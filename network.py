@@ -3,10 +3,6 @@ from machine import Machine
 from util import permutations
 
 
-R_SENSITIVE = 9000.0
-R_USER = 5000.0
-
-
 class Network(object):
     """
     A simulated network of machines belonging to different subnetworks.
@@ -40,7 +36,8 @@ class Network(object):
     the CyberAttackSimulatorEnv class).
     """
 
-    def __init__(self, num_machines, num_services):
+    def __init__(self, num_machines, num_services, r_sensitive=9000.0,
+                 r_user=5000.0):
         """
         Initialize and generate a new Network with given number of machines and
         services for each machine
@@ -48,9 +45,14 @@ class Network(object):
         Arguments:
         int num_machines : number of machines in network
         int num_services : number of services for machine configurations
+        float r_sensitive : value for sensitive documents on machines on
+            sensitive subnet
+        float r_user : value for sensitive documents on machines on user subnet
         """
         self.num_machines = num_machines
         self.num_services = num_services
+        self.r_sensitive = r_sensitive
+        self.r_user = r_user
         self.sensitive_machines = []
         self.subnetworks = self._generate_network()
 
@@ -78,7 +80,7 @@ class Network(object):
                 # sensitive subnet
                 # set reward for every 10th machine in subnet
                 if s_id % 10 == 0:
-                    r = R_SENSITIVE
+                    r = self.r_sensitive
                     self.sensitive_machines.append((2, s_id))
                 subnets[2].append(Machine(2, s_id, cfg, r))
                 s_id += 1
@@ -86,7 +88,7 @@ class Network(object):
                 # user subnet
                 # set reward for every 10th machine in subnet
                 if u_id % 10 == 0:
-                    r = R_USER
+                    r = self.r_user
                     self.sensitive_machines.append((3, u_id))
                 subnets[3].append(Machine(3, u_id, cfg, r))
                 u_id += 1

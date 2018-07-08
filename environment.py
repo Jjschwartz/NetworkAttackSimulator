@@ -4,6 +4,9 @@ import numpy as np
 from action import Action
 from network import Network
 
+R_SENSITIVE = 9000.0
+R_USER = 5000.0
+
 
 class CyberAttackSimulatorEnv(object):
     """
@@ -59,24 +62,22 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     observation = None
 
-    def __init__(self, num_exploits, num_machines):
+    def __init__(self, num_machines, num_exploits):
         """
         Initialize a new environment and network with the specified number
         of exploits and machines
 
         Arguments:
-            int num_exploits : number of exploits (and hence services) to use
-                in environment (minimum is 1)
             int num_machines : number of machines to include in network
                 (minimum is 3)
+            int num_exploits : number of exploits (and hence services) to use
+                in environment (minimum is 1)
         """
         assert 0 < num_exploits
         assert 2 < num_machines
         self.num_exploits = num_exploits
         self.num_machines = num_machines
-        print("A")
         self.network = Network(num_machines, num_exploits)
-        print("B")
         self._generate_action_space()
         self.reset()
 

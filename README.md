@@ -30,10 +30,15 @@ A machine is reachable if:
 - Python >3.5
 - Numpy
 
+For rendering:
+- matplotlib
+- networkX
+
 ## Other future dev todo
 1. Action space class
     1. to allow for random_choice function
     2. optimized data structure?
+1. Make it compatible with openAI gym environment
 
 ## Ideas for future environment features
 1. Attack abort option

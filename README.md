@@ -26,6 +26,10 @@ A machine is reachable if:
 1. it is on exposed subnet (subnet 1 by default) (i.e. this would be the machines available to public, e.g. webserver)
 2. it is on a subnet reachable from a machine on connected subnet that has been successfuly compromised by agent
 
+# Dependencies
+- Python >3.5
+- Numpy
+
 ## Other future dev todo
 1. Action space class
     1. to allow for random_choice function

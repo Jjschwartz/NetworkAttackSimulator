@@ -1,5 +1,6 @@
 from enum import Enum
 from collections import OrderedDict
+import copy
 import numpy as np
 from action import Action
 from network import Network
@@ -121,7 +122,7 @@ class CyberAttackSimulatorEnv(object):
             obs[m] = {"service_info": service_info, "compromised": compromised,
                       "sensitive": sensitive, "reachable": reachable}
         self.observation = OrderedDict(sorted(obs.items()))
-        return self.observation
+        return copy.deepcopy(self.observation)
 
     def step(self, action):
         """
@@ -146,7 +147,7 @@ class CyberAttackSimulatorEnv(object):
         self._update_observation(action, success, services)
         done = self.is_goal()
         reward = value - action.cost
-        return self.observation, reward, done, {}
+        return copy.deepcopy(self.observation), reward, done, {}
 
     def render(self):
         """

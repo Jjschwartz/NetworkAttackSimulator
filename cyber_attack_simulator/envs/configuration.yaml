@@ -1,0 +1,7 @@
+subnets: [1, 2, 3 ]
+subnet_connections: [[ 1, 1, 1, 1],
+                    [ 0, 1, 1, 1],
+                    [ 0, 1, 1, 1]]
+services:
+    1: 0.6
+    2: 0.5

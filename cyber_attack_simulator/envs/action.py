@@ -51,3 +51,17 @@ class Action(object):
             return False
         else:
             return self.service == other.service
+
+    def __lt__(self, other):
+        """
+        Sort by target, then type (scan then exploit), then service
+        """
+        if self.target == other.target:
+            if self.type == other.type:
+                if self.is_scan():
+                    return True
+                return self.service < other.service
+            else:
+                return self.is_scan()
+        else:
+            return self.target < other.target

@@ -14,40 +14,8 @@ class CyberAttackSimulatorEnv(object):
     A simple simulated computer network with subnetworks and machines with
     different vulnerabilities.
 
-    The aim is to retrieve sensitive documents located on certain machines on
-    the network without being caught. Each document provides a large reward to
-    the agent.
-
-    The attack terminates in one of the following ways:
-        1. the agent collects all sensitive documents = goal
-        2. the agent get caught = loss
-
-    The agent receives information about the network topology, specifically:
-        1. the machines and subnets in the network
-        2. which machines have the sensitive documents
-
-    The agent does not know which services are running on which machine, and
-    hence which machines are vulnerable to which exploits.
-
-    The actions available to the agent are exploits and scan.
-    - exploits:
-        - there is one exploit action for each possible service running, which
-        is a envirnment parameter
-    - scan:
-        - reveals which services are present and absent on a target machine
-        (i.e. inspired by Nmap behaviour)
-
-    Each action must be launched against a specific machine, but actions will
-    only possibly work on machines that are reachable.
-
-    A machine is reachable if:
-        1. it is on exposed subnet (subnet 1 by default) (i.e. this would be
-        the machines available to public, e.g. webserver)
-        2. it is on a subnet reachable from a machine on connected subnet that
-        has been successfuly compromised by agent
-
     Properties:
-    - observation : the current knowledge the agent has observed. This is
+    - current_state : the current knowledge the agent has observed. This is
         defined by a dictionary of the known status of each machine on the
         network.
 
@@ -61,7 +29,7 @@ class CyberAttackSimulatorEnv(object):
     """
 
     action_space = None
-    observation = None
+    current_state = None
 
     def __init__(self, num_machines, num_exploits):
         """
@@ -121,8 +89,8 @@ class CyberAttackSimulatorEnv(object):
                 reachable = False
             obs[m] = {"service_info": service_info, "compromised": compromised,
                       "sensitive": sensitive, "reachable": reachable}
-        self.observation = OrderedDict(sorted(obs.items()))
-        return copy.deepcopy(self.observation)
+        self.current_state = OrderedDict(sorted(obs.items()))
+        return copy.deepcopy(self.current_state)
 
     def step(self, action):
         """
@@ -139,23 +107,22 @@ class CyberAttackSimulatorEnv(object):
                 visualization
         """
         if not self._is_reachable(action.target):
-            return self.observation, 0 - action.cost, False, {}
+            return self.current_state, 0 - action.cost, False, {}
 
         success, value, services = self.network.perform_action(action)
 
         value = 0 if self._already_rewarded(action.target) else value
-        self._update_observation(action, success, services)
+        self._update_state(action, success, services)
         done = self.is_goal()
         reward = value - action.cost
-        return copy.deepcopy(self.observation), reward, done, {}
+        return copy.deepcopy(self.current_state), reward, done, {}
 
     def render(self):
         """
         Renders the environment and outputs it to stdout
         """
-        # convert observations into tabular form with columns as subnets
-        for m in self.observation.keys():
-            print("Machine: {0} {1}".format(m, self.observation[m]))
+        for m in self.current_state.keys():
+            print("Machine: {0} {1}".format(m, self.current_state[m]))
 
     def _is_reachable(self, target):
         """
@@ -167,7 +134,7 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             bool reachable : True if reachable, otherwise False
         """
-        return self.observation[target]["reachable"]
+        return self.current_state[target]["reachable"]
 
     def _already_rewarded(self, m):
         """
@@ -178,11 +145,11 @@ class CyberAttackSimulatorEnv(object):
             bool recieved : True if reward was already recieved from this
                 machine, otherwise False
         """
-        return self.observation[m]["compromised"]
+        return self.current_state[m]["compromised"]
 
-    def _update_observation(self, action, success, services):
+    def _update_state(self, action, success, services):
         """
-        Updates the current observation of network state based on if action was
+        Updates the current state of network state based on if action was
         successful and the gained service info
 
         Arguments:
@@ -190,7 +157,7 @@ class CyberAttackSimulatorEnv(object):
             bool success : whether action was successful
             list services : service info gained from action
         """
-        m_service_info = self.observation[action.target]["service_info"]
+        m_service_info = self.current_state[action.target]["service_info"]
         if action.is_scan() or (not action.is_scan() and success):
             # 1. scan or successful exploit, all service info gained for target
             for s in range(len(services)):
@@ -200,7 +167,7 @@ class CyberAttackSimulatorEnv(object):
                     m_service_info[s] = ServiceState.absent
             if not action.is_scan():
                 # successful exploit so machine compromised
-                self.observation[action.target]["compromised"] = True
+                self.current_state[action.target]["compromised"] = True
                 self._update_reachable(action.target)
         else:
             # 2. unsuccessful exploit, targeted service is absent
@@ -209,7 +176,7 @@ class CyberAttackSimulatorEnv(object):
     def _update_reachable(self, compromised_m):
         """
         Updates the reachable status of machines on network, based on current
-        observation and newly exploited machine
+        state and newly exploited machine
 
         Arguments:
             (int, int) compromised_m : compromised machine address
@@ -217,14 +184,14 @@ class CyberAttackSimulatorEnv(object):
         # if machine on subnet 1 is compromised then subnets 1 and 2 are
         # reachable
         if compromised_m[0] == 1:
-            for m in self.observation.keys():
-                self.observation[m]["reachable"] = True
+            for m in self.current_state.keys():
+                self.current_state[m]["reachable"] = True
         # otherwise all machines all already reachable
         # TODO update for when more than 3 subnets
 
     def is_goal(self):
         """
-        Check if the current observation is the goal state. Where the goal
+        Check if the current state is the goal state. Where the goal
         state is defined as when all sensitive documents have been collected
         (i.e. all machines containing sensitive documents have been
         compromised)
@@ -233,7 +200,7 @@ class CyberAttackSimulatorEnv(object):
             bool goal : True if goal state, otherwise False
         """
         for m in self.network.get_sensitive_machines():
-            if not self.observation[m]["compromised"]:
+            if not self.current_state[m]["compromised"]:
                 return False
         return True
 
@@ -247,14 +214,14 @@ class ServiceState(Enum):
     1. present : the service is running on the machine
     2. absent : the service is not running on the machine
     3. unknown : the service may or may not be running on machine
-
-    Initially, all service state observations are unknown, since we haven't
-    performed any actions to reveal they're status.
-    Performing a scan against a machine reveals which services are present
-    and absent.
-    Also, performing an exploit can lead to a service being observed as present
-    if successful, or absent if unsuccessful.
     """
     present = 1
     absent = 2
     unknown = 3
+
+    def __str__(self):
+        if self.value == 1:
+            return "present"
+        if self.value == 2:
+            return "absent"
+        return "unknown"

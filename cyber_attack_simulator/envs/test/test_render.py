@@ -1,11 +1,11 @@
-from environment import CyberAttackSimulatorEnv
-from action import Action
-from render import Viewer
+from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
+from cyber_attack_simulator.envs.action import Action
+from cyber_attack_simulator.envs.render import Viewer
 
 
 def main():
     E = 1
-    M = 14
+    M = 40
     env = CyberAttackSimulatorEnv(M, E)
     obs_sequence = []
     obs_sequence.append(env.reset())

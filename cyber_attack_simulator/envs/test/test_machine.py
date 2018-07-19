@@ -1,7 +1,7 @@
-from machine import Machine
-from action import Action
 import numpy as np
 import unittest
+from cyber_attack_simulator.envs.action import Action
+from cyber_attack_simulator.envs.machine import Machine
 
 
 class MachineTestCase(unittest.TestCase):

@@ -1,6 +1,6 @@
 import numpy as np
-from machine import Machine
-from util import permutations
+from cyber_attack_simulator.envs.util import permutations
+from cyber_attack_simulator.envs.machine import Machine
 
 
 class Network(object):
@@ -61,7 +61,7 @@ class Network(object):
         Generate the network.
 
         Returns:
-        dict subnets : dictionary of lists of machine objects
+            dict subnets : dictionary of lists of machine objects
         """
         # set seed for consistency of networks generated
         np.random.seed(1)

@@ -1,10 +1,10 @@
 import unittest
-from environment import CyberAttackSimulatorEnv
-from environment import ServiceState
-import environment
-from action import Action
-import numpy as np
 from collections import OrderedDict
+import numpy as np
+from cyber_attack_simulator.envs import CyberAttackSimulatorEnv
+from cyber_attack_simulator.envs.environment import ServiceState
+import cyber_attack_simulator.envs.environment as environment
+from cyber_attack_simulator.envs.action import Action
 
 
 class EnvironmentTestCase(unittest.TestCase):

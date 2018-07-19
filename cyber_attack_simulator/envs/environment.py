@@ -2,8 +2,8 @@ from enum import Enum
 from collections import OrderedDict
 import copy
 import numpy as np
-from action import Action
-from network import Network
+from cyber_attack_simulator.envs.network import Network
+from cyber_attack_simulator.envs.action import Action
 
 R_SENSITIVE = 9000.0
 R_USER = 5000.0

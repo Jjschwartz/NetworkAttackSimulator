@@ -1,9 +1,9 @@
-from network import Network
-from network import R_SENSITIVE
-from network import R_USER
-from action import Action
-import numpy as np
 import unittest
+import numpy as np
+from cyber_attack_simulator.envs.network import Network
+from cyber_attack_simulator.envs.environment import R_SENSITIVE
+from cyber_attack_simulator.envs.environment import R_USER
+from cyber_attack_simulator.envs.action import Action
 
 
 class NetworkTestCase(unittest.TestCase):

@@ -1,8 +1,10 @@
 from enum import Enum
 from collections import OrderedDict
 import copy
+import sys
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
+import cyber_attack_simulator.envs.network as network
 from cyber_attack_simulator.envs.action import Action
 
 R_SENSITIVE = 9000.0
@@ -31,7 +33,7 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, num_machines, num_exploits):
+    def __init__(self, num_machines, num_services):
         """
         Initialize a new environment and network with the specified number
         of exploits and machines
@@ -39,30 +41,18 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             int num_machines : number of machines to include in network
                 (minimum is 3)
-            int num_exploits : number of exploits (and hence services) to use
-                in environment (minimum is 1)
+            int num_services : number of services to use in environment
+                (minimum is 1)
         """
-        assert 0 < num_exploits
+        assert 0 < num_services
         assert 2 < num_machines
-        self.num_exploits = num_exploits
+        self.num_services = num_services
         self.num_machines = num_machines
-        self.network = Network(num_machines, num_exploits)
-        self._generate_action_space()
+        self.network = Network(num_machines, num_services)
+        self.address_space = self.network.get_address_space()
+        self.action_space = Action.generate_action_space(
+            self.address_space, self.num_services)
         self.reset()
-
-    def _generate_action_space(self):
-        """
-        Generate the action space for the environment which consists of for
-        each machine in the network, an exploit for each service (i.e.
-        num_exploits) and a scan
-        """
-        machines = self.network.get_machines()
-        temp = set()
-        for m in machines:
-            temp.add(Action(m, "scan", None))
-            for s in range(self.num_exploits):
-                temp.add(Action(m, "exploit", s))
-        self.action_space = temp
 
     def reset(self):
         """
@@ -72,21 +62,18 @@ class CyberAttackSimulatorEnv(object):
             dict obs : the intial observation of the network environment
         """
         obs = {}
-        machines = self.network.get_machines()
-        for m in machines:
+        reward_machines = self.network.get_reward_machines()
+        for m in self.address_space:
             # initially the status of services on machine are unknown
-            service_info = np.full(self.num_exploits, ServiceState.unknown,
+            service_info = np.full(self.num_services, ServiceState.unknown,
                                    ServiceState)
             compromised = False
-            if m[0] == 1:
-                # machine on subnet, has no sensitive info
-                sensitive = False
-                # only machines on exposed subnet are reachable at start
+            sensitive = False
+            reachable = False
+            if m[0] == network.EXPOSED:
                 reachable = True
-            else:
-                # every 10th machine has sensitive info
-                sensitive = m[1] % 10 == 0
-                reachable = False
+            if m in reward_machines:
+                sensitive = True
             obs[m] = {"service_info": service_info, "compromised": compromised,
                       "sensitive": sensitive, "reachable": reachable}
         self.current_state = OrderedDict(sorted(obs.items()))
@@ -116,13 +103,6 @@ class CyberAttackSimulatorEnv(object):
         done = self.is_goal()
         reward = value - action.cost
         return copy.deepcopy(self.current_state), reward, done, {}
-
-    def render(self):
-        """
-        Renders the environment and outputs it to stdout
-        """
-        for m in self.current_state.keys():
-            print("Machine: {0} {1}".format(m, self.current_state[m]))
 
     def _is_reachable(self, target):
         """
@@ -181,28 +161,85 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             (int, int) compromised_m : compromised machine address
         """
-        # if machine on subnet 1 is compromised then subnets 1 and 2 are
-        # reachable
-        if compromised_m[0] == 1:
-            for m in self.current_state.keys():
+        comp_subnet = compromised_m[0]
+        for m in self.address_space:
+            if self.current_state[m]["reachable"]:
+                continue
+            m_subnet = m[0]
+            if self.network.subnets_connected(comp_subnet, m_subnet):
                 self.current_state[m]["reachable"] = True
-        # otherwise all machines all already reachable
-        # TODO update for when more than 3 subnets
 
     def is_goal(self):
         """
-        Check if the current state is the goal state. Where the goal
-        state is defined as when all sensitive documents have been collected
-        (i.e. all machines containing sensitive documents have been
-        compromised)
+        Check if the current state is the goal state.
+        The goal state is  when all sensitive documents have been collected
+        (i.e. all rewarded machines have been compromised)
 
         Returns:
             bool goal : True if goal state, otherwise False
         """
-        for m in self.network.get_sensitive_machines():
+        for m in self.network.get_reward_machines():
             if not self.current_state[m]["compromised"]:
                 return False
         return True
+
+    def render(self, mode="ASCI"):
+        """
+        Render current state.
+
+        If mode = ASCI:
+            Machines displayed in rows, with one row for each subnet and
+            machines displayed in order of id within subnet
+
+            Key, for each machine:
+                C   sensitive & compromised
+                R   sensitive & reachable
+                S   sensitive
+                c   compromised
+                r   reachable
+                o   non-of-above
+
+        Arguments:
+            str mode : rendering mode
+        """
+        outfile = sys.stdout
+
+        subnets = [[], [], []]
+        for m, v in self.current_state.items():
+            subnets[m[0]].append(self._get_machine_symbol(v))
+
+        max_row_size = max([len(x) for x in subnets])
+        min_row_size = min([len(x) for x in subnets])
+
+        output = "-----------------------------"
+        for i, row in enumerate(subnets):
+            output += "\nsubnet {0}: ".format(i)
+            output += " " * ((max_row_size - len(row)) // 2)
+            for col in row:
+                output += col
+            output += "\n"
+            if i < len(subnets) - 1:
+                n_spaces = (max_row_size - min_row_size) // 2
+                output += " " * (len("subnet X: ") + n_spaces) + "|"
+        output += "-----------------------------\n\n"
+
+        outfile.write(output)
+
+    def _get_machine_symbol(self, m_state):
+        if m_state["sensitive"]:
+            if m_state["compromised"]:
+                symbol = "C"
+            elif m_state["reachable"]:
+                symbol = "R"
+            else:
+                symbol = "S"
+        elif m_state["compromised"]:
+            symbol = "c"
+        elif m_state["reachable"]:
+            symbol = "r"
+        else:
+            symbol = "o"
+        return symbol
 
 
 class ServiceState(Enum):

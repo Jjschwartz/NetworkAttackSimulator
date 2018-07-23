@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 
 EXPLOIT_COST = 10.0
 SCAN_COST = 10.0
@@ -16,13 +18,20 @@ class Action(object):
             by the (subnet, machine_id) tuple
     """
 
-    def __init__(self, target, type="scan", service=None):
+    def __init__(self, target, type="scan", service=None, prob=1.0):
         """
         Initialize a new action
+
+        Arguments:
+            tuple target : address of target
+            str type : either "scan" or "exploit"
+            int service : the target service for an exploit
+            float prob : probability of success for a given action
         """
         self.target = target
         self.type = type
         self.service = service
+        self.prob = prob
 
     def is_scan(self):
         return self.type == "scan"
@@ -65,3 +74,26 @@ class Action(object):
                 return self.is_scan()
         else:
             return self.target < other.target
+
+    @staticmethod
+    def generate_action_space(address_space, num_services):
+        """
+        Generate the action space for the environment
+
+        Arguments:
+            list address_space : list of addresses for each machine in network
+            int num_services : number of possible services running on machines
+
+        Returns:
+            OrderedDict action_space : ordered dictionary with action names as
+                keys and Action instances as values
+        """
+        action_space = OrderedDict()
+        for address in address_space:
+            # add scan
+            scan = Action(address, "scan")
+            action_space[str(scan)] = scan
+            for service in range(num_services):
+                exploit = Action(address, "exploit", service)
+                action_space[str(exploit)] = exploit
+        return action_space

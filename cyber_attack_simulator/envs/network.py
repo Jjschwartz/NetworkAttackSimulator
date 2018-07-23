@@ -3,21 +3,25 @@ from cyber_attack_simulator.envs.util import permutations
 from cyber_attack_simulator.envs.machine import Machine
 
 
+USER_SUBNET_SIZE = 5
+EXPOSED = 0
+SENSITIVE = 1
+
+
 class Network(object):
     """
     A simulated network of machines belonging to different subnetworks.
 
-    Number of subnetworks is set to 3, with machines distributed across each
+    Number of subnetworks is set to , with machines distributed across each
     subnet following a set rule:
-        - exposed (subnet 1) - with one machine
-        - sensitive (subnet 2) - with one machine for every 10 in user subnet
-        - user (subnet 3) - all other machines
+        - exposed (subnet 0) - with one machine
+        - sensitive (subnet 1) - with one machine
+        - user (subnet 2+) - all other machines distributed in tree of subnets
+            with each subnet containing up to 5 machines.
 
-    Sensitive documents (aka the rewards) are also stored around network on
-    every 10th machine (including 1st machine) on the sensitive and user
-    subnets. Rewards are designated as follows:
-        - sensitive machines with sensitive docs = +9000
-        - user machines with sensitive docs = +5000
+    Two machines on network contain Sensitive documents (aka the rewards):
+        - One in sensitive subnet machine = r_sensitive
+        - One on machine in leaf subnet of user = r_user
         - any machine with no sensitive docs = 0
 
     The configurations of each machine (i.e. which services are present/absent)
@@ -43,56 +47,66 @@ class Network(object):
         services for each machine
 
         Arguments:
-        int num_machines : number of machines in network
-        int num_services : number of services for machine configurations
-        float r_sensitive : value for sensitive documents on machines on
-            sensitive subnet
-        float r_user : value for sensitive documents on machines on user subnet
+            int num_machines : number of machines to include in network
+                (minimum is 3)
+            int num_exploits : number of exploits (and hence services) to use
+                in environment (minimum is 1)
+            float r_sensitive : reward for sensitive subnet documents
+            float r_user : reward for user subnet documents
         """
         self.num_machines = num_machines
         self.num_services = num_services
         self.r_sensitive = r_sensitive
         self.r_user = r_user
-        self.sensitive_machines = []
-        self.subnetworks = self._generate_network()
+
+        network = self._generate_network()
+        self.subnets = network[0]
+        self.address_space = network[1]
+        self.reward_machines = network[2]
+
+        self.topology = self._generate_topology()
 
     def _generate_network(self):
         """
         Generate the network.
 
+        Arguments:
+            list subnet_sizes : list of number of machines on each subnet
+            float reward : value for sensitive documents on machine
+
         Returns:
             dict subnets : dictionary of lists of machine objects
+            list address_space : list of machine addresses in network
+            list rewarded_machiness : list of machine addresses that contain
+                rewards
         """
         # set seed for consistency of networks generated
         np.random.seed(1)
+
+        subnets = {}
+        address_space = []
+        rewarded_machines = []
+
         configs = self._possible_machine_configs(self.num_services)
-        subnets = {1: [], 2: [], 3: []}
-        # machine id within sensitive and user subnets
-        s_id = 0
-        u_id = 0
-        for m in range(self.num_machines):
-            cfg = configs[np.random.choice(configs.shape[0])]
-            r = 0
-            if m == 0:
-                # exposed subnet
-                subnets[1].append(Machine(1, 0, cfg))
-            elif m % 11 == 2:
-                # sensitive subnet
-                # set reward for every 10th machine in subnet
-                if s_id % 10 == 0:
-                    r = self.r_sensitive
-                    self.sensitive_machines.append((2, s_id))
-                subnets[2].append(Machine(2, s_id, cfg, r))
-                s_id += 1
-            else:
-                # user subnet
-                # set reward for every 10th machine in subnet
-                if u_id % 10 == 0:
-                    r = self.r_user
-                    self.sensitive_machines.append((3, u_id))
-                subnets[3].append(Machine(3, u_id, cfg, r))
-                u_id += 1
-        return subnets
+        subnet_sizes = self._get_subnet_sizes(self.num_machines)
+
+        for subnet, size in enumerate(subnet_sizes):
+            subnets[subnet] = []
+            for m in range(size):
+                cfg = configs[np.random.choice(configs.shape[0])]
+                address = (subnet, m)
+                address_space.append(address)
+                value = 0
+                if subnet == 1 and m == 0:
+                    # machine on sensitive subnet
+                    value = self.r_sensitive
+                    rewarded_machines.append(address)
+                elif subnet == len(subnet_sizes) - 1 and m == size - 1:
+                    # last machine in last user subnet
+                    value = self.r_user
+                    rewarded_machines.append(address)
+                subnets[subnet].append(Machine(address, cfg, value))
+        return subnets, address_space, rewarded_machines
 
     def _possible_machine_configs(self, ns):
         """
@@ -103,66 +117,139 @@ class Network(object):
         no configuration where all services are absent.
 
         Argument:
-        int ns : number of possible services on machines
+            int ns : number of possible services on machines
 
         Returns:
-        ndarray configs : numpy array of all possible configurations, where
-            each configuration is a list of bools corresponding to the presence
-            or absence of a service
+            ndarray configs : numpy array of all possible configurations, where
+                each configuration is a list of bools corresponding to the
+                presence or absence of a service
         """
         # remove last permutation which is all False
         configs = permutations(ns)[:-1]
         return np.asarray(configs)
+
+    def _get_subnet_sizes(self, nm):
+        """
+        Generate list of subnet sizes
+
+        Argument:
+            int nm : number of machines in network
+
+        Returns:
+            list subnet_sizes : list of number of machines in each subnet
+        """
+        # exposed (0) and sensitive (1) subnets both contain 1 machine
+        subnet_sizes = [1, 1]
+        subnet_sizes += [USER_SUBNET_SIZE] * ((nm - 2) // USER_SUBNET_SIZE)
+        subnet_sizes.append((nm - 2) % USER_SUBNET_SIZE)
+        return subnet_sizes
+
+    def _generate_topology(self):
+        """
+        Generate the topology of the network, defining the connectivity between
+        subnets.
+
+        Returns:
+            2D matrix topology : an adjacency matrix of subnets
+        """
+        topology = np.zeros((len(self.subnets), len(self.subnets)))
+        # exposed subnet is connected to sensitive and first user subnet
+        for i in range(3):
+            for j in range(3):
+                topology[i][j] = 1
+        if len(self.subnets) == 3:
+            return topology
+        # all other subnets are part of user binary tree
+        for i in range(2, len(self.subnets)):
+            topology[i][i] = 1
+            pos = i - 2
+            if pos > 0:
+                parent = ((pos - 1) // 2) + 2
+                topology[i][parent] = 1
+            child_left = ((2 * pos) + 1) + 2
+            child_right = ((2 * pos) + 2) + 2
+            if child_left < len(self.subnets):
+                topology[i][child_left] = 1
+            if child_right < len(self.subnets):
+                topology[i][child_right] = 1
+        return topology
 
     def perform_action(self, action):
         """
         Perform the given Action against the network.
 
         Arguments:
-        Action exploit : the exploit Action
+            Action exploit : the exploit Action
 
         Returns:
-        bool success : True if action was successful, False otherwise
-            (i.e. False if exploit failed)
-        float value : value gained from action (0 if unsuccessful or scan),
-            otherwise value of machine
-        list services : the list of services identified by action. This is
-            the services if exploit was successful or scan, otherwise an empty
-            list
+            bool success : True if action was successful, False otherwise
+                (i.e. False if exploit failed)
+            float value : value gained from action (0 if unsuccessful or scan),
+                otherwise value of machine
+            list services : the list of services identified by action. This is
+                the services if exploit was successful or scan, otherwise an
+                empty list
         """
         # check if valid target machine
         tgt_subnet, tgt_id = action.target
-        assert 0 < tgt_subnet and tgt_subnet < 4
-        assert tgt_id <= len(self.subnetworks[tgt_subnet])
+        assert 0 <= tgt_subnet and tgt_subnet < len(self.subnets)
+        assert tgt_id <= len(self.subnets[tgt_subnet])
 
         # check if valid action type and service
         if not action.is_scan():
             assert 0 <= action.service and action.service < self.num_services
 
         # action is valid, so perform against machine
-        t_machine = self.subnetworks[tgt_subnet][tgt_id]
+        t_machine = self.subnets[tgt_subnet][tgt_id]
         return t_machine.perform_action(action)
 
-    def get_machines(self):
+    def get_address_space(self):
         """
         Get a list of all machine addresses in network
 
         Returns:
-            list machines : a list of all machine addresses, as (subnet, id)
-                tuple, on the network
+            list address_space : a list of all machine addresses
         """
-        machines = []
-        for subnet in self.subnetworks.values():
-            for m in subnet:
-                machines.append(m.address)
-        return machines
+        return self.address_space
 
-    def get_sensitive_machines(self):
+    def get_reward_machines(self):
         """
-        Get addresses of machines which contain sensitive documents
+        Get addresses of machines which contain sensitive documents (rewards)
 
         Returns:
             list machines : a list of addresses of machines in network that
                 contain sensitive documents
         """
-        return self.sensitive_machines
+        return self.reward_machines
+
+    def subnets_connected(self, subnet_1, subnet_2):
+        """
+        Checks whether two subnets are directly connected. A subnet is also
+        connected to itself.
+
+        Arguments:
+            int subnet_1 : the id of first subnet
+            int subnet_2 : the id of second subnet
+
+        Returns:
+            bool connected : True if subnets are directly connected
+        """
+        return self.topology[subnet_1][subnet_2] == 1
+
+    def print_network(self):
+        """
+        Print a user friendly display of the network
+        """
+        output = "\n"
+        for subnet, machines in self.subnets.items():
+            if subnet == 0:
+                output += "EXPOSED    "
+            elif subnet == 1:
+                output += "SENSITIVE  "
+            else:
+                output += "USER {0}     ".format(subnet - 2)
+            output += "Subnet = {0} : {{".format(subnet)
+            for m in machines:
+                output += "{0}, ".format(m.address)
+            output += "}\n"
+        print(output)

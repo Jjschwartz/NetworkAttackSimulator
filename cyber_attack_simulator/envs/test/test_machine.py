@@ -9,8 +9,8 @@ class MachineTestCase(unittest.TestCase):
     def setUp(self):
         self.test_r = 5000.0
         self.services = np.asarray([True, False, True])
-        self.test_m1 = Machine(1, 1, self.services)
-        self.test_m2 = Machine(1, 2, self.services, self.test_r)
+        self.test_m1 = Machine((1, 1), self.services)
+        self.test_m2 = Machine((1, 2), self.services, self.test_r)
 
     def test_successful_exploit(self):
         # address is ignored as this is controlled and checked at Network level
@@ -63,12 +63,12 @@ class MachineTestCase(unittest.TestCase):
     def test_eq(self):
         s1 = np.asarray([True, False, True])
         s2 = np.asarray([True, False, True])
-        m1 = Machine(1, 1, s1)
-        m2 = Machine(1, 1, s2)
+        m1 = Machine((1, 1), s1)
+        m2 = Machine((1, 1), s2)
         self.assertTrue(m1 == m2)
 
-        m3 = Machine(1, 1, s1, self.test_r)
-        m4 = Machine(1, 1, s2, self.test_r)
+        m3 = Machine((1, 1), s1, self.test_r)
+        m4 = Machine((1, 1), s2, self.test_r)
         self.assertTrue(m3 == m4)
 
 

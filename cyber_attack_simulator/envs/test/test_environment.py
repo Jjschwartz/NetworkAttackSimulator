@@ -1,10 +1,12 @@
 import unittest
 from collections import OrderedDict
 import numpy as np
-from cyber_attack_simulator.envs import CyberAttackSimulatorEnv
+from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 from cyber_attack_simulator.envs.environment import ServiceState
 import cyber_attack_simulator.envs.environment as environment
 from cyber_attack_simulator.envs.action import Action
+from cyber_attack_simulator.envs.network import Network
+import cyber_attack_simulator.envs.network as network
 
 
 class EnvironmentTestCase(unittest.TestCase):
@@ -12,20 +14,9 @@ class EnvironmentTestCase(unittest.TestCase):
     def setUp(self):
         self.E = 1
         self.M = 3
+        self.network = Network(self.M, self.E)
+        self.ads_space = self.network.get_address_space()
         self.env = CyberAttackSimulatorEnv(self.M, self.E)
-        m1 = (1, 0)
-        m2 = (2, 0)
-        m3 = (3, 0)
-        self.t_machines = [m1, m2, m3]
-
-    def test_action_space(self):
-        actual_A_space = self.env.action_space
-        expected_A_space = set()
-        for m in self.t_machines:
-            expected_A_space.add(Action(m, "scan", None))
-            for e in range(self.E):
-                expected_A_space.add(Action(m, "exploit", e))
-        self.assertSetEqual(actual_A_space, expected_A_space)
 
     def test_reset1(self):
         actual_obs = self.env.reset()
@@ -33,7 +24,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(actual_obs, expected_obs)
 
     def test_reset2(self):
-        t_action = Action(self.t_machines[0], "scan", None)
+        t_action = Action(self.ads_space[0], "scan")
         o, _, _, _ = self.env.step(t_action)
         self.env.reset()
         actual_obs = self.env.reset()
@@ -41,7 +32,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(actual_obs, expected_obs)
 
     def test_step_not_reachable(self):
-        t_action = Action(self.t_machines[1], "scan", None)
+        t_action = Action(self.ads_space[1], "scan")
         expected_obs = self.env.reset()
         o, r, d, _ = self.env.step(t_action)
         self.assertEqual(r, -t_action.cost)
@@ -49,7 +40,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_step_scan_reachable(self):
-        t_action = Action(self.t_machines[0], "scan", None)
+        t_action = Action(self.ads_space[0], "scan")
         expected_obs = self.env.reset()
         o, r, d, _ = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
@@ -58,7 +49,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_step_exploit_reachable(self):
-        t_action = Action(self.t_machines[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
         o, r, d, _ = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
@@ -67,12 +58,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_step_exploit_sensitive(self):
-        t_action = Action(self.t_machines[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.t_machines[1], "exploit", 0)
+        t_action2 = Action(self.ads_space[1], "exploit", 0)
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -81,12 +72,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_step_exploit_user(self):
-        t_action = Action(self.t_machines[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.t_machines[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], "exploit", 0)
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -95,16 +86,16 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_step_done(self):
-        t_action = Action(self.t_machines[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action1 = Action(self.t_machines[1], "exploit", 0)
+        t_action1 = Action(self.ads_space[1], "exploit", 0)
         o, r, d, _ = self.env.step(t_action1)
         self.update_obs(t_action1, expected_obs, True)
 
-        t_action2 = Action(self.t_machines[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], "exploit", 0)
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -112,12 +103,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def test_already_rewarded(self):
-        t_action = Action(self.t_machines[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.t_machines[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], "exploit", 0)
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -129,15 +120,18 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertDictEqual(o, expected_obs)
 
     def get_initial_expected_obs(self):
-        t_service_info = np.full(self.E, ServiceState.unknown, ServiceState)
-        t_compromised = False
         t_obs = {}
-        for m in self.t_machines:
+        for m in self.ads_space:
+            t_service_info = np.full(self.E, ServiceState.unknown,
+                                     ServiceState)
+            t_compromised = False
             t_reachable = False
-            t_sensitive = True
-            if m[0] == 1:
+            t_sensitive = False
+            t_reachable = False
+            if m[0] == network.EXPOSED:
                 t_reachable = True
-                t_sensitive = False
+            if m in self.network.get_reward_machines():
+                t_sensitive = True
             t_obs[m] = {"service_info": t_service_info,
                         "compromised": t_compromised,
                         "reachable": t_reachable,
@@ -146,17 +140,19 @@ class EnvironmentTestCase(unittest.TestCase):
 
     def update_obs(self, action, obs, success):
         """ Valid for test where E = 1 """
-        m = action.target
+        target = action.target
         if success:
-            for s in range(len(obs[m]["service_info"])):
-                obs[m]["service_info"][s] = ServiceState.present
+            for s in range(len(obs[target]["service_info"])):
+                obs[target]["service_info"][s] = ServiceState.present
         if not action.is_scan() and success:
-            obs[action.target]["compromised"] = True
-            if m[0] == 1:
-                for o in obs.keys():
-                    obs[o]["reachable"] = True
+            obs[target]["compromised"] = True
+            for m in self.ads_space:
+                if obs[m]["reachable"]:
+                    continue
+                if self.network.subnets_connected(target[0], m[0]):
+                    obs[m]["reachable"] = True
         elif not action.is_scan() and not success:
-            obs[m["service_info"][action.service]] = ServiceState.absent
+            obs[target]["service_info"][action.service] = ServiceState.absent
         return obs
 
 

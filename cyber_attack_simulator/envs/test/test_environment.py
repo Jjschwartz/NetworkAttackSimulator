@@ -2,9 +2,10 @@ import unittest
 from collections import OrderedDict
 import numpy as np
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
-from cyber_attack_simulator.envs.environment import ServiceState
+from cyber_attack_simulator.envs.environment import Service
 import cyber_attack_simulator.envs.environment as environment
 from cyber_attack_simulator.envs.action import Action
+from cyber_attack_simulator.envs.state import State
 from cyber_attack_simulator.envs.network import Network
 import cyber_attack_simulator.envs.network as network
 
@@ -21,7 +22,7 @@ class EnvironmentTestCase(unittest.TestCase):
     def test_reset1(self):
         actual_obs = self.env.reset()
         expected_obs = self.get_initial_expected_obs()
-        self.assertDictEqual(actual_obs, expected_obs)
+        self.assertEqual(actual_obs, expected_obs)
 
     def test_reset2(self):
         t_action = Action(self.ads_space[0], "scan")
@@ -29,7 +30,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.env.reset()
         actual_obs = self.env.reset()
         expected_obs = self.get_initial_expected_obs()
-        self.assertDictEqual(actual_obs, expected_obs)
+        self.assertEqual(actual_obs, expected_obs)
 
     def test_step_not_reachable(self):
         t_action = Action(self.ads_space[1], "scan")
@@ -37,7 +38,7 @@ class EnvironmentTestCase(unittest.TestCase):
         o, r, d, _ = self.env.step(t_action)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_step_scan_reachable(self):
         t_action = Action(self.ads_space[0], "scan")
@@ -46,7 +47,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_step_exploit_reachable(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
@@ -55,7 +56,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_step_exploit_sensitive(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
@@ -69,7 +70,7 @@ class EnvironmentTestCase(unittest.TestCase):
 
         self.assertEqual(r, environment.R_SENSITIVE - t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_step_exploit_user(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
@@ -83,7 +84,7 @@ class EnvironmentTestCase(unittest.TestCase):
 
         self.assertEqual(r, environment.R_USER - t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_step_done(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
@@ -100,7 +101,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action2, expected_obs, True)
 
         self.assertTrue(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def test_already_rewarded(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
@@ -117,13 +118,12 @@ class EnvironmentTestCase(unittest.TestCase):
 
         self.assertEqual(r, 0 - t_action.cost)
         self.assertFalse(d)
-        self.assertDictEqual(o, expected_obs)
+        self.assertEqual(o, expected_obs)
 
     def get_initial_expected_obs(self):
-        t_obs = {}
+        t_obs = OrderedDict()
         for m in self.ads_space:
-            t_service_info = np.full(self.E, ServiceState.unknown,
-                                     ServiceState)
+            t_service_info = np.full(self.E, Service.unknown, Service)
             t_compromised = False
             t_reachable = False
             t_sensitive = False
@@ -136,23 +136,23 @@ class EnvironmentTestCase(unittest.TestCase):
                         "compromised": t_compromised,
                         "reachable": t_reachable,
                         "sensitive": t_sensitive}
-        return OrderedDict(sorted(t_obs.items()))
+        return State(t_obs)
 
     def update_obs(self, action, obs, success):
         """ Valid for test where E = 1 """
         target = action.target
         if success:
-            for s in range(len(obs[target]["service_info"])):
-                obs[target]["service_info"][s] = ServiceState.present
+            for s in range(self.E):
+                obs.update_service(target, s, Service.present)
         if not action.is_scan() and success:
-            obs[target]["compromised"] = True
+            obs.set_compromised(target)
             for m in self.ads_space:
-                if obs[m]["reachable"]:
+                if obs.reachable(m):
                     continue
                 if self.network.subnets_connected(target[0], m[0]):
-                    obs[m]["reachable"] = True
+                    obs.set_reachable(m)
         elif not action.is_scan() and not success:
-            obs[target]["service_info"][action.service] = ServiceState.absent
+            obs.update_service(target, action.service, Service.absent)
         return obs
 
 

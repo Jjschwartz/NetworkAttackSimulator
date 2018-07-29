@@ -7,26 +7,21 @@ def main():
     E = 1
     M = 40
     env = CyberAttackSimulatorEnv(M, E)
-    obs_sequence = []
-    obs_sequence.append(env.reset())
+    episode = []
 
-    t_action = Action((1, 0), "exploit", 0)
-    o, r, d, _ = env.step(t_action)
-    obs_sequence.append(o)
+    actions = [Action((0, 0), "exploit", 0),
+               Action((1, 0), "exploit", 0),
+               Action((2, 1), "exploit", 0),
+               Action((2, 0), "exploit", 0)]
 
-    t_action = Action((2, 0), "exploit", 0)
-    o, r, d, _ = env.step(t_action)
-    obs_sequence.append(o)
+    state = env.reset()
 
-    t_action = Action((3, 1), "exploit", 0)
-    o, r, d, _ = env.step(t_action)
-    obs_sequence.append(o)
+    for a in actions:
+        new_state, r, d, _ = env.step(a)
+        episode.append((state, a, r))
+        state = new_state
 
-    t_action = Action((3, 0), "exploit", 0)
-    o, r, d, _ = env.step(t_action)
-    obs_sequence.append(o)
-
-    Viewer(obs_sequence)
+    Viewer(episode, env.network)
 
 
 if __name__ == "__main__":

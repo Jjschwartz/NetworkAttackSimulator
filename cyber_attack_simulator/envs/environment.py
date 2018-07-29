@@ -6,6 +6,8 @@ import numpy as np
 from cyber_attack_simulator.envs.network import Network
 import cyber_attack_simulator.envs.network as network
 from cyber_attack_simulator.envs.action import Action
+from cyber_attack_simulator.envs.state import State
+from cyber_attack_simulator.envs.render import Viewer
 
 R_SENSITIVE = 9000.0
 R_USER = 5000.0
@@ -17,18 +19,11 @@ class CyberAttackSimulatorEnv(object):
     different vulnerabilities.
 
     Properties:
-    - current_state : the current knowledge the agent has observed. This is
-        defined by a dictionary of the known status of each machine on the
-        network.
-
-        Status for each machine is defined by:
-            1. service_info : list of ServiceState, for each service
-            2. compromised : True/False
-            3. sensitive : True/False (whether machine has sensitive info)
-            4. reachable : True/False (whether machine is currently reachable)
-
+    - current_state : the current knowledge the agent has observed
     - action_space : the set of all actions allowed for environment
     """
+
+    rendering_modes = ["readable", "ASCI"]
 
     action_space = None
     current_state = None
@@ -61,12 +56,12 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             dict obs : the intial observation of the network environment
         """
-        obs = {}
+        obs = OrderedDict()
         reward_machines = self.network.get_reward_machines()
         for m in self.address_space:
             # initially the status of services on machine are unknown
-            service_info = np.full(self.num_services, ServiceState.unknown,
-                                   ServiceState)
+            service_info = np.full(self.num_services, Service.unknown,
+                                   Service)
             compromised = False
             sensitive = False
             reachable = False
@@ -76,7 +71,7 @@ class CyberAttackSimulatorEnv(object):
                 sensitive = True
             obs[m] = {"service_info": service_info, "compromised": compromised,
                       "sensitive": sensitive, "reachable": reachable}
-        self.current_state = OrderedDict(sorted(obs.items()))
+        self.current_state = State(obs)
         return copy.deepcopy(self.current_state)
 
     def step(self, action):
@@ -93,39 +88,16 @@ class CyberAttackSimulatorEnv(object):
             dict info : contains extra info useful for debugging or
                 visualization
         """
-        if not self._is_reachable(action.target):
+        if not self.current_state.reachable(action.target):
             return self.current_state, 0 - action.cost, False, {}
 
         success, value, services = self.network.perform_action(action)
 
-        value = 0 if self._already_rewarded(action.target) else value
+        value = 0 if self.current_state.compromised(action.target) else value
         self._update_state(action, success, services)
         done = self.is_goal()
         reward = value - action.cost
         return copy.deepcopy(self.current_state), reward, done, {}
-
-    def _is_reachable(self, target):
-        """
-        Checks if a given target machine is reachable
-
-        Arguments:
-            (int, int) target : the machine address
-
-        Returns:
-            bool reachable : True if reachable, otherwise False
-        """
-        return self.current_state[target]["reachable"]
-
-    def _already_rewarded(self, m):
-        """
-        Checks if the reward, if any, from exploting a machine has already
-        been collected (i.e. sensitive documents have already been collected).
-
-        Returns:
-            bool recieved : True if reward was already recieved from this
-                machine, otherwise False
-        """
-        return self.current_state[m]["compromised"]
 
     def _update_state(self, action, success, services):
         """
@@ -137,21 +109,20 @@ class CyberAttackSimulatorEnv(object):
             bool success : whether action was successful
             list services : service info gained from action
         """
-        m_service_info = self.current_state[action.target]["service_info"]
+        target = action.target
         if action.is_scan() or (not action.is_scan() and success):
             # 1. scan or successful exploit, all service info gained for target
             for s in range(len(services)):
-                if services[s]:
-                    m_service_info[s] = ServiceState.present
-                else:
-                    m_service_info[s] = ServiceState.absent
+                new_state = Service.present if services[s] else Service.absent
+                self.current_state.update_service(target, s, new_state)
             if not action.is_scan():
                 # successful exploit so machine compromised
-                self.current_state[action.target]["compromised"] = True
+                self.current_state.set_compromised(target)
                 self._update_reachable(action.target)
         else:
             # 2. unsuccessful exploit, targeted service is absent
-            m_service_info[action.service] = ServiceState.absent
+            self.current_state.update_service(target, action.service,
+                                              Service.absent)
 
     def _update_reachable(self, compromised_m):
         """
@@ -163,11 +134,11 @@ class CyberAttackSimulatorEnv(object):
         """
         comp_subnet = compromised_m[0]
         for m in self.address_space:
-            if self.current_state[m]["reachable"]:
+            if self.current_state.reachable(m):
                 continue
             m_subnet = m[0]
             if self.network.subnets_connected(comp_subnet, m_subnet):
-                self.current_state[m]["reachable"] = True
+                self.current_state.set_reachable(m)
 
     def is_goal(self):
         """
@@ -178,8 +149,8 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             bool goal : True if goal state, otherwise False
         """
-        for m in self.network.get_reward_machines():
-            if not self.current_state[m]["compromised"]:
+        for sensitive_m in self.network.get_reward_machines():
+            if not self.current_state.compromised(sensitive_m):
                 return False
         return True
 
@@ -202,11 +173,20 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             str mode : rendering mode
         """
+        if mode == "ASCI":
+            self._render_asci()
+        elif mode == "readable":
+            self._render_readable()
+        else:
+            print("Please choose correct render mode: {0}".format(
+                self.rendering_modes))
+
+    def _render_asci(self):
         outfile = sys.stdout
 
         subnets = [[], [], []]
-        for m, v in self.current_state.items():
-            subnets[m[0]].append(self._get_machine_symbol(v))
+        for m in self.address_space:
+            subnets[m[0]].append(self._get_machine_symbol(m))
 
         max_row_size = max([len(x) for x in subnets])
         min_row_size = min([len(x) for x in subnets])
@@ -225,40 +205,87 @@ class CyberAttackSimulatorEnv(object):
 
         outfile.write(output)
 
-    def _get_machine_symbol(self, m_state):
-        if m_state["sensitive"]:
-            if m_state["compromised"]:
+    def _get_machine_symbol(self, m):
+        if self.current_state.sensitive(m):
+            if self.current_state.compromised(m):
                 symbol = "C"
-            elif m_state["reachable"]:
+            elif self.current_state.reachable(m):
                 symbol = "R"
             else:
                 symbol = "S"
-        elif m_state["compromised"]:
+        elif self.current_state.compromised(m):
             symbol = "c"
-        elif m_state["reachable"]:
+        elif self.current_state.reachable(m):
             symbol = "r"
         else:
             symbol = "o"
         return symbol
 
+    def _render_readable(self):
+        output = ""
+        for m in self.address_space:
+            output += "Machine = " + str(m) + " =>\n"
 
-class ServiceState(Enum):
+            output += "\tServices:\n"
+            for s in range(self.num_services):
+                service_state = self.current_state.service_state(m, s)
+                output += "\t\t{0} = {1}".format(s, str(service_state))
+                output += "\n"
+
+            output += "\treachable: {0}\n".format(
+                self.current_state.reachable(m))
+            output += "\tcompromised: {0}\n".format(
+                self.current_state.compromised(m))
+            output += "\tsensitive: {0}\n".format(
+                self.current_state.sensitive(m))
+        sys.stdout.write(output)
+
+    def optimal_num_actions(self):
+        """
+        Return optimal number of actions to reach goal, assuming deterministic
+        actions.
+
+        Also, assumes that for environments where the number of services is 2
+        or greater the optimal actions are scan -> exploit
+
+        Returns:
+            int n: optimal number of actions to reach goal
+        """
+        num_subnets = np.ceil((self.num_machines - 2) / 5)
+        user_depth = np.floor(np.log2(num_subnets)) + 1
+        if self.num_services > 1:
+            return 2 + 2 + 2 * user_depth
+        # only 1 service so only requires 1 action per subnet
+        return 1 + 1 + user_depth
+
+    def render_episode(self, episode):
+        """
+        Render an episode as sequence of network graphs
+
+        Arguments:
+            list episode : ordered list of (State, Action, reward) tuples from
+                each timestep taken during episode
+        """
+        Viewer(episode, self.network)
+
+
+class Service(Enum):
     """
     Possible states for a service running on a machine, from the agents point
     of view
 
     Possible service state observations:
+    0. unknown : the service may or may not be running on machine
     1. present : the service is running on the machine
     2. absent : the service is not running on the machine
-    3. unknown : the service may or may not be running on machine
     """
+    unknown = 0
     present = 1
     absent = 2
-    unknown = 3
 
     def __str__(self):
+        if self.value == 0:
+            return "unknown"
         if self.value == 1:
             return "present"
-        if self.value == 2:
-            return "absent"
-        return "unknown"
+        return "absent"

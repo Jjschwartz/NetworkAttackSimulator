@@ -1,21 +1,4 @@
-import sys
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
-
-
-def print_state(obs):
-    output = ""
-    for m, vals in obs.items():
-        output += "Machine = " + str(m) + " =>\n"
-
-        output += "\tServices:\n"
-        for i, s in enumerate(vals["service_info"]):
-            output += "\t\t{0} = {1}".format(i, str(s))
-            output += "\n"
-
-        output += "\treachable: {0}\n".format(vals["reachable"])
-        output += "\tcompromised: {0}\n".format(vals["compromised"])
-        output += "\tsensitive: {0}\n".format(vals["sensitive"])
-    sys.stdout.write(output)
 
 
 def print_actions(action_space):
@@ -52,11 +35,12 @@ if __name__ == "__main__":
     done = False
     total_reward = 0
     while not done:
-        env.render()
-        print_state(obs)
+        env.render("ASCI")
+        env.render("readable")
         action = get_action(action_space)
         obs, reward, done, _ = env.step(action)
         total_reward += reward
 
     print("Complete")
+    env.render("ASCI")
     print("Total reward = {0}".format(total_reward))

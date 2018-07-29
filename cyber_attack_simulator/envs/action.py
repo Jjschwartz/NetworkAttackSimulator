@@ -85,15 +85,14 @@ class Action(object):
             int num_services : number of possible services running on machines
 
         Returns:
-            OrderedDict action_space : ordered dictionary with action names as
-                keys and Action instances as values
+            list action_space : list of actions
         """
-        action_space = OrderedDict()
+        action_space = []
         for address in address_space:
             # add scan
             scan = Action(address, "scan")
-            action_space[str(scan)] = scan
+            action_space.append(scan)
             for service in range(num_services):
                 exploit = Action(address, "exploit", service)
-                action_space[str(exploit)] = exploit
+                action_space.append(exploit)
         return action_space

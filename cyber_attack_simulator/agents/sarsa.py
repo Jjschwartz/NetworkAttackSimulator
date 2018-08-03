@@ -1,7 +1,8 @@
 import numpy as np
+from agent import Agent
 
 
-class SarsaAgent(object):
+class SarsaAgent(Agent):
     """
     An Agent for the Cyber Attack Simulator environment that uses the Sarsa
     method to find an optimal policy
@@ -28,12 +29,6 @@ class SarsaAgent(object):
 
         self.action_space = env.action_space
         self.q_table = dict()
-
-    def train(self):
-        """
-        Train the RL Agent using SARSA TD learning
-        """
-        raise NotImplementedError
 
     def _q_update(self, s, a, s_new, a_new, r):
         """
@@ -72,39 +67,6 @@ class SarsaAgent(object):
             return self.q_table[state]
         return self.q_table[state][action]
 
-    def generate_episode(self):
-        """
-        Generate and episode following the current greed-policy.
-        This method is used to check the current learned policy.
-
-        Returns:
-            list episode : ordered list of (State, Action, reward) tuples
-                from each timestep taken during episode
-        """
-        episode = []
-        state = self.env.reset()
-        for t in range(self.max_steps):
-            action = self._choose_greedy_action(state)
-            result = self.env.step(self.action_space[action])
-            new_state, reward, done, _ = result
-            episode.append((state, self.action_space[action], reward))
-            if done:
-                break
-            state = new_state
-        return episode
-
-    def _choose_greedy_action(self, state):
-        """
-        Choose the best action for given state according to Q-value
-
-        Arguments:
-            State state : the state to choose action for
-
-        Returns:
-            int action : index of chosen action to take
-        """
-        raise NotImplementedError
-
 
 class EGreedySarsaAgent(SarsaAgent):
     """
@@ -130,7 +92,6 @@ class EGreedySarsaAgent(SarsaAgent):
 
     def train(self):
         print("Starting training for {0} episodes".format(self.num_episodes))
-        message = "Episode = {0} - avg timesteps for last 10 episodes = {1}"
 
         epsilon = 1.0
         epsilon_schedule = np.linspace(epsilon, self.min_epsilon,
@@ -162,18 +123,9 @@ class EGreedySarsaAgent(SarsaAgent):
             epsilon = epsilon_schedule[e]
 
             timeteps_per_episode.append(total_timesteps)
-            if e % (self.num_episodes / 10) == 0:
-                t_per_e = total_timesteps / (e + 1)
-                if e > 0:
-                    ten_ep_avg = total_timesteps - timeteps_per_episode[e - 10]
-                    ten_ep_avg /= 10
-                    print(message.format(e, ten_ep_avg))
-                else:
-                    print(message.format(e, t_per_e))
+            self.report_progress(e, self.num_episodes / 10, total_timesteps)
 
         print("Training complete after {0} episodes".format(e))
-        ten_ep_avg = total_timesteps - timeteps_per_episode[e - 10]
-        print(message.format(e, ten_ep_avg) / 10)
         return timeteps_per_episode
 
     def _choose_action(self, state, epsilon=0.0):
@@ -223,11 +175,11 @@ class UCBSarsaAgent(SarsaAgent):
 
     def train(self):
         print("Starting training for {0} episodes".format(self.num_episodes))
-        message = "Episode = {0} - avg timesteps for last 10 episodes = {1}"
 
         # stores total timestep at end of each episode
         total_timesteps = 0
-        timeteps_per_episode = []
+        episode_timesteps = []
+        episode_rewards = []
 
         for e in range(self.num_episodes):
             # reset environment
@@ -235,6 +187,7 @@ class UCBSarsaAgent(SarsaAgent):
             # get initial action
             action = self._choose_action(state, self.c)
 
+            episode_reward = 0
             for _ in range(self.max_steps):
                 # increment state-action pair visit count
                 self._n(state)[action] += 1
@@ -247,24 +200,17 @@ class UCBSarsaAgent(SarsaAgent):
                 self._q_update(state, action, new_state, new_action, reward)
                 state = new_state
                 action = new_action
+                episode_reward += reward
                 total_timesteps += 1
                 if done:
                     break
 
-            timeteps_per_episode.append(total_timesteps)
-            if e % (self.num_episodes / 10) == 0:
-                t_per_e = total_timesteps / (e + 1)
-                if e > 0:
-                    ten_ep_avg = total_timesteps - timeteps_per_episode[e - 10]
-                    ten_ep_avg /= 10
-                    print(message.format(e, ten_ep_avg))
-                else:
-                    print(message.format(e, t_per_e))
+            episode_rewards.append(episode_reward)
+            episode_timesteps.append(total_timesteps)
+            self.report_progress(e, self.num_episodes / 10, episode_timesteps)
 
         print("Training complete after {0} episodes".format(e))
-        ten_ep_avg = total_timesteps - timeteps_per_episode[e - 10]
-        print(message.format(e, ten_ep_avg) / 10)
-        return timeteps_per_episode
+        return episode_timesteps, episode_rewards
 
     def _n(self, state, action=None):
         """

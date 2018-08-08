@@ -72,10 +72,6 @@ class Network(object):
         """
         Generate the network.
 
-        Arguments:
-            list subnet_sizes : list of number of machines on each subnet
-            float reward : value for sensitive documents on machine
-
         Returns:
             dict subnets : dictionary of lists of machine objects
             list address_space : list of machine addresses in network

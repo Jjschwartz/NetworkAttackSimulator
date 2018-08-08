@@ -3,11 +3,9 @@ from collections import OrderedDict
 import numpy as np
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 from cyber_attack_simulator.envs.environment import Service
-import cyber_attack_simulator.envs.environment as environment
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
-from cyber_attack_simulator.envs.network import Network
-import cyber_attack_simulator.envs.network as network
+import cyber_attack_simulator.envs.loader as loader
 
 
 class EnvironmentTestCase(unittest.TestCase):
@@ -15,9 +13,14 @@ class EnvironmentTestCase(unittest.TestCase):
     def setUp(self):
         self.E = 1
         self.M = 3
-        self.network = Network(self.M, self.E)
+        self.env = self.get_env(self.M, self.E)
+        self.network = self.env.network
         self.ads_space = self.network.get_address_space()
-        self.env = CyberAttackSimulatorEnv(self.M, self.E)
+
+    def get_env(self, nM, nS):
+        config = loader.generate_config(nM, nS)
+        env = CyberAttackSimulatorEnv(config)
+        return env
 
     def test_reset1(self):
         actual_obs = self.env.reset()
@@ -68,7 +71,7 @@ class EnvironmentTestCase(unittest.TestCase):
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
-        self.assertEqual(r, environment.R_SENSITIVE - t_action.cost)
+        self.assertEqual(r, loader.R_SENSITIVE - t_action.cost)
         self.assertFalse(d)
         self.assertEqual(o, expected_obs)
 
@@ -82,7 +85,7 @@ class EnvironmentTestCase(unittest.TestCase):
         o, r, d, _ = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
-        self.assertEqual(r, environment.R_USER - t_action.cost)
+        self.assertEqual(r, loader.R_USER - t_action.cost)
         self.assertFalse(d)
         self.assertEqual(o, expected_obs)
 
@@ -128,9 +131,9 @@ class EnvironmentTestCase(unittest.TestCase):
             t_reachable = False
             t_sensitive = False
             t_reachable = False
-            if m[0] == network.EXPOSED:
+            if m[0] == loader.EXPOSED:
                 t_reachable = True
-            if m in self.network.get_reward_machines():
+            if m in self.network.get_sensitive_machines():
                 t_sensitive = True
             t_obs[m] = {"service_info": t_service_info,
                         "compromised": t_compromised,

@@ -4,13 +4,9 @@ import copy
 import sys
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
-import cyber_attack_simulator.envs.network as network
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
 from cyber_attack_simulator.envs.render import Viewer
-
-R_SENSITIVE = 9000.0
-R_USER = 5000.0
 
 
 class CyberAttackSimulatorEnv(object):
@@ -28,35 +24,29 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, num_machines, num_services, exploit_probs=1.0,
-                 static=True):
+    def __init__(self, config, exploit_probs=1.0, static=True):
         """
-        Initialize a new environment and network with the specified number
-        of exploits and machines
+        Construct a new environment and network
 
         For deterministic exploits set exploit_probs=1.0
         For randomly generated probabilities set exploit_probs=None
 
         Arguments:
-            int num_machines : number of machines to include in network
-                (minimum is 3)
-            int num_services : number of services to use in environment
-                (minimum is 1)
+            dict config : network configuration
             None, int or list  exploit_probs :  success probability of exploits
             bool static : whether the network changes each episode or not
         """
-        assert 0 < num_services
-        assert 2 < num_machines
-        self.num_services = num_services
-        self.num_machines = num_machines
+        self.config = config
         self.exploit_probs = exploit_probs
         self.static = static
         self.seed = 1
         self.reset_count = 0
-        self.network = Network(num_machines, num_services, seed=self.seed)
+
+        self.num_services = config["services"]
+        self.network = Network(config, self.seed)
         self.address_space = self.network.get_address_space()
         self.action_space = Action.generate_action_space(
-            self.address_space, self.num_services, exploit_probs)
+            self.address_space, config["services"], exploit_probs)
         self.reset()
 
     def reset(self):
@@ -66,13 +56,12 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             dict obs : the intial observation of the network environment
         """
-        self.reset_count += 1
         if not self.static:
-            self.network = Network(self.num_machines, self.num_services,
-                                   seed=self.seed + self.reset_count)
+            # generate new network using different seed
+            self.network.generate_network(self.seed + self.reset_count)
 
         obs = OrderedDict()
-        reward_machines = self.network.get_reward_machines()
+        sensitive_machines = self.network.get_sensitive_machines()
         for m in self.address_space:
             # initially the status of services on machine are unknown
             service_info = np.full(self.num_services, Service.unknown,
@@ -80,13 +69,14 @@ class CyberAttackSimulatorEnv(object):
             compromised = False
             sensitive = False
             reachable = False
-            if m[0] == network.EXPOSED:
+            if self.network.subnet_exposed(m[0]):
                 reachable = True
-            if m in reward_machines:
+            if m in sensitive_machines:
                 sensitive = True
             obs[m] = {"service_info": service_info, "compromised": compromised,
                       "sensitive": sensitive, "reachable": reachable}
         self.current_state = State(obs)
+        self.reset_count += 1
         return copy.deepcopy(self.current_state)
 
     def step(self, action):
@@ -168,8 +158,9 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             bool goal : True if goal state, otherwise False
         """
-        for sensitive_m in self.network.get_reward_machines():
+        for sensitive_m in self.network.get_sensitive_machines():
             if not self.current_state.compromised(sensitive_m):
+                # at least one sensitive machine not compromised
                 return False
         return True
 
@@ -270,7 +261,8 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             int n: optimal number of actions to reach goal
         """
-        num_subnets = np.ceil((self.num_machines - 2) / 5)
+        num_machines = len(self.address_space)
+        num_subnets = np.ceil((num_machines - 2) / 5)
         user_depth = np.floor(np.log2(num_subnets)) + 1
         if self.num_services > 1:
             return 2 + 2 + 2 * user_depth
@@ -289,7 +281,7 @@ class CyberAttackSimulatorEnv(object):
 
     def __str__(self):
         output = "Environment: "
-        output += "Machines = {}, ".format(self.num_machines)
+        output += "Subnets = {}, ".format(self.network.subnets)
         output += "Services = {}, ".format(self.num_services)
         if self.exploit_probs is None or type(self.exploit_probs) is list:
             deterministic = False

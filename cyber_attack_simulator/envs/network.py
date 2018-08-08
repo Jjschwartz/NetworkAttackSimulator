@@ -29,26 +29,29 @@ class Network(object):
 
         Arguments:
             dict config : network configuration
+            int seed : random number generator seed
         """
         self.config = config
-        self.seed = seed
 
         self.subnets = config["subnets"]
         self.topology = config["topology"]
         self.num_services = config["services"]
         self.sensitive_machines = config["sensitive_machines"]
-        self.machines = self._generate_network()
+        self.machines = self.generate_network(seed)
 
-    def _generate_network(self):
+    def generate_network(self, seed):
         """
         Generate the network.
+
+        Argument:
+            int seed : random number generator seed
 
         Returns:
             dict machine : ordered dictionary of machines in network, with
                 address as keys and machine objects as values
         """
         # set seed for consistency of networks generated
-        np.random.seed(self.seed)
+        np.random.seed(seed)
         machines = OrderedDict()
 
         machine_config_set = self._possible_machine_configs(self.num_services)

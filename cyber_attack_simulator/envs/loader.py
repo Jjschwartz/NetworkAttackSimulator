@@ -1,19 +1,27 @@
 """
-This module contains functinallity for loading networks from yaml configuration
-files
+This module contains functionality for loading network configurations from yaml
+files and also for generating configurations based on number of machines and
+services in network using standard formula.
 """
 import yaml
 import numpy as np
 
 # dictionary of valid key names and value types for config file
 VALID_CONFIG_KEYS = {"subnets": list,
-                     "subnet_connections": list,
+                     "topology": list,
                      "services": int,
                      "sensitive_machines": list}
 
+# Constants for generating network
+USER_SUBNET_SIZE = 5
+EXPOSED = 0
+SENSITIVE = 1
+R_SENSITIVE = 9000.0
+R_USER = 5000.0
 
-def generate_config(num_machines, num_services, r_sensitive=9000.0,
-                    r_user=5000.0, seed=1):
+
+def generate_config(num_machines, num_services, r_sensitive=R_SENSITIVE,
+                    r_user=R_USER, seed=1):
     """
     Generate the network configuration based on standard formula.
 
@@ -29,7 +37,98 @@ def generate_config(num_machines, num_services, r_sensitive=9000.0,
     Returns:
         dict config : network configuration as dictionary
     """
-    pass
+    assert 0 < num_services
+    assert 2 < num_machines
+    assert 0 < r_sensitive and 0 < r_user
+    config = {}
+    subnets = generate_subnets(num_machines)
+    config["subnets"] = subnets
+    config["topology"] = generate_topology(subnets)
+    config["services"] = num_services
+    s_machines = generate_sensitive_machines(subnets, r_sensitive, r_user)
+    config["sensitive_machines"] = s_machines
+    return config
+
+
+def generate_subnets(num_machines):
+    """
+    Generate list of subnet sizes
+
+    Argument:
+        int num_machines : number of machines in network
+
+    Returns:
+        list subnets : list of number of machines in each subnet
+    """
+    # exposed (0) and sensitive (1) subnets both contain 1 machine
+    subnets = [1, 1]
+    # remainder of machines go into user subnet tree
+    num_full_user_subnets = ((num_machines - 2) // USER_SUBNET_SIZE)
+    subnets += [USER_SUBNET_SIZE] * num_full_user_subnets
+    if ((num_machines - 2) % USER_SUBNET_SIZE) != 0:
+        subnets.append((num_machines - 2) % USER_SUBNET_SIZE)
+    return subnets
+
+
+def generate_topology(subnets):
+    """
+    Generate the topology of the network, defining the connectivity between
+    subnets.
+
+    Arguments:
+        list subnets : list of subnet sizes
+
+    Returns:
+        2D matrix topology : an adjacency matrix of subnets
+    """
+    num_subnets = len(subnets)
+    # extra column for public connectivity
+    topology = np.zeros((num_subnets, num_subnets + 1))
+    # exposed subnet is connected to sensitive and first user subnet and also
+    # to public
+    for row in range(3):
+        for col in range(4):
+            if row > 0 and col == 0:
+                continue
+            topology[row][col] = 1
+    if num_subnets == 3:
+        return topology
+    # all other subnets are part of user binary tree
+    for row in range(2, num_subnets):
+        # subnet connected to itself
+        topology[row][row + 1] = 1
+        # position in tree
+        pos = row - 2
+        if pos > 0:
+            parent = ((pos - 1) // 2) + 3
+            topology[row][parent] = 1
+        child_left = ((2 * pos) + 1) + 3
+        child_right = ((2 * pos) + 2) + 3
+        if child_left < num_subnets + 1:
+            topology[row][child_left] = 1
+        if child_right < num_subnets + 1:
+            topology[row][child_right] = 1
+    return topology
+
+
+def generate_sensitive_machines(subnets, r_sensitive, r_user):
+    """
+    Generate list of senstive machines.
+
+    Arguments:
+        list subnets : list of subnet sizes
+        float r_sensitive : value for sensitive subnet information
+        float r_user : value for user subnet information
+
+    Returns:
+        list sensitive_machines : list of [subnetID, machineID, value] lists
+    """
+    sensitive_machines = []
+    # first sensitive machine is first machine in SENSITIVE network
+    sensitive_machines.append([SENSITIVE, 0, r_sensitive])
+    # second sensitive machine is last machine on last USER network
+    sensitive_machines.append([len(subnets) - 1, subnets[-1] - 1, r_user])
+    return sensitive_machines
 
 
 def load_config(file_name):
@@ -101,18 +200,18 @@ def check_config_valid(config):
             raise ValueError("{0} invalid subnet size, must be positive int"
                              .format(subnet_size))
 
-    # 3. check subnet_connections is valid adjacency matrix
-    subnet_connections = config["subnet_connections"]
-    if len(subnet_connections) != len(subnets):
-        raise ValueError(("Number of rows in subnet_connections adjacency "
+    # 3. check topology is valid adjacency matrix
+    topology = config["topology"]
+    if len(topology) != len(subnets):
+        raise ValueError(("Number of rows in topology adjacency "
                          "matrix must equal number of subnets: {0} != {1}")
-                         .format(len(subnet_connections), len(subnets)))
-    for row in config["subnet_connections"]:
+                         .format(len(topology), len(subnets)))
+    for row in config["topology"]:
         if type(row) is not list:
-            raise ValueError("subnet_connections must be 2D adjacency matrix "
+            raise ValueError("topology must be 2D adjacency matrix "
                              "(i.e. list of lists)")
         if len(row) != len(subnets) + 1:
-            raise ValueError(("Number of columns in subnet_connections "
+            raise ValueError(("Number of columns in topology "
                               "adjaceny matrix must equal number of subnets+1:"
                               " {0} != {1}").format(len(row), len(subnets)+1))
         for col in row:

@@ -1,5 +1,5 @@
 subnets: [1, 1, 1]
-subnet_connections: [[ 1, 1, 1],
+topology: [[ 1, 1, 1],
                     [ 0, 1, 1, 1],
                     [ 0, 1, 1, 1]]
 services: 2

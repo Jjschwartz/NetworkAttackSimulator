@@ -1,110 +1,67 @@
 import numpy as np
+from collections import OrderedDict
 from cyber_attack_simulator.envs.util import permutations
 from cyber_attack_simulator.envs.machine import Machine
-
-
-USER_SUBNET_SIZE = 5
-EXPOSED = 0
-SENSITIVE = 1
 
 
 class Network(object):
     """
     A simulated network of machines belonging to different subnetworks.
 
-    Number of subnetworks is set to , with machines distributed across each
-    subnet following a set rule:
-        - exposed (subnet 0) - with one machine
-        - sensitive (subnet 1) - with one machine
-        - user (subnet 2+) - all other machines distributed in tree of subnets
-            with each subnet containing up to 5 machines.
-
-    Two machines on network contain Sensitive documents (aka the rewards):
-        - One in sensitive subnet machine = r_sensitive
-        - One on machine in leaf subnet of user = r_user
-        - any machine with no sensitive docs = 0
-
-    The configurations of each machine (i.e. which services are present/absent)
-    are allocated randomly but deterministically, so that a network initialized
-    with the same number of machines and services will always produce the same
-    network. This is done to keep consistency for agents trained on a given
-    network size.
-
     Properties:
-    - subnetworks - dictionary of subnets and the list of all machines on that
-        subnet
-
-    Note: The network and machines defined in the Network class are designed as
-    immutable with the intention all attack logic (e.g whether an action can
-    be used against a specific machine) is controlled by the environment, (i.e
-    the CyberAttackSimulatorEnv class).
+    - subnets - list of subnet sizes
+    - topology - adjacency matrix defining connectivity between subnets and
+        public
+    - services - number of possible services running on each machine
+    - sensitive_machines - list of addresses of machines that contain senstive
+        info and also the value (reward) of accessing info
     """
 
-    def __init__(self, num_machines, num_services, r_sensitive=9000.0,
-                 r_user=5000.0, seed=1):
+    def __init__(self, config, seed=1):
         """
-        Initialize and generate a new Network with given number of machines and
-        services for each machine
+        Construct a new network based on provided configuration.
+
+        Configuration must be valid and contain items:
+            - subnets
+            - topology
+            - services
+            - sensitive_machines
 
         Arguments:
-            int num_machines : number of machines to include in network
-                (minimum is 3)
-            int num_exploits : number of exploits (and hence services) to use
-                in environment (minimum is 1)
-            float r_sensitive : reward for sensitive subnet documents
-            float r_user : reward for user subnet documents
-            int seed : random generator seed
+            dict config : network configuration
         """
-        self.num_machines = num_machines
-        self.num_services = num_services
-        self.r_sensitive = r_sensitive
-        self.r_user = r_user
+        self.config = config
         self.seed = seed
 
-        network = self._generate_network()
-        self.subnets = network[0]
-        self.address_space = network[1]
-        self.reward_machines = network[2]
-
-        self.topology = self._generate_topology()
+        self.subnets = config["subnets"]
+        self.topology = config["topology"]
+        self.num_services = config["services"]
+        self.sensitive_machines = config["sensitive_machines"]
+        self.machines = self._generate_network()
 
     def _generate_network(self):
         """
         Generate the network.
 
         Returns:
-            dict subnets : dictionary of lists of machine objects
-            list address_space : list of machine addresses in network
-            list rewarded_machiness : list of machine addresses that contain
-                rewards
+            dict machine : ordered dictionary of machines in network, with
+                address as keys and machine objects as values
         """
         # set seed for consistency of networks generated
         np.random.seed(self.seed)
+        machines = OrderedDict()
 
-        subnets = {}
-        address_space = []
-        rewarded_machines = []
+        machine_config_set = self._possible_machine_configs(self.num_services)
+        num_configs = machine_config_set.shape[0]
 
-        configs = self._possible_machine_configs(self.num_services)
-        subnet_sizes = self._get_subnet_sizes(self.num_machines)
-
-        for subnet, size in enumerate(subnet_sizes):
-            subnets[subnet] = []
+        for subnet, size in enumerate(self.subnets):
             for m in range(size):
-                cfg = configs[np.random.choice(configs.shape[0])]
+                cfg = machine_config_set[np.random.choice(num_configs)]
                 address = (subnet, m)
-                address_space.append(address)
-                value = 0
-                if subnet == 1 and m == 0:
-                    # machine on sensitive subnet
-                    value = self.r_sensitive
-                    rewarded_machines.append(address)
-                elif subnet == len(subnet_sizes) - 1 and m == size - 1:
-                    # last machine in last user subnet
-                    value = self.r_user
-                    rewarded_machines.append(address)
-                subnets[subnet].append(Machine(address, cfg, value))
-        return subnets, address_space, rewarded_machines
+                value = self._get_machine_value(address)
+                machine = Machine(address, cfg, value)
+                machines[address] = machine
+        return machines
 
     def _possible_machine_configs(self, ns):
         """
@@ -126,52 +83,14 @@ class Network(object):
         configs = permutations(ns)[:-1]
         return np.asarray(configs)
 
-    def _get_subnet_sizes(self, nm):
+    def _get_machine_value(self, address):
         """
-        Generate list of subnet sizes
-
-        Argument:
-            int nm : number of machines in network
-
-        Returns:
-            list subnet_sizes : list of number of machines in each subnet
+        Get the value of machine at given address
         """
-        # exposed (0) and sensitive (1) subnets both contain 1 machine
-        subnet_sizes = [1, 1]
-        subnet_sizes += [USER_SUBNET_SIZE] * ((nm - 2) // USER_SUBNET_SIZE)
-        if ((nm - 2) % USER_SUBNET_SIZE) != 0:
-            subnet_sizes.append((nm - 2) % USER_SUBNET_SIZE)
-        return subnet_sizes
-
-    def _generate_topology(self):
-        """
-        Generate the topology of the network, defining the connectivity between
-        subnets.
-
-        Returns:
-            2D matrix topology : an adjacency matrix of subnets
-        """
-        topology = np.zeros((len(self.subnets), len(self.subnets)))
-        # exposed subnet is connected to sensitive and first user subnet
-        for i in range(3):
-            for j in range(3):
-                topology[i][j] = 1
-        if len(self.subnets) == 3:
-            return topology
-        # all other subnets are part of user binary tree
-        for i in range(2, len(self.subnets)):
-            topology[i][i] = 1
-            pos = i - 2
-            if pos > 0:
-                parent = ((pos - 1) // 2) + 2
-                topology[i][parent] = 1
-            child_left = ((2 * pos) + 1) + 2
-            child_right = ((2 * pos) + 2) + 2
-            if child_left < len(self.subnets):
-                topology[i][child_left] = 1
-            if child_right < len(self.subnets):
-                topology[i][child_right] = 1
-        return topology
+        for m in self.sensitive_machines:
+            if m[0] == address[0] and m[1] == address[1]:
+                return float(m[2])
+        return 0.0
 
     def perform_action(self, action):
         """
@@ -192,14 +111,14 @@ class Network(object):
         # check if valid target machine
         tgt_subnet, tgt_id = action.target
         assert 0 <= tgt_subnet and tgt_subnet < len(self.subnets)
-        assert tgt_id <= len(self.subnets[tgt_subnet])
+        assert tgt_id <= self.subnets[tgt_subnet]
 
         # check if valid action type and service
         if not action.is_scan():
             assert 0 <= action.service and action.service < self.num_services
 
         # action is valid, so perform against machine
-        t_machine = self.subnets[tgt_subnet][tgt_id]
+        t_machine = self.machines[action.target]
         return t_machine.perform_action(action)
 
     def get_address_space(self):
@@ -209,17 +128,20 @@ class Network(object):
         Returns:
             list address_space : a list of all machine addresses
         """
-        return self.address_space
+        return list(self.machines.keys())
 
-    def get_reward_machines(self):
+    def get_sensitive_machines(self):
         """
-        Get addresses of machines which contain sensitive documents (rewards)
+        Get addresses of machines which contain sensitive information (rewards)
 
         Returns:
-            list machines : a list of addresses of machines in network that
-                contain sensitive documents
+            list sensitive_addresses : a list of addresses of sensitive
+                machines in network
         """
-        return self.reward_machines
+        sensitive_addresses = []
+        for m in self.sensitive_machines:
+            sensitive_addresses.append((m[0], m[1]))
+        return sensitive_addresses
 
     def subnets_connected(self, subnet_1, subnet_2):
         """
@@ -233,22 +155,26 @@ class Network(object):
         Returns:
             bool connected : True if subnets are directly connected
         """
-        return self.topology[subnet_1][subnet_2] == 1
+        # plus one for subnet 2 since first column is for public or not
+        return self.topology[subnet_1][subnet_2 + 1] == 1
 
-    def print_network(self):
+    def subnet_exposed(self, subnet):
         """
-        Print a user friendly display of the network
+        Returns whether a subnet is exposed to the public or not, i.e. is on
+        public network and so always reachable by attacker.
+
+        Arguments:
+            int subnet : the id of subnet
+
+        Returns:
+            bool exposed : True if subnet is publicly exposed
         """
-        output = "\n"
-        for subnet, machines in self.subnets.items():
-            if subnet == 0:
-                output += "EXPOSED    "
-            elif subnet == 1:
-                output += "SENSITIVE  "
-            else:
-                output += "USER {0}     ".format(subnet - 2)
-            output += "Subnet = {0} : {{".format(subnet)
-            for m in machines:
-                output += "{0}, ".format(m.address)
-            output += "}\n"
-        print(output)
+        return self.topology[subnet][0] == 1
+
+    def __str__(self):
+        output = "Network:\n"
+        output += "Subnets = " + str(self.subnets) + "\n"
+        output += "Topology =\n" + str(self.topology) + "\n"
+        output += "Services = " + str(self.num_services) + "\n"
+        output += "Sensitive machines = " + str(self.sensitive_machines)
+        return output

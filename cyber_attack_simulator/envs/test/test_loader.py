@@ -1,5 +1,6 @@
 import unittest
 import yaml
+import numpy as np
 import cyber_attack_simulator.envs.loader as loader
 
 
@@ -65,50 +66,50 @@ class LoaderTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
 
-    def test_check_config_valid_invalid_subnet_connections(self):
+    def test_check_config_valid_invalid_topology(self):
         config = self.get_valid_config_dict()
         # invalid number of rows
-        config["subnet_connections"] = [[1]]
+        config["topology"] = [[1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # not 2D array
-        config["subnet_connections"] = [1, 1, 1]
+        config["topology"] = [1, 1, 1]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid number of columns
-        config["subnet_connections"] = [[1, 1],
-                                        [1, 1],
-                                        [1, 1]]
+        config["topology"] = [[1, 1],
+                              [1, 1],
+                              [1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid number of columns V2
-        config["subnet_connections"] = [[1, 1, 1, 1],
-                                        [1, 1, 1, 1],
-                                        [1, 1, 1]]
+        config["topology"] = [[1, 1, 1, 1],
+                              [1, 1, 1, 1],
+                              [1, 1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid value
-        config["subnet_connections"] = [[1.0, 1, 1, 1],
-                                        [1, 1, 1, 1],
-                                        [1, 1, 1, 1]]
+        config["topology"] = [[1.0, 1, 1, 1],
+                              [1, 1, 1, 1],
+                              [1, 1, 1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid value V2
-        config["subnet_connections"] = [[1, -1, 1, 1],
-                                        [1, 1, 1, 1],
-                                        [1, 1, 1, 1]]
+        config["topology"] = [[1, -1, 1, 1],
+                              [1, 1, 1, 1],
+                              [1, 1, 1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid value V3
-        config["subnet_connections"] = [[1, 1, 1, 1],
-                                        [1, 1, 2, 1],
-                                        [1, 1, 1, 1]]
+        config["topology"] = [[1, 1, 1, 1],
+                              [1, 1, 2, 1],
+                              [1, 1, 1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # invalid value V4
-        config["subnet_connections"] = [[1, 1, 1, 1],
-                                        [1, 1, 1, 1],
-                                        [1, "invalid", 1, 1]]
+        config["topology"] = [[1, 1, 1, 1],
+                              [1, 1, 1, 1],
+                              [1, "invalid", 1, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
 
@@ -130,7 +131,9 @@ class LoaderTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
         # too many sensitive_machines
-        config["sensitive_machines"] = [[0, 0, 1], [1, 0, 1], [2, 0, 1],
+        config["sensitive_machines"] = [[0, 0, 1],
+                                        [1, 0, 1],
+                                        [2, 0, 1],
                                         [3, 0, 1]]
         with self.assertRaises(ValueError):
             loader.check_config_valid(config)
@@ -204,8 +207,8 @@ class LoaderTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             loader.load_config(file)
 
-    def test_load_config_invalid_subnet_connections(self):
-        file = "inputs/invalid_config_subnet_connections.yaml"
+    def test_load_config_invalid_topology(self):
+        file = "inputs/invalid_config_topology.yaml"
         with self.assertRaises(ValueError):
             loader.load_config(file)
 
@@ -219,12 +222,28 @@ class LoaderTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             loader.load_config(file)
 
+    def test_generate_topology(self):
+        subnets = [1, 1, 1]
+        expected = np.asarray([[1, 1, 1, 1],
+                               [0, 1, 1, 1],
+                               [0, 1, 1, 1]])
+        actual = loader.generate_topology(subnets)
+        self.assertTrue(np.array_equal(expected, actual))
+
+        subnets = [1, 1, 5, 3]
+        expected = np.asarray([[1, 1, 1, 1, 0],
+                               [0, 1, 1, 1, 0],
+                               [0, 1, 1, 1, 1],
+                               [0, 0, 0, 1, 1]])
+        actual = loader.generate_topology(subnets)
+        self.assertTrue(np.array_equal(expected, actual))
+
     def get_valid_config_dict(self):
         config = {}
         for k, v in loader.VALID_CONFIG_KEYS.items():
             if k is "subnets":
                 value = [1, 1, 1]
-            if k is "subnet_connections":
+            if k is "topology":
                 value = [[1, 1, 1, 1],
                          [0, 1, 1, 1],
                          [0, 1, 1, 1]]

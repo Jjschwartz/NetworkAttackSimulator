@@ -1,8 +1,9 @@
 import unittest
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
-from cyber_attack_simulator.envs.environment import R_SENSITIVE
-from cyber_attack_simulator.envs.environment import R_USER
+from cyber_attack_simulator.envs.loader import R_SENSITIVE
+from cyber_attack_simulator.envs.loader import R_USER
+from cyber_attack_simulator.envs.loader import generate_config
 from cyber_attack_simulator.envs.action import Action
 
 
@@ -11,44 +12,55 @@ class NetworkTestCase(unittest.TestCase):
     def setUp(self):
         self.M = 3
         self.S = 3
-        self.network = Network(self.M, self.S)
+        self.config = generate_config(self.M, self.S)
+        self.network = Network(self.config)
 
-    def find_exploit(self, network, subnet_id, m_id, valid):
-        services = network.subnets[subnet_id][m_id]._services
+    def find_exploit(self, network, address, valid):
+        services = network.machines[address]._services
         for i in range(len(services)):
             if services[i] == valid:
                 return i
 
+    def get_network(self, nM, nS):
+        config = generate_config(nM, nS)
+        network = Network(config)
+        return network
+
     def test_generate_network_small(self):
         M = 3
         S = 3
-        network = Network(M, S)
+        network = self.get_network(M, S)
         subnets = network.subnets
         self.assertEqual(len(subnets), 3)
         for s in range(3):
-            self.assertEqual(len(subnets[s]), 1)
-            self.assertEqual(subnets[s][0].address, (s, 0))
+            self.assertEqual(subnets[s], 1)
+            self.assertTrue(network.machines[(s, 0)].address, (s, 0))
 
     def test_generate_network_consistency(self):
         M = [3, 6]
         S = [3, 6]
         results1 = []
+        machines1 = []
         for m in M:
             for s in S:
-                network = Network(m, s)
+                network = self.get_network(m, s)
                 results1.append(network.subnets)
+                machines1.append(network.machines)
         results2 = []
+        machines2 = []
         for m in M:
             for s in S:
-                network = Network(m, s)
+                network = self.get_network(m, s)
                 results2.append(network.subnets)
+                machines2.append(network.machines)
         self.assertEqual(results1, results2)
+        self.assertEqual(machines1, machines2)
 
     def test_successful_exploit(self):
         rewards = [0, R_SENSITIVE, R_USER]
         for i in range(3):
             subnet = i
-            e = self.find_exploit(self.network, subnet, 0, True)
+            e = self.find_exploit(self.network, (subnet, 0), True)
             exploit = Action((subnet, 0), "exploit", e)
             outcome, reward, services = self.network.perform_action(exploit)
             self.assertTrue(outcome)
@@ -59,7 +71,7 @@ class NetworkTestCase(unittest.TestCase):
         exp_services = np.asarray([])
         for i in range(3):
             subnet = i
-            e = self.find_exploit(self.network, subnet, 0, False)
+            e = self.find_exploit(self.network, (subnet, 0), False)
             exploit = Action((subnet, 0), "exploit", e)
             outcome, reward, services = self.network.perform_action(exploit)
             self.assertFalse(outcome)
@@ -70,7 +82,7 @@ class NetworkTestCase(unittest.TestCase):
         rewards = [0, 0, 0]
         for i in range(3):
             subnet = i
-            exp_services = self.network.subnets[subnet][0]._services
+            exp_services = self.network.machines[(subnet, 0)]._services
             exploit = Action((subnet, 0), "scan", None)
             outcome, reward, services = self.network.perform_action(exploit)
             self.assertTrue(outcome)
@@ -94,7 +106,9 @@ class NetworkTestCase(unittest.TestCase):
     def test_topology(self):
         m = 20
         s = 1
-        network = Network(m, s)
+        network = self.get_network(m, s)
+        # test public explosure of subnet 0
+        self.assertTrue(network.subnet_exposed(0))
         # test full connectivity of first 3 subnets
         for i in range(3):
             for j in range(3):
@@ -129,8 +143,9 @@ class NetworkTestCase(unittest.TestCase):
     def test_print(self):
         m = 20
         s = 1
-        network = Network(m, s)
-        network.print_network()
+        network = self.get_network(m, s)
+        print()
+        print(network)
 
 
 if __name__ == "__main__":

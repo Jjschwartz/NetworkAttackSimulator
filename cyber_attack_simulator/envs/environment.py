@@ -28,25 +28,35 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, num_machines, num_services):
+    def __init__(self, num_machines, num_services, exploit_probs=1.0,
+                 static=True):
         """
         Initialize a new environment and network with the specified number
         of exploits and machines
+
+        For deterministic exploits set exploit_probs=1.0
+        For randomly generated probabilities set exploit_probs=None
 
         Arguments:
             int num_machines : number of machines to include in network
                 (minimum is 3)
             int num_services : number of services to use in environment
                 (minimum is 1)
+            None, int or list  exploit_probs :  success probability of exploits
+            bool static : whether the network changes each episode or not
         """
         assert 0 < num_services
         assert 2 < num_machines
         self.num_services = num_services
         self.num_machines = num_machines
-        self.network = Network(num_machines, num_services)
+        self.exploit_probs = exploit_probs
+        self.static = static
+        self.seed = 1
+        self.reset_count = 0
+        self.network = Network(num_machines, num_services, seed=self.seed)
         self.address_space = self.network.get_address_space()
         self.action_space = Action.generate_action_space(
-            self.address_space, self.num_services)
+            self.address_space, self.num_services, exploit_probs)
         self.reset()
 
     def reset(self):
@@ -56,6 +66,11 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             dict obs : the intial observation of the network environment
         """
+        self.reset_count += 1
+        if not self.static:
+            self.network = Network(self.num_machines, self.num_services,
+                                   seed=self.seed + self.reset_count)
+
         obs = OrderedDict()
         reward_machines = self.network.get_reward_machines()
         for m in self.address_space:
@@ -89,6 +104,10 @@ class CyberAttackSimulatorEnv(object):
                 visualization
         """
         if not self.current_state.reachable(action.target):
+            return self.current_state, 0 - action.cost, False, {}
+
+        # Non-determinism
+        if np.random.random_sample() > action.prob:
             return self.current_state, 0 - action.cost, False, {}
 
         success, value, services = self.network.perform_action(action)
@@ -267,6 +286,18 @@ class CyberAttackSimulatorEnv(object):
                 each timestep taken during episode
         """
         Viewer(episode, self.network)
+
+    def __str__(self):
+        output = "Environment: "
+        output += "Machines = {}, ".format(self.num_machines)
+        output += "Services = {}, ".format(self.num_services)
+        if self.exploit_probs is None or type(self.exploit_probs) is list:
+            deterministic = False
+        else:
+            deterministic = True if self.exploit_probs == 1.0 else False
+        output += "Deterministic = {}, ".format(deterministic)
+        output += "Static = {}".format(self.static)
+        return output
 
 
 class Service(Enum):

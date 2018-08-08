@@ -32,12 +32,15 @@ class Agent(object):
         """
         episode = []
         state = self.env.reset()
+        reward_sum = 0
         for t in range(self.max_steps):
             action = self._choose_greedy_action(state)
             result = self.env.step(self.action_space[action])
             new_state, reward, done, _ = result
             episode.append((state, self.action_space[action], reward))
+            reward_sum += reward
             if done:
+                episode.append((new_state, None, reward_sum))
                 break
             state = new_state
         return episode

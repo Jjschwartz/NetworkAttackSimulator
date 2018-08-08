@@ -58,4 +58,5 @@ def test_agent(env, agent, num_runs, avg_interval=10):
 
     episode = agent.generate_episode()
     env.render_episode(episode)
-    plot_episode_results(avg_run_timesteps, avg_run_rewards, opt_num_actions)
+    plot_episode_results(avg_run_timesteps, avg_run_rewards, opt_num_actions,
+                         avg_interval)

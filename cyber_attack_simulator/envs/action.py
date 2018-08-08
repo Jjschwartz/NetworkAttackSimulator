@@ -1,4 +1,4 @@
-from collections import OrderedDict
+import numpy as np
 
 
 EXPLOIT_COST = 10.0
@@ -76,23 +76,49 @@ class Action(object):
             return self.target < other.target
 
     @staticmethod
-    def generate_action_space(address_space, num_services):
+    def generate_action_space(address_space, num_services, exploit_probs=1.0):
         """
         Generate the action space for the environment
+
+        Success probabilities of each exploit are determined as follows:
+            - None - probabilities generated randomly from uniform distribution
+            - single-float - probability of each exploit is set to value
+            - list of float - probability of each exploit is set to
+                corresponding value in list
+
+        For deterministic exploits set exploit_probs=1.0
 
         Arguments:
             list address_space : list of addresses for each machine in network
             int num_services : number of possible services running on machines
+            None, int or list  exploit_probs :  success probability of exploits
 
         Returns:
             list action_space : list of actions
         """
+        if exploit_probs is None:
+            exploit_probs = np.random.random_sample(num_services)
+        elif type(exploit_probs) is list:
+            if len(exploit_probs) == num_services:
+                raise ValueError("Lengh of exploit probability list must be "
+                                 + "same as number of services")
+            for e in exploit_probs:
+                if e <= 0.0 or e > 1.0:
+                    raise ValueError("Exploit probabilities must be > 0.0 "
+                                     + "and <=1.0")
+        else:
+            if exploit_probs <= 0.0 or exploit_probs > 1.0:
+                raise ValueError("Exploit probabilities must be > 0.0 and "
+                                 + "<=1.0")
+            exploit_probs = [exploit_probs] * num_services
+
         action_space = []
         for address in address_space:
             # add scan
             scan = Action(address, "scan")
             action_space.append(scan)
             for service in range(num_services):
-                exploit = Action(address, "exploit", service)
+                prob = exploit_probs[service]
+                exploit = Action(address, "exploit", service, prob)
                 action_space.append(exploit)
         return action_space

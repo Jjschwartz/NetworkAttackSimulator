@@ -41,7 +41,7 @@ class Network(object):
     """
 
     def __init__(self, num_machines, num_services, r_sensitive=9000.0,
-                 r_user=5000.0):
+                 r_user=5000.0, seed=1):
         """
         Initialize and generate a new Network with given number of machines and
         services for each machine
@@ -53,11 +53,13 @@ class Network(object):
                 in environment (minimum is 1)
             float r_sensitive : reward for sensitive subnet documents
             float r_user : reward for user subnet documents
+            int seed : random generator seed
         """
         self.num_machines = num_machines
         self.num_services = num_services
         self.r_sensitive = r_sensitive
         self.r_user = r_user
+        self.seed = seed
 
         network = self._generate_network()
         self.subnets = network[0]
@@ -81,7 +83,7 @@ class Network(object):
                 rewards
         """
         # set seed for consistency of networks generated
-        np.random.seed(1)
+        np.random.seed(self.seed)
 
         subnets = {}
         address_space = []
@@ -141,7 +143,8 @@ class Network(object):
         # exposed (0) and sensitive (1) subnets both contain 1 machine
         subnet_sizes = [1, 1]
         subnet_sizes += [USER_SUBNET_SIZE] * ((nm - 2) // USER_SUBNET_SIZE)
-        subnet_sizes.append((nm - 2) % USER_SUBNET_SIZE)
+        if ((nm - 2) % USER_SUBNET_SIZE) != 0:
+            subnet_sizes.append((nm - 2) % USER_SUBNET_SIZE)
         return subnet_sizes
 
     def _generate_topology(self):

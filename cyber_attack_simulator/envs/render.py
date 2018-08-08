@@ -168,8 +168,12 @@ class Viewer(object):
         plt.axis('off')
         self._legend()
         state, action, reward = self.episode[self.timestep]
-        title = "t = {0}, {1}, reward = {2}".format(
-            self.timestep, action, reward)
+        if self.timestep == len(self.episode) - 1:
+            title = "t = {0}, Goal reached, total reward = {1}".format(
+                self.timestep, reward)
+        else:
+            title = "t = {0}, {1}, reward = {2}".format(
+                self.timestep, action, reward)
         self.axes.set_title(title)
         self.canvas.draw()
 

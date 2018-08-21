@@ -1,5 +1,5 @@
 import numpy as np
-from agent import Agent
+from cyber_attack_simulator.agents.agent import Agent
 
 
 class SarsaAgent(Agent):
@@ -36,9 +36,10 @@ class SarsaAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
-    def train(self, env, num_episodes=100, max_steps=100):
-        print("{0} agent: Starting training for {1} episodes"
-              .format(self.type, num_episodes))
+    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
+        if verbose:
+            print("{0} agent: Starting training for {1} episodes"
+                  .format(self.type, num_episodes))
 
         # stores total timestep and reward at end of each episode
         total_timesteps = 0
@@ -81,10 +82,12 @@ class SarsaAgent(Agent):
 
             episode_rewards.append(episode_reward)
             episode_timesteps.append(total_timesteps)
-            self.report_progress(e, num_episodes / 10, episode_timesteps)
+            if verbose:
+                self.report_progress(e, num_episodes / 10, episode_timesteps)
 
-        print("{0} agent: Training complete after {0} episodes"
-              .format(self.type, e))
+        if verbose:
+            print("{0} agent: Training complete after {0} episodes"
+                  .format(self.type, e))
         return episode_timesteps, episode_rewards
 
     def _choose_action(self, state, action_space, param=0.0):
@@ -215,5 +218,17 @@ class SarsaAgent(Agent):
         step = (self.max_epsilon - self.min_epsilon) / num_episodes
         return self.max_epsilon - (step * e)
 
+    def reset(self):
+        self.n_table = dict()
+        self.q_table = dict()
+
     def _choose_greedy_action(self, state, action_space):
         return self._choose_action(state, action_space)
+
+    def __str__(self):
+        if self.type == "UCB":
+            return ("UCB: alpha={0}, gamma={1}, c={2}"
+                    .format(self.alpha, self.gamma, self.c))
+        else:
+            return ("e-Greedy: alpha={0}, gamma={1}, min-epsilon={2}"
+                    .format(self.alpha, self.gamma, self.min_epsilon))

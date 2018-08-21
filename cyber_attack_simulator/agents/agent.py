@@ -33,6 +33,13 @@ class Agent(object):
         """
         raise NotImplementedError
 
+    def reset(self):
+        """
+        Resets the agent to an initial not trained state.
+        Used to perform multiple runs without having to initialize new agent.
+        """
+        raise NotImplementedError
+
     def generate_episode(self, env, max_steps=100):
         """
         Generate and episode following the current greed-policy.
@@ -94,3 +101,6 @@ class Agent(object):
                 print(message.format(episode_num, interval, episode_avg))
             else:
                 print(message.format(episode_num, interval, episodes[0]))
+
+    def __str__(self):
+        raise NotImplemented

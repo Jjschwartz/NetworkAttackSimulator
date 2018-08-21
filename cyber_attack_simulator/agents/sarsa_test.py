@@ -1,8 +1,7 @@
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 import cyber_attack_simulator.envs.loader as loader
 from agent_test import test_agent
-from sarsa import EGreedySarsaAgent
-from sarsa import UCBSarsaAgent
+from sarsa import SarsaAgent
 
 small_config = "configs/small.yaml"
 small_med_config = "configs/small_med.yaml"
@@ -21,13 +20,11 @@ def main():
 
     env = CyberAttackSimulatorEnv(config, exploit_probs, static)
 
-    num_episodes = 200
+    num_episodes = 500
     max_steps = 200
     alpha = 0.1
     gamma = 0.9
-    # greedy_agent = EGreedySarsaAgent(env, num_episodes, max_steps, alpha,
-    #                                 gamma)
-    ucb_agent = UCBSarsaAgent(alpha, gamma)
+    ucb_agent = SarsaAgent("egreedy", alpha, gamma)
 
     num_runs = 1
     test_agent(env, ucb_agent, num_runs, num_episodes, max_steps)

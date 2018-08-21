@@ -42,12 +42,12 @@ def plot_episode_results(episode_timesteps, episode_rewards, optimal_actions,
     plt.show()
 
 
-def test_agent(env, agent, num_runs, avg_interval=10):
+def test_agent(env, agent, num_runs, num_episodes, max_steps, avg_interval=10):
 
     run_results_timesteps = []
     run_results_rewards = []
     for run in range(num_runs):
-        t, r = agent.train()
+        t, r = agent.train(env, num_episodes, max_steps)
         run_results_timesteps.append(t)
         run_results_rewards.append(r)
     avg_run_timesteps = np.average(run_results_timesteps, axis=0)
@@ -56,7 +56,7 @@ def test_agent(env, agent, num_runs, avg_interval=10):
     opt_num_actions = env.optimal_num_actions()
     print("Optimal number actions = {0}".format(opt_num_actions))
 
-    episode = agent.generate_episode()
+    episode = agent.generate_episode(env, max_steps)
     env.render_episode(episode)
     plot_episode_results(avg_run_timesteps, avg_run_rewards, opt_num_actions,
                          avg_interval)

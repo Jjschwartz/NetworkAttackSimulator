@@ -1,6 +1,7 @@
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 import cyber_attack_simulator.envs.loader as loader
 from cyber_attack_simulator.agents.sarsa import SarsaAgent
+from cyber_attack_simulator.agents.q_learning import QLearningAgent
 from analyser import Analyser
 
 small_config = "configs/small.yaml"
@@ -27,9 +28,12 @@ def main():
 
     alpha = 0.1
     gamma = 0.9
-    ucb_agent = SarsaAgent("UCB", alpha, gamma)
-    egreedy_agent = SarsaAgent("egreedy", alpha, gamma)
-    agents = [ucb_agent, egreedy_agent]
+    ucb_sarsa = SarsaAgent("UCB", alpha, gamma)
+    egreedy_sarsa = SarsaAgent("egreedy", alpha, gamma)
+    ucb_q = QLearningAgent("UCB", alpha, gamma)
+    egreedy_q = QLearningAgent("egreedy", alpha, gamma)
+    agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
+    # agents = [ucb_sarsa, egreedy_sarsa]
 
     analyser = Analyser(env, agents, num_episodes, max_steps, num_runs)
     analyser.run_analysis(verbose)

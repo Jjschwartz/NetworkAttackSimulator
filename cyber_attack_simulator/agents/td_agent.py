@@ -211,9 +211,8 @@ class TDAgent(Agent):
         return self._choose_action(state, action_space)
 
     def __str__(self):
-        if self.type == "UCB":
-            return ("UCB: alpha={0}, gamma={1}, c={2}"
-                    .format(self.alpha, self.gamma, self.c))
-        else:
-            return ("e-Greedy: alpha={0}, gamma={1}, min-epsilon={2}"
-                    .format(self.alpha, self.gamma, self.min_epsilon))
+        return ("{0}: alpha={1}, gamma={2}, c={3}".format(
+                self.name(), self.type, self.alpha, self.gamma, self.c))
+
+    def name(self):
+        return "{0} {1}".format(self.algorithm, self.type)

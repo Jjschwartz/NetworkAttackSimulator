@@ -59,16 +59,17 @@ class Analyser(object):
                 run_steps.append(s)
                 run_rewards.append(r)
                 run_times.append(t)
-            self.results[agent.type] = [np.average(run_steps, axis=0),
-                                        np.average(run_rewards, axis=0),
-                                        np.average(run_times, axis=0)]
+            self.results[agent.name()] = [np.average(run_steps, axis=0),
+                                          np.average(run_rewards, axis=0),
+                                          np.average(run_times, axis=0)]
 
     def plot_results(self):
         """
         Plot results of last analysis run
         """
         fig = plt.figure()
-        title = fig.suptitle("\n".join(wrap(str(self.env), 60)))
+        title_text = "{0}, runs = {1}".format(self.env, self.num_runs)
+        title = fig.suptitle("\n".join(wrap(title_text, 60)))
 
         ax1 = fig.add_subplot(131)
         for agent, result in self.results.items():
@@ -91,15 +92,17 @@ class Analyser(object):
 
         ax3.set_xlabel("Average Time (sec)")
         ax3.set_ylabel("Average Rewards")
-        ax3.legend()
+
+        handles, labels = ax3.get_legend_handles_labels()
+        n_agents = len(self.agents)
+        fig.legend(handles, labels, loc='lower center', ncol=n_agents // 2)
 
         fig.tight_layout()
         # set position for title and move plots down
         title.set_y(0.95)
-        fig.subplots_adjust(top=0.85)
-
-        fig_name = "{0}{1}_{2}.png".format(FIGUREDIR, self.env.outfile_name(),
-                                           self.num_runs)
+        fig.subplots_adjust(top=0.85, left=0.1, right=0.9,
+                            bottom=0.11 * (n_agents // 2))
+        fig_name = self._output_file_name(FIGUREDIR, "png")
         fig.savefig(fig_name)
         plt.show()
 
@@ -109,8 +112,7 @@ class Analyser(object):
 
         agent,episode,timesteps,reward,time
         """
-        file_name = "{0}{1}_{2}.csv".format(RESULTDIR, self.env.outfile_name(),
-                                            self.num_runs)
+        file_name = self._output_file_name(RESULTDIR, "csv")
         fout = open(file_name, "w")
         fout.write("agent,episode,timesteps,reward,time\n")
         for agent, result in self.results.items():
@@ -121,3 +123,11 @@ class Analyser(object):
                                                          result[2][e]))
                 fout.write(output)
         fout.close()
+
+    def _output_file_name(self, dir, filetype):
+        name = "{0}{1}_{2}_{3}.{4}".format(dir,
+                                           self.env.outfile_name(),
+                                           len(self.agents),
+                                           self.num_runs,
+                                           filetype)
+        return name

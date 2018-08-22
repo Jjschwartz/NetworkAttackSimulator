@@ -2,9 +2,13 @@
 This module contains functionallity for analysing and comparing agent
 performance on Cyber Attack Simulator environments
 """
-from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 import numpy as np
 import matplotlib.pyplot as plt
+from textwrap import wrap
+
+
+RESULTDIR = "results/"
+FIGUREDIR = "figures/"
 
 
 class Analyser(object):
@@ -64,7 +68,7 @@ class Analyser(object):
         Plot results of last analysis run
         """
         fig = plt.figure()
-        title = fig.suptitle(str(self.env))
+        title = fig.suptitle("\n".join(wrap(str(self.env), 60)))
 
         ax1 = fig.add_subplot(131)
         for agent, result in self.results.items():
@@ -93,4 +97,27 @@ class Analyser(object):
         # set position for title and move plots down
         title.set_y(0.95)
         fig.subplots_adjust(top=0.85)
+
+        fig_name = "{0}{1}_{2}.png".format(FIGUREDIR, self.env.outfile_name(),
+                                           self.num_runs)
+        fig.savefig(fig_name)
         plt.show()
+
+    def output_results(self):
+        """
+        Output results to a file in csv format, with headers:
+
+        agent,episode,timesteps,reward,time
+        """
+        file_name = "{0}{1}_{2}.csv".format(RESULTDIR, self.env.outfile_name(),
+                                            self.num_runs)
+        fout = open(file_name, "w")
+        fout.write("agent,episode,timesteps,reward,time\n")
+        for agent, result in self.results.items():
+            for e in range(self.num_episodes):
+                output = ("{0},{1},{2},{3},{4}\n".format(agent, e,
+                                                         result[0][e],
+                                                         result[1][e],
+                                                         result[2][e]))
+                fout.write(output)
+        fout.close()

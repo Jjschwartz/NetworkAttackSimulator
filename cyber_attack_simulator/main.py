@@ -15,14 +15,14 @@ def main():
     # num_services = 3
     # config = loader.generate_config(num_machines, num_services)
     # config = loader.load_config(small_config)
-    config = loader.load_config(small_med_config)
-    # config = loader.load_config(med_config)
+    # config = loader.load_config(small_med_config)
+    config = loader.load_config(med_config)
 
     env = CyberAttackSimulatorEnv(config, exploit_probs, static)
 
-    num_episodes = 100
-    max_steps = 100
-    num_runs = 1
+    num_episodes = 500
+    max_steps = 200
+    num_runs = 10
     verbose = True
 
     alpha = 0.1
@@ -33,6 +33,7 @@ def main():
 
     analyser = Analyser(env, agents, num_episodes, max_steps, num_runs)
     analyser.run_analysis(verbose)
+    analyser.output_results()
     analyser.plot_results()
 
 

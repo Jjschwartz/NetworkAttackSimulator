@@ -291,6 +291,16 @@ class CyberAttackSimulatorEnv(object):
         output += "Static = {}".format(self.static)
         return output
 
+    def outfile_name(self):
+        output = "{}_".format(self.network.subnets)
+        output += "{}_".format(self.num_services)
+        if self.exploit_probs is None or type(self.exploit_probs) is list:
+            deterministic = "stoch"
+        else:
+            deterministic = "det" if self.exploit_probs == 1.0 else False
+        output += "{}".format(deterministic)
+        return output
+
 
 class Service(Enum):
     """

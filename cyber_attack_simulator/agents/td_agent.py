@@ -3,21 +3,22 @@ import time
 from cyber_attack_simulator.agents.agent import Agent
 
 
-class SarsaAgent(Agent):
+class TDAgent(Agent):
     """
-    An Agent for the Cyber Attack Simulator environment that uses the Sarsa
-    method to find an optimal policy
+    A Temporal Difference Agent abstract class for the Cyber Attack Simulator
+    environment that uses a TD method to find an optimal policy
 
     Supported action-selection methods:
         - Upper-confidence bounds - UCB
         - epsilon-greedy - egreedy
     """
     types = ["UCB", "egreedy"]
+    algorithm = "TD"
 
     def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0,
                  min_epsilon=0.02, c=1.0):
         """
-        Initialize a new Sarsa agent
+        Initialize a new TD agent
 
         Arguments:
             str type : type of Sarsa agent
@@ -42,8 +43,8 @@ class SarsaAgent(Agent):
 
     def train(self, env, num_episodes=100, max_steps=100, verbose=False):
         if verbose:
-            print("Sarsa {0} agent: Starting training for {1} episodes"
-                  .format(self.type, num_episodes))
+            print("{0} {1} agent: Starting training for {1} episodes"
+                  .format(self.algorithm, self.type, num_episodes))
 
         # stores timesteps, rewards and time taken for each episode
         episode_timesteps = []
@@ -77,7 +78,7 @@ class SarsaAgent(Agent):
 
     def _run_episode(self, env, max_steps, param):
         """
-        Train the agent for a single episode.
+        Train the agent for a single episode using TD-algorithm.
 
         Arguments:
             CyberAttackSimulatorEnv env : the environment
@@ -89,25 +90,7 @@ class SarsaAgent(Agent):
             int ep_reward : reward achieved for episode
             float ep_time : time taken for episode
         """
-        a_space = env.action_space
-        s = env.reset()
-        a = self._choose_action(s, a_space, param)
-        ep_reward = 0
-        ep_timesteps = 0
-        for _ in range(max_steps):
-            # increment state-action pair visit count
-            self._n(s, a_space)[a] += 1
-            result = env.step(a_space[a])
-            new_s, reward, done, _ = result
-            new_a = self._choose_action(new_s, a_space, param)
-            self._q_update(s, a, new_s, new_a, reward, a_space)
-            s = new_s
-            a = new_a
-            ep_reward += reward
-            ep_timesteps += 1
-            if done:
-                break
-        return ep_timesteps, ep_reward
+        raise NotImplementedError
 
     def _choose_action(self, state, action_space, param=0.0):
         """
@@ -170,23 +153,6 @@ class SarsaAgent(Agent):
         q_values = self._q(state, action_space)
         adj_q_values = q_values + bonuses
         return np.argmax(adj_q_values)
-
-    def _q_update(self, s, a, s_new, a_new, r, action_space):
-        """
-        Update state-action action value using Sarsa update
-
-        Arguments:
-            State s: current state
-            int a: current action
-            State s_new: next state
-            int a_new: next action
-            float r: reward from performing a in s (current step)
-            list action_space : list of possible actions for state
-        """
-        current_q = self._q(s, action_space, a)
-        new_q = self._q(s_new, action_space, a_new)
-        td_error = r + self.gamma * new_q - current_q
-        self._q(s, action_space)[a] = current_q + self.alpha * td_error
 
     def _q(self, state, action_space, action=None):
         """

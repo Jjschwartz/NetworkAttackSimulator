@@ -11,8 +11,9 @@ class Agent(object):
 
     Methods users need to implemented:
         - train
-        - generate_episode
+        - reset
         - _choose_greedy_action
+        - __str__
 
     Implemented Methods
         - generate_episode
@@ -37,6 +38,19 @@ class Agent(object):
         """
         Resets the agent to an initial not trained state.
         Used to perform multiple runs without having to initialize new agent.
+        """
+        raise NotImplementedError
+
+    def _choose_greedy_action(self, state, action_space):
+        """
+        Choose the best action for given state according to current policy
+
+        Arguments:
+            State state : the state to choose action for
+            list action_space : list of possible actions for state
+
+        Returns:
+            int action : index of chosen action to take
         """
         raise NotImplementedError
 
@@ -68,19 +82,6 @@ class Agent(object):
             state = new_state
         return episode
 
-    def _choose_greedy_action(self, state, action_space):
-        """
-        Choose the best action for given state according to current policy
-
-        Arguments:
-            State state : the state to choose action for
-            list action_space : list of possible actions for state
-
-        Returns:
-            int action : index of chosen action to take
-        """
-        raise NotImplementedError
-
     def report_progress(self, episode_num, interval, episodes):
         """
         Print a progress message to standard out, reporting on current
@@ -89,14 +90,14 @@ class Agent(object):
         Arguments:
             int episode_num : current episode number
             int interval : reporting interval (how often to report)
-            list[int] episodes : list of cumulative total of timesteps for each
-                episode upto current episode
+            list[int] episodes : list of timesteps for each episode up to
+                    current episode
         """
         message = "Episode = {0} - avg timesteps for last {1} episodes = {2}"
         interval = int(math.ceil(interval))
         if episode_num % interval == 0:
             if episode_num > 0:
-                episode_avg = episodes[-1] - episodes[-1 - interval]
+                episode_avg = sum(episodes[-1 - interval:])
                 episode_avg /= interval
                 print(message.format(episode_num, interval, episode_avg))
             else:

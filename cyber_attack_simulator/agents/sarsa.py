@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from cyber_attack_simulator.agents.agent import Agent
 
 
@@ -41,12 +42,10 @@ class SarsaAgent(Agent):
             print("{0} agent: Starting training for {1} episodes"
                   .format(self.type, num_episodes))
 
-        # stores total timestep and reward at end of each episode
-        total_timesteps = 0
+        # stores timesteps, rewards and time taken for each episode
         episode_timesteps = []
         episode_rewards = []
-
-        a_space = env.action_space
+        episode_times = []
 
         if self.type == "UCB":
             param = self.c
@@ -54,41 +53,58 @@ class SarsaAgent(Agent):
             param = self.max_epsilon
 
         for e in range(num_episodes):
-            # reset environment
-            state = env.reset()
-            # get initial action
-            action = self._choose_action(state, a_space, param)
-            episode_reward = 0
-            for _ in range(max_steps):
-                # increment state-action pair visit count
-                self._n(state, a_space)[action] += 1
-                # perform action
-                result = env.step(a_space[action])
-                new_state, reward, done, _ = result
-                # get action for new state
-                new_action = self._choose_action(new_state, a_space, param)
-                # update state-action q_value
-                self._q_update(state, action, new_state, new_action, reward,
-                               a_space)
-                state = new_state
-                action = new_action
-                episode_reward += reward
-                total_timesteps += 1
-                if done:
-                    break
+            start_time = time.time()
+            timesteps, reward = self._run_episode(env, max_steps, param)
+            ep_time = time.time() - start_time
+
             # slowly decrease exploration
             if self.type == "egreedy":
                 param = self._epsilon_decay(num_episodes, e)
 
-            episode_rewards.append(episode_reward)
-            episode_timesteps.append(total_timesteps)
+            episode_rewards.append(reward)
+            episode_timesteps.append(timesteps)
+            episode_times.append(ep_time)
             if verbose:
                 self.report_progress(e, num_episodes / 10, episode_timesteps)
 
         if verbose:
             print("{0} agent: Training complete after {0} episodes"
                   .format(self.type, e))
-        return episode_timesteps, episode_rewards
+        return episode_timesteps, episode_rewards, episode_times
+
+    def _run_episode(self, env, max_steps, param):
+        """
+        Train the agent for a single episode.
+
+        Arguments:
+            CyberAttackSimulatorEnv env : the environment
+            int max_steps : max number of steps to run episode for
+            float param : the action selection hyperparameter value for agent
+
+        Returns:
+            int ep_timesteps : number of timesteps taken for epidode
+            int ep_reward : reward achieved for episode
+            float ep_time : time taken for episode
+        """
+        a_space = env.action_space
+        s = env.reset()
+        a = self._choose_action(s, a_space, param)
+        ep_reward = 0
+        ep_timesteps = 0
+        for _ in range(max_steps):
+            # increment state-action pair visit count
+            self._n(s, a_space)[a] += 1
+            result = env.step(a_space[a])
+            new_s, reward, done, _ = result
+            new_a = self._choose_action(new_s, a_space, param)
+            self._q_update(s, a, new_s, new_a, reward, a_space)
+            s = new_s
+            a = new_a
+            ep_reward += reward
+            ep_timesteps += 1
+            if done:
+                break
+        return ep_timesteps, ep_reward
 
     def _choose_action(self, state, action_space, param=0.0):
         """

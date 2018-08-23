@@ -55,3 +55,7 @@ class SarsaAgent(TDAgent):
         new_q = self._q(s_new, action_space, a_new)
         td_error = r + self.gamma * new_q - current_q
         self._q(s, action_space)[a] = current_q + self.alpha * td_error
+
+    def __str__(self):
+        return ("{0}: alpha={1}, gamma={2}, min_epsilon={3}, max_epsilon={4}".format(
+                self.name(), self.alpha, self.gamma, self.min_epsilon, self.max_epsilon))

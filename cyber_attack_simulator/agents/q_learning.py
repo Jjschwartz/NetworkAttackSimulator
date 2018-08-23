@@ -52,3 +52,7 @@ class QLearningAgent(TDAgent):
         new_q = np.max(self._q(s_new, action_space))
         td_error = r + self.gamma * new_q - current_q
         self._q(s, action_space)[a] = current_q + self.alpha * td_error
+
+    def __str__(self):
+        return ("{0}: alpha={1}, gamma={2}, c={3}".format(
+                self.name(), self.alpha, self.gamma, self.c))

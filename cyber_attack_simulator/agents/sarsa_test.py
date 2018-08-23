@@ -3,9 +3,9 @@ import cyber_attack_simulator.envs.loader as loader
 from agent_test import test_agent
 from sarsa import SarsaAgent
 
-small_config = "configs/small.yaml"
-small_med_config = "configs/small_med.yaml"
-med_config = "configs/medium.yaml"
+small_config = "../configs/small.yaml"
+small_med_config = "../configs/small_med.yaml"
+med_config = "../configs/medium.yaml"
 
 
 def main():

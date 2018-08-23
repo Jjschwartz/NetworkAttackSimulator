@@ -13,7 +13,7 @@ FIGUREDIR = "figures/"
 
 class Analyser(object):
 
-    def __init__(self, env, agents, num_episodes, max_steps, num_runs):
+    def __init__(self, env, agents, num_episodes, max_steps, num_runs, window=10):
         """
         Initialize for given network configuraiton and set of agents
 
@@ -22,14 +22,16 @@ class Analyser(object):
             list agents : list of Agent class instances
             int num_episodes : number of episodes to train agent for
             int max_steps : max number of steps per episode
-            int num_runs : number of runs (i.e. set of episodes) to average
-                results over
+            int num_runs : number of runs (i.e. set of episodes) to average results over
+            int window : convergence window (only used when num_runs = 1, otherwise no early
+                stopping for convergenc)
         """
         self.env = env
         self.agents = agents
         self.num_episodes = num_episodes
         self.max_steps = max_steps
         self.num_runs = num_runs
+        self.window = num_episodes if num_runs > 1 else window
 
         self.results = {}
 
@@ -44,18 +46,18 @@ class Analyser(object):
             dict results : dict with agent type as key and values being
                 npmatrix of rewards vs timesteps averaged over runs
         """
-        print("Running analysis on: \n\t {0}\n".format(self.env))
+        print("\nRunning analysis on: \n\t {0}".format(self.env))
         self.results = {}
         for agent in self.agents:
-            print("Running analysis for agent {0}".format(str(agent)))
+            print("\nRunning analysis for agent:\n\t {0}".format(str(agent)))
             run_steps = []
             run_rewards = []
             run_times = []
             for run in range(self.num_runs):
                 print("Run {0} of {1}".format(run, self.num_runs))
                 agent.reset()
-                s, r, t = agent.train(self.env, self.num_episodes,
-                                      self.max_steps, verbose)
+                s, r, t = agent.train(self.env, self.num_episodes, self.max_steps, self.window,
+                                      verbose)
                 run_steps.append(s)
                 run_rewards.append(r)
                 run_times.append(t)
@@ -73,14 +75,14 @@ class Analyser(object):
 
         ax1 = fig.add_subplot(131)
         for agent, result in self.results.items():
-            ax1.plot(range(self.num_episodes), result[0], label=agent)
+            ax1.plot(range(len(result[0])), result[0], label=agent)
 
         ax1.set_xlabel("Episodes")
         ax1.set_ylabel("Average Timesteps")
 
         ax2 = fig.add_subplot(132)
         for agent, result in self.results.items():
-            ax2.plot(range(self.num_episodes), result[1], label=agent)
+            ax2.plot(range(len(result[1])), result[1], label=agent)
 
         ax2.set_xlabel("Episodes")
         ax2.set_ylabel("Average Rewards")
@@ -116,7 +118,7 @@ class Analyser(object):
         fout = open(file_name, "w")
         fout.write("agent,episode,timesteps,reward,time\n")
         for agent, result in self.results.items():
-            for e in range(self.num_episodes):
+            for e in range(len(result[0])):
                 output = ("{0},{1},{2},{3},{4}\n".format(agent, e,
                                                          result[0][e],
                                                          result[1][e],

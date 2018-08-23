@@ -47,8 +47,8 @@ def test_agent(env, agent, num_runs, num_episodes, max_steps, avg_interval=10):
     run_results_timesteps = []
     run_results_rewards = []
     for run in range(num_runs):
-        t, r = agent.train(env, num_episodes, max_steps)
-        run_results_timesteps.append(t)
+        s, r, _ = agent.train(env, num_episodes, max_steps)
+        run_results_timesteps.append(s)
         run_results_rewards.append(r)
     avg_run_timesteps = np.average(run_results_timesteps, axis=0)
     avg_run_rewards = np.average(run_results_rewards, axis=0)

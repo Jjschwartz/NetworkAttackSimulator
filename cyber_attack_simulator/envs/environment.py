@@ -245,13 +245,10 @@ class CyberAttackSimulatorEnv(object):
                 (self.network.is_sensitive_machine(m)))
         sys.stdout.write(output)
 
-    def optimal_num_actions(self):
+    def minumum_actions(self):
         """
-        Return optimal number of actions to reach goal, assuming deterministic
-        actions.
-
-        Also, assumes that for environments where the number of services is 2
-        or greater the optimal actions are scan -> exploit
+        Return minimum possible number of actions to reach goal, assuming
+        deterministic actions (i.e. they work first shot)
 
         Returns:
             int n: optimal number of actions to reach goal
@@ -261,7 +258,7 @@ class CyberAttackSimulatorEnv(object):
         user_depth = np.floor(np.log2(num_subnets)) + 1
         if self.num_services > 1:
             return 2 + 2 + 2 * user_depth
-        # only 1 service so only requires 1 action per subnet
+        # 1 for public net, 1 for subnet 2, user depth for user subnet
         return 1 + 1 + user_depth
 
     def render_episode(self, episode):

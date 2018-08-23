@@ -16,18 +16,19 @@ def main():
     # num_services = 3
     # config = loader.generate_config(num_machines, num_services)
     # 100 episodes, 100 steps
-    # config = loader.load_config(small_config)
+    config = loader.load_config(small_config)
     # 100 episodes, 100 steps
     # config = loader.load_config(small_med_config)
     # 500 episodes, 200 steps
-    config = loader.load_config(med_config)
+    # config = loader.load_config(med_config)
 
     env = CyberAttackSimulatorEnv(config, exploit_probs, static)
 
-    num_episodes = 500
-    max_steps = 200
-    num_runs = 10
-    verbose = True
+    num_episodes = 100
+    max_steps = 100
+    num_runs = 1
+    window = 10
+    verbose = False
 
     alpha = 0.1
     gamma = 0.9
@@ -38,7 +39,7 @@ def main():
     agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
     # agents = [ucb_sarsa, egreedy_sarsa]
 
-    analyser = Analyser(env, agents, num_episodes, max_steps, num_runs)
+    analyser = Analyser(env, agents, num_episodes, max_steps, num_runs, window)
     analyser.run_analysis(verbose)
     analyser.output_results()
     analyser.plot_results()

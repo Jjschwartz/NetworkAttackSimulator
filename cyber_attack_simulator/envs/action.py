@@ -1,8 +1,8 @@
 import numpy as np
 
 
-EXPLOIT_COST = 10.0
-SCAN_COST = 10.0
+EXPLOIT_COST = 100.0
+SCAN_COST = 100.0
 
 
 class Action(object):

@@ -3,10 +3,13 @@ import time
 from cyber_attack_simulator.agents.agent import Agent
 
 
+THRESHOLD = 1e-6
+
+
 class TDAgent(Agent):
     """
-    A Temporal Difference Agent abstract class for the Cyber Attack Simulator
-    environment that uses a TD method to find an optimal policy
+    A Temporal Difference Agent abstract class for the Cyber Attack Simulator environment that uses
+    a TD method to find an optimal policy
 
     Supported action-selection methods:
         - Upper-confidence bounds - UCB
@@ -15,8 +18,7 @@ class TDAgent(Agent):
     types = ["UCB", "egreedy"]
     algorithm = "TD"
 
-    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0,
-                 min_epsilon=0.02, c=1.0):
+    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.02, c=1.0):
         """
         Initialize a new TD agent
 
@@ -41,7 +43,7 @@ class TDAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
-    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
+    def train(self, env, num_episodes=100, max_steps=100, window=10, verbose=False):
         if verbose:
             print("{0} {1} agent: Starting training for {1} episodes"
                   .format(self.algorithm, self.type, num_episodes))
@@ -50,6 +52,9 @@ class TDAgent(Agent):
         episode_timesteps = []
         episode_rewards = []
         episode_times = []
+
+        # queue to track last window epsisode rewards for convergence checking
+        r_trace = np.zeros(num_episodes)
 
         if self.type == "UCB":
             param = self.c
@@ -61,7 +66,7 @@ class TDAgent(Agent):
             timesteps, reward = self._run_episode(env, max_steps, param)
             ep_time = time.time() - start_time
 
-            # slowly decrease exploration
+            # slowly decrease exploration for egreedy agent
             if self.type == "egreedy":
                 param = self._epsilon_decay(num_episodes, e)
 
@@ -71,9 +76,20 @@ class TDAgent(Agent):
             if verbose:
                 self.report_progress(e, num_episodes / 10, episode_timesteps)
 
+            new_reward = self.evaluate_agent(env, max_steps)
+            r_trace[e] = new_reward
+            if e > window * 2:
+                old_avg = np.mean(r_trace[e - (2 * window): e - window])
+                new_avg = np.mean(r_trace[e - window: e])
+                if abs(new_avg - old_avg) < THRESHOLD:
+                    if verbose:
+                        print("{0} {1} agent: Converged after {2} episodes"
+                              .format(self.algorithm, self.type, e))
+                    break
+
         if verbose:
-            print("{0} agent: Training complete after {0} episodes"
-                  .format(self.type, e))
+            print("{0} {1} agent: Training complete after {2} episodes"
+                  .format(self.algorithm, self.type, e))
         return episode_timesteps, episode_rewards, episode_times
 
     def _run_episode(self, env, max_steps, param):
@@ -94,9 +110,8 @@ class TDAgent(Agent):
 
     def _choose_action(self, state, action_space, param=0.0):
         """
-        Choose action to take from given state using agent defined action
-        selection. If hyperparameter not provided then defaults to
-        greedy policy.
+        Choose action to take from given state using agent defined action selection. If
+        hyperparameter not provided then defaults to greedy policy.
 
         Arguments:
             State state : the state to choose action for
@@ -113,7 +128,7 @@ class TDAgent(Agent):
 
     def _choose_action_egreedy(self, state, action_space, epsilon=0.0):
         """
-        Choose action to take from given state using epsilon-greedy policy
+        Choose action to take from given state using epsilon-greedy policy.
         If epsilon not provided then defaults to greedy policy
 
         Arguments:
@@ -131,9 +146,8 @@ class TDAgent(Agent):
 
     def _choose_action_ucb(self, state, action_space, c=0.0):
         """
-        Choose action to take from given state using Upper-Confidence-Bound
-        action selection. If c hyperparameter not provided then defaults to
-        greedy policy.
+        Choose action to take from given state using Upper-Confidence-Bound action selection.
+        If c hyperparameter not provided then defaults to greedy policy.
 
         Arguments:
             State state : the state to choose action for
@@ -156,8 +170,8 @@ class TDAgent(Agent):
 
     def _q(self, state, action_space, action=None):
         """
-        Returns the Q-value for a state-action pair or returns the list of
-        Q-values for a state if no action is provided
+        Returns the Q-value for a state-action pair or returns the list of Q-values for a state if
+        no action is provided
 
         Arguments:
             State state : environment state
@@ -212,7 +226,7 @@ class TDAgent(Agent):
 
     def __str__(self):
         return ("{0}: alpha={1}, gamma={2}, c={3}".format(
-                self.name(), self.type, self.alpha, self.gamma, self.c))
+                self.name(), self.alpha, self.gamma, self.c))
 
     def name(self):
         return "{0} {1}".format(self.algorithm, self.type)

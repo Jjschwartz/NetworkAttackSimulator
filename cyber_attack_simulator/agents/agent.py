@@ -60,7 +60,8 @@ class Agent(object):
         This method is used to check the current learned policy.
 
         Arguments:
-
+            CyberAttackSimulatorEnv env : environment to generate episode for
+            int max_steps : max number of steps allowed for episode
 
         Returns:
             list episode : ordered list of (State, Action, reward) tuples
@@ -70,34 +71,58 @@ class Agent(object):
         state = env.reset()
         action_space = env.action_space
         reward_sum = 0
+        steps = 0
         for t in range(max_steps):
             action = self._choose_greedy_action(state, action_space)
-            result = env.step(action_space[action])
-            new_state, reward, done, _ = result
+            new_state, reward, done = env.step(action_space[action])
             episode.append((state, action_space[action], reward, False))
             reward_sum += reward
+            steps += 1
             if done:
                 episode.append((new_state, None, reward_sum, done))
                 break
             state = new_state
         return episode
 
+    def evaluate_agent(self, env, max_steps=100):
+        """
+        Evaluate the current agents policy by running an episode using greedy
+        policy.
+
+        Arguments:
+            CyberAttackSimulatorEnv env : environment to generate episode for
+            int max_steps : max number of steps allowed for episode
+
+        Returns:
+            int reward : total reward recieved for episode
+        """
+        state = env.reset()
+        action_space = env.action_space
+        reward_sum = 0
+        for t in range(max_steps):
+            action = self._choose_greedy_action(state, action_space)
+            new_state, reward, done = env.step(action_space[action])
+            reward_sum += reward
+            if done:
+                break
+            state = new_state
+        return reward_sum
+
     def report_progress(self, episode_num, interval, episodes):
         """
-        Print a progress message to standard out, reporting on current
-        episode number and average timesteps per episode
+        Print a progress message to standard out, reporting on current episode number and average
+        timesteps per episode
 
         Arguments:
             int episode_num : current episode number
             int interval : reporting interval (how often to report)
-            list[int] episodes : list of timesteps for each episode up to
-                    current episode
+            list[int] episodes : list of timesteps for each episode up to current episode
         """
         message = "Episode = {0} - avg timesteps for last {1} episodes = {2}"
         interval = int(math.ceil(interval))
         if episode_num % interval == 0:
             if episode_num > 0:
-                episode_avg = sum(episodes[-1 - interval:])
+                episode_avg = sum(episodes[-interval:])
                 episode_avg /= interval
                 print(message.format(episode_num, interval, episode_avg))
             else:

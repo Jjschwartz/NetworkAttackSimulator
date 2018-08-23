@@ -3,7 +3,7 @@ import numpy as np
 
 class State(object):
     """
-    A state in the cyber attack simulator environmentself.
+    A state in the cyber attack simulator environment.
 
     Properties:
         - dict obs : a dictionary with the address of each machine as the
@@ -13,8 +13,7 @@ class State(object):
         - Defined by :
             1. service_info : list of ServiceState, for each service
             2. compromised : True/False
-            3. sensitive : True/False (whether machine has sensitive info)
-            4. reachable : True/False (whether machine is currently reachable)
+            3. reachable : True/False (whether machine is currently reachable)
 
     Main methods:
         - reachable : whether machine is reachable
@@ -57,19 +56,6 @@ class State(object):
             bool compromised : True if compromised
         """
         return self._obs[target]["compromised"]
-
-    def sensitive(self, target):
-        """
-        Checks if a given target machine has sensitive documents (i.e. a
-        reward)
-
-        Arguments:
-            (int, int) target : the machine address
-
-        Returns:
-            bool sensitive : True if machine has sensitive docs
-        """
-        return self._obs[target]["sensitive"]
 
     def service_state(self, target, service):
         """
@@ -118,8 +104,7 @@ class State(object):
 
             other_v = other._obs[m]
             if (v["compromised"] != other_v["compromised"]
-                or v["reachable"] != other_v["reachable"]
-                    or v["sensitive"] != other_v["sensitive"]):
+                    or v["reachable"] != other_v["reachable"]):
                 return False
             if not np.array_equal(v["service_info"], other_v["service_info"]):
                 return False

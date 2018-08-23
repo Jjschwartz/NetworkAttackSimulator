@@ -197,7 +197,7 @@ class Viewer(object):
         """
         compromised = state.compromised(m)
         reachable = state.reachable(m)
-        sensitive = state.sensitive(m)
+        sensitive = self.network.is_sensitive_machine(m)
         if sensitive:
             if compromised:
                 color = 'yellow'

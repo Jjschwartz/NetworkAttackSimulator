@@ -28,8 +28,7 @@ class QLearningAgent(TDAgent):
             a = self._choose_action(s, a_space, param)
             # increment state-action pair visit count
             self._n(s, a_space)[a] += 1
-            result = env.step(a_space[a])
-            new_s, reward, done, _ = result
+            new_s, reward, done = env.step(a_space[a])
             self._q_update(s, a, new_s, reward, a_space)
             s = new_s
             ep_reward += reward

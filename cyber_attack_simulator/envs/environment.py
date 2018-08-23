@@ -61,20 +61,16 @@ class CyberAttackSimulatorEnv(object):
             self.network.generate_network(self.seed + self.reset_count)
 
         obs = OrderedDict()
-        sensitive_machines = self.network.get_sensitive_machines()
         for m in self.address_space:
             # initially the status of services on machine are unknown
             service_info = np.full(self.num_services, Service.unknown,
                                    Service)
             compromised = False
-            sensitive = False
             reachable = False
             if self.network.subnet_exposed(m[0]):
                 reachable = True
-            if m in sensitive_machines:
-                sensitive = True
             obs[m] = {"service_info": service_info, "compromised": compromised,
-                      "sensitive": sensitive, "reachable": reachable}
+                      "reachable": reachable}
         self.current_state = State(obs)
         self.reset_count += 1
         return copy.deepcopy(self.current_state)
@@ -87,18 +83,16 @@ class CyberAttackSimulatorEnv(object):
             Action action : Action object from action_space
 
         Returns:
-            dict observation : agent's observation of the network
+            dict obs : agent observation of the network
             float reward : reward from performing action
             bool done : whether the episode has ended or not
-            dict info : contains extra info useful for debugging or
-                visualization
         """
         if not self.current_state.reachable(action.target):
-            return self.current_state, 0 - action.cost, False, {}
+            return self.current_state, 0 - action.cost, False
 
         # Non-determinism
         if np.random.random_sample() > action.prob:
-            return self.current_state, 0 - action.cost, False, {}
+            return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
 
@@ -106,7 +100,8 @@ class CyberAttackSimulatorEnv(object):
         self._update_state(action, success, services)
         done = self.is_goal()
         reward = value - action.cost
-        return copy.deepcopy(self.current_state), reward, done, {}
+        obs = copy.deepcopy(self.current_state)
+        return obs, reward, done
 
     def _update_state(self, action, success, services):
         """
@@ -216,7 +211,7 @@ class CyberAttackSimulatorEnv(object):
         outfile.write(output)
 
     def _get_machine_symbol(self, m):
-        if self.current_state.sensitive(m):
+        if self.network.is_sensitive_machine(m):
             if self.current_state.compromised(m):
                 symbol = "C"
             elif self.current_state.reachable(m):
@@ -247,7 +242,7 @@ class CyberAttackSimulatorEnv(object):
             output += "\tcompromised: {0}\n".format(
                 self.current_state.compromised(m))
             output += "\tsensitive: {0}\n".format(
-                self.current_state.sensitive(m))
+                (self.network.is_sensitive_machine(m)))
         sys.stdout.write(output)
 
     def optimal_num_actions(self):

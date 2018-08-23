@@ -28,8 +28,7 @@ class SarsaAgent(TDAgent):
         for _ in range(max_steps):
             # increment state-action pair visit count
             self._n(s, a_space)[a] += 1
-            result = env.step(a_space[a])
-            new_s, reward, done, _ = result
+            new_s, reward, done = env.step(a_space[a])
             new_a = self._choose_action(new_s, a_space, param)
             self._q_update(s, a, new_s, new_a, reward, a_space)
             s = new_s

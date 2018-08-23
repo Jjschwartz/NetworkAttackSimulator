@@ -38,6 +38,7 @@ class Network(object):
         self.num_services = config["services"]
         self.sensitive_machines = config["sensitive_machines"]
         self.machines = self.generate_network(seed)
+        self.sensitive_addresses = self._get_sensitive_addresses()
 
     def generate_network(self, seed):
         """
@@ -133,6 +134,16 @@ class Network(object):
         """
         return list(self.machines.keys())
 
+    def _get_sensitive_addresses(self):
+        """
+        Get addresses of machines which contain sensitive machines, to store
+        for later efficiency
+        """
+        sensitive_addresses = []
+        for m in self.sensitive_machines:
+            sensitive_addresses.append((m[0], m[1]))
+        return sensitive_addresses
+
     def get_sensitive_machines(self):
         """
         Get addresses of machines which contain sensitive information (rewards)
@@ -141,10 +152,19 @@ class Network(object):
             list sensitive_addresses : a list of addresses of sensitive
                 machines in network
         """
-        sensitive_addresses = []
-        for m in self.sensitive_machines:
-            sensitive_addresses.append((m[0], m[1]))
-        return sensitive_addresses
+        return self.sensitive_addresses
+
+    def is_sensitive_machine(self, m):
+        """
+        Returns whether a given machine is sensitive or not
+
+        Arguments:
+            (int, int) m : machine address
+
+        Returns:
+            bool is_sensitive : True if machine is sensitive, False otherwise
+        """
+        return m in self.sensitive_addresses
 
     def subnets_connected(self, subnet_1, subnet_2):
         """

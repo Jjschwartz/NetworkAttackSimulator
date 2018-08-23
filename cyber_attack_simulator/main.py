@@ -15,8 +15,11 @@ def main():
     # num_machines = 5
     # num_services = 3
     # config = loader.generate_config(num_machines, num_services)
+    # 100 episodes, 100 steps
     # config = loader.load_config(small_config)
+    # 100 episodes, 100 steps
     # config = loader.load_config(small_med_config)
+    # 500 episodes, 200 steps
     config = loader.load_config(med_config)
 
     env = CyberAttackSimulatorEnv(config, exploit_probs, static)

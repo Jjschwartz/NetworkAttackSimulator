@@ -12,11 +12,11 @@ med_config = "configs/medium.yaml"
 def main():
     exploit_probs = 1.0
     static = True
-    # num_machines = 5
-    # num_services = 3
-    # config = loader.generate_config(num_machines, num_services)
+    num_machines = 5
+    num_services = 3
+    config = loader.generate_config(num_machines, num_services)
     # 100 episodes, 100 steps
-    config = loader.load_config(small_config)
+    # config = loader.load_config(small_config)
     # 100 episodes, 100 steps
     # config = loader.load_config(small_med_config)
     # 500 episodes, 200 steps
@@ -28,7 +28,7 @@ def main():
     max_steps = 100
     num_runs = 1
     window = 10
-    verbose = False
+    verbose = True
 
     alpha = 0.1
     gamma = 0.9
@@ -36,8 +36,11 @@ def main():
     egreedy_sarsa = SarsaAgent("egreedy", alpha, gamma)
     ucb_q = QLearningAgent("UCB", alpha, gamma)
     egreedy_q = QLearningAgent("egreedy", alpha, gamma)
-    agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
+    # agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
     # agents = [ucb_sarsa, egreedy_sarsa]
+    agents = []
+    for i in range(1, 10):
+        agents.append(SarsaAgent("UCB", i*alpha, gamma))
 
     analyser = Analyser(env, agents, num_episodes, max_steps, num_runs, window)
     analyser.run_analysis(verbose)

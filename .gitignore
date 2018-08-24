@@ -2,3 +2,7 @@
 __pycache__/
 
 cyber_attack_simulator\.egg-info/
+
+cyber_attack_simulator/figures/
+
+cyber_attack_simulator/results/

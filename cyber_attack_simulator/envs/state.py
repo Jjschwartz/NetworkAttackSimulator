@@ -1,4 +1,11 @@
 import numpy as np
+import json
+
+
+# index of each state variable in state list
+COMPROMISED = 0
+REACHABLE = 1
+SERVICE_INFO = 2
 
 
 class State(object):
@@ -6,8 +13,8 @@ class State(object):
     A state in the cyber attack simulator environment.
 
     Properties:
-        - dict obs : a dictionary with the address of each machine as the
-            key and values being the observed state of the machine
+        - OrderedDict obs : a dictionary with the address of each machine as the
+            key and values being a list of values of state variables
 
     State of a machine:
         - Defined by :
@@ -22,16 +29,14 @@ class State(object):
     """
 
     def __init__(self, obs):
+        """
+        Initialize new state object.
+
+        Arguments:
+            OrderedDict obs : a dictionary with the address of each machine as the
+                key and values being a list of values of state variables
+        """
         self._obs = obs
-
-    def get_machines(self):
-        """
-        Get all machines in state
-
-        Returns:
-            list machines : list of machine addresses in state
-        """
-        return sorted(list(self._obs.keys()))
 
     def reachable(self, target):
         """
@@ -43,7 +48,7 @@ class State(object):
         Returns:
             bool reachable : True if reachable
         """
-        return self._obs[target]["reachable"]
+        return self._obs[target][REACHABLE]
 
     def compromised(self, target):
         """
@@ -55,7 +60,7 @@ class State(object):
         Returns:
             bool compromised : True if compromised
         """
-        return self._obs[target]["compromised"]
+        return self._obs[target][COMPROMISED]
 
     def service_state(self, target, service):
         """
@@ -68,30 +73,49 @@ class State(object):
         Returns
             ServiceState state : state of service
         """
-        return self._obs[target]["service_info"][service]
+        return self._obs[target][SERVICE_INFO][service]
 
-    def update_service(self, target, service, new_state):
+    def update_service(self, target, service, new_service_state):
         """
         Update a service on the specified target machines
 
         Arguments:
             (int, int) target : the target machine address
             int service : the service number
-            ServiceState new_state : new service state
+            ServiceState new_service_state : new service state
         """
-        self._obs[target]["service_info"][service] = new_state
+        self._obs[target][SERVICE_INFO][service] = new_service_state
 
     def set_compromised(self, target):
-        self._obs[target]["compromised"] = True
+        """
+        Set the target machine state as compromised
+
+        Arguments:
+            (int, int) target : the target machine address
+        """
+        self._obs[target][COMPROMISED] = True
 
     def set_reachable(self, target):
-        self._obs[target]["reachable"] = True
+        """
+        Set the target machine state as reachable
+
+        Arguments:
+            (int, int) target : the target machine address
+        """
+        self._obs[target][REACHABLE] = True
 
     def __str__(self):
         return str(self._obs)
 
     def __hash__(self):
-        return hash(self.__str__())
+        # We can assume address space doesn't change so only need to hash values
+        # Also using an OrderedDict so order is stable
+        hash_list = []
+        for v in self._obs.values():
+            hash_list.append(v[COMPROMISED])
+            hash_list.append(v[REACHABLE])
+            hash_list.append(hash(v[SERVICE_INFO].tostring()))
+        return hash(tuple(hash_list))
 
     def __eq__(self, other):
         if not isinstance(other, State):
@@ -101,11 +125,9 @@ class State(object):
         for m, v in self._obs.items():
             if m not in other._obs:
                 return False
-
             other_v = other._obs[m]
-            if (v["compromised"] != other_v["compromised"]
-                    or v["reachable"] != other_v["reachable"]):
+            if (v[COMPROMISED] != other_v[COMPROMISED] or v[REACHABLE] != other_v[REACHABLE]):
                 return False
-            if not np.array_equal(v["service_info"], other_v["service_info"]):
+            if not np.array_equal(v[SERVICE_INFO], other_v[SERVICE_INFO]):
                 return False
         return True

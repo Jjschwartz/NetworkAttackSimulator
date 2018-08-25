@@ -69,8 +69,7 @@ class CyberAttackSimulatorEnv(object):
             reachable = False
             if self.network.subnet_exposed(m[0]):
                 reachable = True
-            obs[m] = {"service_info": service_info, "compromised": compromised,
-                      "reachable": reachable}
+            obs[m] = [compromised, reachable, service_info]
         self.current_state = State(obs)
         self.reset_count += 1
         return copy.deepcopy(self.current_state)
@@ -91,8 +90,8 @@ class CyberAttackSimulatorEnv(object):
             return self.current_state, 0 - action.cost, False
 
         # Non-determinism
-        if np.random.random_sample() > action.prob:
-            return self.current_state, 0 - action.cost, False
+        # if np.random.random_sample() > action.prob:
+        #     return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
 
@@ -100,7 +99,10 @@ class CyberAttackSimulatorEnv(object):
         self._update_state(action, success, services)
         done = self.is_goal()
         reward = value - action.cost
-        obs = copy.deepcopy(self.current_state)
+        # obs = copy.deepcopy(self.current_state)
+        # Optimization: return hash of state rather than complete copy
+        # saves cost of copying state each time
+        obs = hash(self.current_state)
         return obs, reward, done
 
     def _update_state(self, action, success, services):

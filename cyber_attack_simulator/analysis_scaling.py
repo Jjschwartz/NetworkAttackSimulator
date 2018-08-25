@@ -82,16 +82,17 @@ def main():
     max_machines = 10
     machine_range = list(range(min_machines, max_machines + 1))
     min_exploits = 1
-    max_exploits = 10
+    max_exploits = 5
     exploit_range = list(range(min_exploits, max_exploits + 1))
     max_episodes = 1000
     max_steps = 1000
     num_runs = 5
-    window = 10
+    window = 50
 
     alpha = 0.1
     gamma = 0.9
-    ucb_sarsa = SarsaAgent("UCB", alpha, gamma)
+    c = 1.0
+    ucb_sarsa = SarsaAgent("UCB", alpha, gamma, c)
 
     results = run_scaling_analysis(ucb_sarsa, machine_range, exploit_range, max_episodes,
                                    max_steps, num_runs, window)

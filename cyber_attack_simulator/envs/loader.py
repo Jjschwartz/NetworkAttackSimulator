@@ -16,8 +16,8 @@ VALID_CONFIG_KEYS = {"subnets": list,
 USER_SUBNET_SIZE = 5
 EXPOSED = 0
 SENSITIVE = 1
-R_SENSITIVE = 9000.0
-R_USER = 5000.0
+R_SENSITIVE = 1000.0
+R_USER = 1000.0
 
 
 def generate_config(num_machines, num_services, r_sensitive=R_SENSITIVE,

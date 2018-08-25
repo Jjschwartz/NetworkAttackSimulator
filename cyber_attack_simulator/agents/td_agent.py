@@ -39,6 +39,9 @@ class TDAgent(Agent):
         self.min_epsilon = min_epsilon
         self.c = c
 
+        self.reset()
+
+    def reset(self):
         # dictionary for storing state-action visits
         self.n_table = dict()
         self.q_table = dict()
@@ -216,10 +219,6 @@ class TDAgent(Agent):
         """
         step = (self.max_epsilon - self.min_epsilon) / num_episodes
         return self.max_epsilon - (step * e)
-
-    def reset(self):
-        self.n_table = dict()
-        self.q_table = dict()
 
     def _choose_greedy_action(self, state, action_space):
         return self._choose_action(state, action_space)

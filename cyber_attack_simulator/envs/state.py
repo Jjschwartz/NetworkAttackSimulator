@@ -1,5 +1,4 @@
 import numpy as np
-import json
 
 
 # index of each state variable in state list
@@ -16,7 +15,7 @@ class State(object):
         - OrderedDict obs : a dictionary with the address of each machine as the
             key and values being a list of values of state variables
 
-    State of a machine:
+    State variables:
         - Defined by :
             1. service_info : list of ServiceState, for each service
             2. compromised : True/False
@@ -123,9 +122,9 @@ class State(object):
         if len(self._obs) != len(other._obs):
             return False
         for m, v in self._obs.items():
-            if m not in other._obs:
+            other_v = other._obs.get(m)
+            if other_v is None:
                 return False
-            other_v = other._obs[m]
             if (v[COMPROMISED] != other_v[COMPROMISED] or v[REACHABLE] != other_v[REACHABLE]):
                 return False
             if not np.array_equal(v[SERVICE_INFO], other_v[SERVICE_INFO]):

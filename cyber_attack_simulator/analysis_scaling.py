@@ -3,7 +3,6 @@ This module contains functions for performing an analysis of the performance of 
 algorithms versus the problem size (number of machines and exploits)
 """
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
-import cyber_attack_simulator.envs.loader as loader
 from cyber_attack_simulator.agents.sarsa import SarsaAgent
 import time
 import numpy as np
@@ -26,8 +25,7 @@ def run_scaling_analysis(agent, machine_range, exploit_range, num_episodes,
             print("\n>> Machines={0}, Exploits={1}".format(m, e))
             run_rewards = []
             run_times = []
-            config = loader.generate_config(m, e)
-            env = CyberAttackSimulatorEnv(config)
+            env = CyberAttackSimulatorEnv.from_params(m, e)
             for run in range(num_runs):
                 print("Run {0} of {1}".format(run, num_runs))
                 agent.reset()

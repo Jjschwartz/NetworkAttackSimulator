@@ -1,12 +1,12 @@
 from enum import Enum
 from collections import OrderedDict
-import copy
 import sys
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
 from cyber_attack_simulator.envs.render import Viewer
+import cyber_attack_simulator.envs.loader as loader
 
 
 class CyberAttackSimulatorEnv(object):
@@ -49,6 +49,41 @@ class CyberAttackSimulatorEnv(object):
             self.address_space, config["services"], exploit_probs)
         self.reset()
 
+    @classmethod
+    def from_file(cls, path, exploit_probs=1.0, static=True):
+        """
+        Construct a new Cyber Attack Simulator Environment from a config file.
+
+        Arguments:
+            str path : path to the config file
+            None, int or list  exploit_probs :  success probability of exploits
+            bool static : whether the network changes each episode or not
+
+        Returns:
+            CyberAttackSimulatorEnv env : a new environment object
+        """
+        config = loader.load_config(path)
+        return cls(config, exploit_probs, static)
+
+    @classmethod
+    def from_params(cls, num_machines, num_services, exploit_probs=1.0, static=True):
+        """
+        Construct a new Cyber Attack Simulator Environment from a auto generated network based on
+        number of machines and services.
+
+        Arguments:
+            int num_machines : number of machines to include in network (minimum is 3)
+            int num_exploits : number of exploits (and hence services) to use in environment
+                (minimum is 1)
+            None, int or list  exploit_probs :  success probability of exploits
+            bool static : whether the network changes each episode or not
+
+        Returns:
+            CyberAttackSimulatorEnv env : a new environment object
+        """
+        config = loader.generate_config(num_machines, num_services)
+        return cls(config, exploit_probs, static)
+
     def reset(self):
         """
         Reset the state of the environment and returns the initial observation.
@@ -72,7 +107,7 @@ class CyberAttackSimulatorEnv(object):
             obs[m] = [compromised, reachable, service_info]
         self.current_state = State(obs)
         self.reset_count += 1
-        return copy.deepcopy(self.current_state)
+        return hash(self.current_state)
 
     def step(self, action):
         """
@@ -97,11 +132,9 @@ class CyberAttackSimulatorEnv(object):
 
         value = 0 if self.current_state.compromised(action.target) else value
         self._update_state(action, success, services)
-        done = self.is_goal()
+        done = self._is_goal()
         reward = value - action.cost
-        # obs = copy.deepcopy(self.current_state)
-        # Optimization: return hash of state rather than complete copy
-        # saves cost of copying state each time
+        # Optimization: return hash of state rather than complete copy saves cost of copying state
         obs = hash(self.current_state)
         return obs, reward, done
 
@@ -146,7 +179,7 @@ class CyberAttackSimulatorEnv(object):
             if self.network.subnets_connected(comp_subnet, m_subnet):
                 self.current_state.set_reachable(m)
 
-    def is_goal(self):
+    def _is_goal(self):
         """
         Check if the current state is the goal state.
         The goal state is  when all sensitive documents have been collected

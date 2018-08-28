@@ -1,5 +1,4 @@
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
-import cyber_attack_simulator.envs.loader as loader
 from cyber_attack_simulator.agents.sarsa import SarsaAgent
 from cyber_attack_simulator.agents.q_learning import QLearningAgent
 
@@ -13,15 +12,14 @@ def main():
     static = True
     num_machines = 15
     num_services = 5
-    config = loader.generate_config(num_machines, num_services)
+    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, exploit_probs, static)
     # 100 episodes, 100 steps
-    # config = loader.load_config(small_config)
+    # config_path = small_config
     # 100 episodes, 100 steps
-    # config = loader.load_config(small_med_config)
+    # config_path = small_med_config)
     # 500 episodes, 200 steps
-    # config = loader.load_config(med_config)
-
-    env = CyberAttackSimulatorEnv(config, exploit_probs, static)
+    # config_path = med_config
+    # env = CyberAttackSimulatorEnv.from_file(config_path, exploit_probs, static)
 
     num_episodes = 1500
     max_steps = 1000

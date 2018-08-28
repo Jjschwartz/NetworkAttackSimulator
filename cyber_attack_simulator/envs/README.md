@@ -10,7 +10,6 @@ The attack terminates in one of the following ways:
 
 The agent receives information about the network topology, specifically:
 1. the machines and subnets in the network
-2. which machines have the sensitive documents
 
 The agent does not know which services are running on which machine, and hence which machines are vulnerable to which exploits.
 
@@ -23,10 +22,10 @@ The actions available to the agent are exploits and scan.
 Each action must be launched against a specific machine, but actions will only possibly work on machines that are reachable.
 
 A machine is reachable if:
-1. it is on exposed subnet (subnet 1 by default) (i.e. this would be the machines available to public, e.g. webserver)
-2. it is on a subnet reachable from a machine on connected subnet that has been successfuly compromised by agent
+1. it is on exposed subnet (i.e. this would be the machines available to public, e.g. webserver)
+2. it is on a subnet connected to a compromised subnet, where a subnet is considered compromised when at least one machine within it has been compromised by agent
 
-# Dependencies
+## Dependencies
 - Python >3.5
 - Numpy
 
@@ -37,11 +36,10 @@ For rendering:
 ## Specifying an environment
 
 The environment is defined by:
-- number of subnets
-- how many machines on each subnet
-- the connectivity of each subnet (i.e. which subnets are connected to each other, which are connected to the public internet)
-- the possible services running
-- the exploits - which service and their success probability
+- number of subnets and how many machines on each subnet
+- Network topology: the connectivity of each subnet (i.e. which subnets are connected to each other, which are connected to the public internet)
+- the number of services available (i.e. how many possible exploits are available)
+- the list of sensitive machines and their value
 
 There are two options for generating a new environement:
 
@@ -56,21 +54,25 @@ The generated network has the following structure:
 - Machines distributed across each subnet following a set rule:
     - exposed (subnet 0) - with one machine
     - sensitive (subnet 1) - with one machine
-    - user (subnet 2+) - all other machines distributed in tree of subnets with each subnet containing up to 5 machines.
+    - user (subnets 2+) - all other machines distributed in tree of subnets with each subnet containing up to 5 machines.
 
 Two machines on network contain Sensitive documents (aka the rewards):
     - One in sensitive subnet machine = r_sensitive
-    - One on machine in leaf subnet of user = r_user
+    - One on machine in a leaf subnet of the user subnets tree = r_user
     - any machine with no sensitive docs = 0
 
 The configurations of each machine (i.e. which services are present/absent) are allocated randomly but deterministically, so that a network initialized with the same number of machines and services will always produce the same network. This is done to keep consistency for agents trained on a given network size.
 
-
-e.g. generate an environment with 3 subnets with 3, 4, 5 machines on each and running a possible 3 services with deterministic exploits
+e.g. To generate an environment with 5 machines and running a possible 3 services with deterministic exploits.
 
 ```
-env = CyberAttackSimulatorEnv([3, 4, 5], 3, deterministic=True)
+env = CyberAttackSimulatorEnv.from_params(5, 3)
 ```
+
+This will produce a network with 3 subnets:
+    1. subnet 0: containing 1 machine, exposed to public and connected to subnets 1 & 2
+    2. subnet 1: containing 1 machine with sensitive info (r_sensitive) and connected to subnets 1 & 2 (but not public)
+    3. subnet 2: containing 3 machines, 1 which has sensitive info (r_user) and connected to subnets 1 & 2 (but not public)
 
 The generated environment will follow a predictable network topology with the first subnet bieng the public subnet accessible from outside and which is connected to the 2nd and 3rd subnets. The 2nd and 3rd subnets are also connected, and any remaining subnets are connected in a tree structure from the 3rd subnet (i.e. think of these as user subnets).
 
@@ -80,7 +82,7 @@ Generate an environment from a configuration file. The configuration file must b
 - subnets: a list of number of machines in each subnet
 - topology: an adjacency matrix of connections between each subnet and also the outside world
 - services: number of possible services running on any given machine as an integer
-- sensitive_machines: a list of lists where each list is of  addresses of machines on network that contain sensitive information that attacker is aiming to access and the value of information on each machine (as float or int)
+- sensitive_machines: a list of lists where each list is the addresses of machines on network that contain sensitive information and the value of each machine (as float or int)
     - i.e. each list is of form: \[subnetID, machineID, value\]
 
 **Example configuration file:**
@@ -112,19 +114,13 @@ sensitive_machines: [[2, 2, 1000],
                      [3, 1, 500]]
 ```
 
+To load a new environment from a config file use the from_file classmethod:
+```
+env = CyberAttackSimulatorEnv.from_file("path/to/configfile")
+```
 
-## Other future dev todo
-1. Action space class
-    1. to allow for random_choice function
-    2. optimized data structure?
-1. Make it compatible with openAI gym environment
-
-## Ideas for future environment features
-1. Attack abort option
-    * Agent can choose to abort attack in order to avoid detection
-    * Ends episode with agent recieveing only gained rewards
-    * Would be a sub-optimal goal
-1. Non-deterministic actions
-    * exploits may fail with some probability, even when service is present on target machine
-1. Each action produces a certain amount of noise which eventually leads to being caught
-2. Add support for more than 3 subnets and users to specify depth (i.e. number of subnets to traverse to reach goals)
+## Interacting with the environment
+Once an environment has been initialized, interacting with it is easy. There are only a few methods for interaction:
+1. **reset()** : which resets the environment back to the initial state (i.e. no machines compromised and state of each machine is unknown) and returns the initial state
+2. **step(action)** : which takes an action and performs one step in the environment, applying action and returning the new state, a reward and whether the new state is the goal state or not
+3. **render(mode) **: for rendering the environment. See function comments for more details of options. Also see render_episode for rendering an entire episode sequence that can be stepped through action by action.

@@ -2,7 +2,7 @@ import numpy as np
 import time
 from cyber_attack_simulator.agents.agent import Agent
 
-
+# For measuring difference between rewards when checking for convergence
 THRESHOLD = 1e-6
 
 

@@ -21,7 +21,7 @@ R_USER = 1000.0
 
 
 def generate_config(num_machines, num_services, r_sensitive=R_SENSITIVE,
-                    r_user=R_USER, seed=1):
+                    r_user=R_USER):
     """
     Generate the network configuration based on standard formula.
 
@@ -32,7 +32,6 @@ def generate_config(num_machines, num_services, r_sensitive=R_SENSITIVE,
             in environment (minimum is 1)
         float r_sensitive : reward for sensitive subnet documents
         float r_user : reward for user subnet documents
-        int seed : random generator seed
 
     Returns:
         dict config : network configuration as dictionary
@@ -48,6 +47,26 @@ def generate_config(num_machines, num_services, r_sensitive=R_SENSITIVE,
     s_machines = generate_sensitive_machines(subnets, r_sensitive, r_user)
     config["sensitive_machines"] = s_machines
     return config
+
+
+def load_config(file_name):
+    """
+    Load the network configuration from file
+
+    Raises errors if file invalid.
+
+    Arguments:
+        str file_name : path and name of config file
+
+    Returns:
+        dict config : network configuration as dictionary
+    """
+    config = load_yaml_file(file_name)
+    try:
+        check_config_valid(config)
+        return config
+    except (KeyError, TypeError, ValueError) as exc:
+        raise exc
 
 
 def generate_subnets(num_machines):
@@ -129,26 +148,6 @@ def generate_sensitive_machines(subnets, r_sensitive, r_user):
     # second sensitive machine is last machine on last USER network
     sensitive_machines.append([len(subnets) - 1, subnets[-1] - 1, r_user])
     return sensitive_machines
-
-
-def load_config(file_name):
-    """
-    Load the network configuration from file
-
-    Raises errors if file invalid.
-
-    Arguments:
-        str file_name : path and name of config file
-
-    Returns:
-        dict config : network configuration as dictionary
-    """
-    config = load_yaml_file(file_name)
-    try:
-        check_config_valid(config)
-        return config
-    except (KeyError, TypeError, ValueError) as exc:
-        raise exc
 
 
 def load_yaml_file(file_name):

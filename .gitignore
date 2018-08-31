@@ -7,4 +7,6 @@ cyber_attack_simulator/figures/
 
 cyber_attack_simulator/results/
 
+cyber_attack_simulator/prof/
+
 *.cprof

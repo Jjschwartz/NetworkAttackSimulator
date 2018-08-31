@@ -23,7 +23,7 @@ class Action(object):
         Initialize a new action
 
         Arguments:
-            tuple target : address of target
+            (int, int) target : address of target
             str type : either "scan" or "exploit"
             int service : the target service for an exploit
             float prob : probability of success for a given action

@@ -31,7 +31,6 @@ class Network(object):
             int seed : random number generator seed
         """
         self.config = config
-
         self.subnets = config["subnets"]
         self.topology = config["topology"]
         self.num_services = config["services"]
@@ -65,35 +64,6 @@ class Network(object):
                 machine = Machine(address, cfg, value)
                 machines[address] = machine
         return machines
-
-    def _possible_machine_configs(self, ns):
-        """
-        Generate set of all possible machine service configurations based
-        on number of exploits/services in environment.
-
-        Note: Each machine is vulnerable to at least one exploit, so there is
-        no configuration where all services are absent.
-
-        Argument:
-            int ns : number of possible services on machines
-
-        Returns:
-            ndarray configs : numpy array of all possible configurations, where
-                each configuration is a list of bools corresponding to the
-                presence or absence of a service
-        """
-        # remove last permutation which is all False
-        configs = permutations(ns)[:-1]
-        return np.asarray(configs)
-
-    def _get_machine_value(self, address):
-        """
-        Get the value of machine at given address
-        """
-        for m in self.sensitive_machines:
-            if m[0] == address[0] and m[1] == address[1]:
-                return float(m[2])
-        return 0.0
 
     def perform_action(self, action):
         """
@@ -132,16 +102,6 @@ class Network(object):
             list address_space : a list of all machine addresses
         """
         return list(self.machines.keys())
-
-    def _get_sensitive_addresses(self):
-        """
-        Get addresses of machines which contain sensitive machines, to store
-        for later efficiency
-        """
-        sensitive_addresses = []
-        for m in self.sensitive_machines:
-            sensitive_addresses.append((m[0], m[1]))
-        return sensitive_addresses
 
     def get_sensitive_machines(self):
         """
@@ -192,6 +152,45 @@ class Network(object):
             bool exposed : True if subnet is publicly exposed
         """
         return self.topology[subnet][0] == 1
+
+    def _possible_machine_configs(self, ns):
+        """
+        Generate set of all possible machine service configurations based
+        on number of exploits/services in environment.
+
+        Note: Each machine is vulnerable to at least one exploit, so there is
+        no configuration where all services are absent.
+
+        Argument:
+            int ns : number of possible services on machines
+
+        Returns:
+            ndarray configs : numpy array of all possible configurations, where
+                each configuration is a list of bools corresponding to the
+                presence or absence of a service
+        """
+        # remove last permutation which is all False
+        configs = permutations(ns)[:-1]
+        return np.asarray(configs)
+
+    def _get_sensitive_addresses(self):
+        """
+        Get addresses of machines which contain sensitive machines, to store
+        for later efficiency
+        """
+        sensitive_addresses = []
+        for m in self.sensitive_machines:
+            sensitive_addresses.append((m[0], m[1]))
+        return sensitive_addresses
+
+    def _get_machine_value(self, address):
+        """
+        Get the value of machine at given address
+        """
+        for m in self.sensitive_machines:
+            if m[0] == address[0] and m[1] == address[1]:
+                return float(m[2])
+        return 0.0
 
     def __str__(self):
         output = "Network:\n"

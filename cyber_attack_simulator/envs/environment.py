@@ -221,6 +221,16 @@ class CyberAttackSimulatorEnv(object):
             print("Please choose correct render mode: {0}".format(
                 self.rendering_modes))
 
+    def render_episode(self, episode):
+        """
+        Render an episode as sequence of network graphs
+
+        Arguments:
+            list episode : ordered list of (State, Action, reward) tuples from
+                each timestep taken during episode
+        """
+        Viewer(episode, self.network)
+
     def _render_asci(self):
         outfile = sys.stdout
 
@@ -280,32 +290,6 @@ class CyberAttackSimulatorEnv(object):
                 (self.network.is_sensitive_machine(m)))
         sys.stdout.write(output)
 
-    def minumum_actions(self):
-        """
-        Return minimum possible number of actions to reach goal, assuming
-        deterministic actions (i.e. they work first shot)
-
-        Returns:
-            int n: optimal number of actions to reach goal
-        """
-        num_machines = len(self.address_space)
-        num_subnets = np.ceil((num_machines - 2) / 5)
-        user_depth = np.floor(np.log2(num_subnets)) + 1
-        if self.num_services > 1:
-            return 2 + 2 + 2 * user_depth
-        # 1 for public net, 1 for subnet 2, user depth for user subnet
-        return 1 + 1 + user_depth
-
-    def render_episode(self, episode):
-        """
-        Render an episode as sequence of network graphs
-
-        Arguments:
-            list episode : ordered list of (State, Action, reward) tuples from
-                each timestep taken during episode
-        """
-        Viewer(episode, self.network)
-
     def __str__(self):
         output = "Environment: "
         output += "Subnets = {}, ".format(self.network.subnets)
@@ -319,6 +303,12 @@ class CyberAttackSimulatorEnv(object):
         return output
 
     def outfile_name(self):
+        """
+        Generate name for environment for use when writing to a file.
+
+        Output format:
+            <list of size of each subnet>_<number of services>_<det or stoch>
+        """
         output = "{}_".format(self.network.subnets)
         output += "{}_".format(self.num_services)
         if self.exploit_probs is None or type(self.exploit_probs) is list:

@@ -18,8 +18,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.ads_space = self.network.get_address_space()
 
     def get_env(self, nM, nS):
-        config = loader.generate_config(nM, nS)
-        env = CyberAttackSimulatorEnv(config)
+        env = CyberAttackSimulatorEnv.from_params(nM, nS)
         return env
 
     def test_reset1(self):

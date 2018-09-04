@@ -24,7 +24,7 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, config, exploit_probs=1.0, static=True):
+    def __init__(self, config, exploit_probs=1.0):
         """
         Construct a new environment and network
 
@@ -34,11 +34,9 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             dict config : network configuration
             None, int or list  exploit_probs :  success probability of exploits
-            bool static : whether the network changes each episode or not
         """
         self.config = config
         self.exploit_probs = exploit_probs
-        self.static = static
         self.seed = 1
         self.reset_count = 0
 
@@ -50,23 +48,22 @@ class CyberAttackSimulatorEnv(object):
         self.reset()
 
     @classmethod
-    def from_file(cls, path, exploit_probs=1.0, static=True):
+    def from_file(cls, path, exploit_probs=1.0):
         """
         Construct a new Cyber Attack Simulator Environment from a config file.
 
         Arguments:
             str path : path to the config file
             None, int or list  exploit_probs :  success probability of exploits
-            bool static : whether the network changes each episode or not
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.load_config(path)
-        return cls(config, exploit_probs, static)
+        return cls(config, exploit_probs)
 
     @classmethod
-    def from_params(cls, num_machines, num_services, exploit_probs=1.0, static=True):
+    def from_params(cls, num_machines, num_services, exploit_probs=1.0):
         """
         Construct a new Cyber Attack Simulator Environment from a auto generated network based on
         number of machines and services.
@@ -82,7 +79,7 @@ class CyberAttackSimulatorEnv(object):
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.generate_config(num_machines, num_services)
-        return cls(config, exploit_probs, static)
+        return cls(config, exploit_probs)
 
     def reset(self):
         """
@@ -91,10 +88,6 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             dict obs : the intial observation of the network environment
         """
-        if not self.static:
-            # generate new network using different seed
-            self.network.generate_network(self.seed + self.reset_count)
-
         obs = OrderedDict()
         for m in self.address_space:
             # initially the status of services on machine are unknown
@@ -123,10 +116,6 @@ class CyberAttackSimulatorEnv(object):
         """
         if not self.current_state.reachable(action.target):
             return self.current_state, 0 - action.cost, False
-
-        # Non-determinism
-        # if np.random.random_sample() > action.prob:
-        #     return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
 

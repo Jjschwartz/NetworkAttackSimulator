@@ -1,5 +1,4 @@
 import unittest
-from collections import OrderedDict
 from cyber_attack_simulator.envs.action import Action
 
 

@@ -119,17 +119,12 @@ class Analyser(object):
         fout.write("agent,episode,timesteps,reward,time\n")
         for agent, result in self.results.items():
             for e in range(len(result[0])):
-                output = ("{0},{1},{2},{3},{4}\n".format(agent, e,
-                                                         result[0][e],
-                                                         result[1][e],
+                output = ("{0},{1},{2},{3},{4}\n".format(agent, e, result[0][e], result[1][e],
                                                          result[2][e]))
                 fout.write(output)
         fout.close()
 
     def _output_file_name(self, dir, filetype):
-        name = "{0}{1}_{2}_{3}.{4}".format(dir,
-                                           self.env.outfile_name(),
-                                           len(self.agents),
-                                           self.num_runs,
-                                           filetype)
+        name = "{0}{1}_{2}_{3}.{4}".format(dir, self.env.outfile_name(), len(self.agents),
+                                           self.num_runs, filetype)
         return name

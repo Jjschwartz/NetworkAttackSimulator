@@ -15,8 +15,8 @@ from mpl_toolkits.mplot3d import Axes3D
 RESULTDIR = "results/"
 
 
-def run_scaling_analysis(agent, machine_range, exploit_range, num_episodes,
-                         max_steps, num_runs, window):
+def run_scaling_analysis(agent, machine_range, exploit_range, num_episodes, max_steps, num_runs,
+                         window):
 
     print("Running scaling analysis for agent: \n\t {0}".format(str(agent)))
     results = []

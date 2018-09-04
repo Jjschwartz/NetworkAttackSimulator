@@ -38,7 +38,6 @@ class TDAgent(Agent):
         self.max_epsilon = max_epsilon
         self.min_epsilon = min_epsilon
         self.c = c
-
         self.reset()
 
     def reset(self):
@@ -46,7 +45,7 @@ class TDAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
-    def train(self, env, num_episodes=100, max_steps=100, window=10, verbose=False):
+    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
         if verbose:
             print("{0} {1} agent: Starting training for {1} episodes"
                   .format(self.algorithm, self.type, num_episodes))
@@ -55,9 +54,6 @@ class TDAgent(Agent):
         episode_timesteps = []
         episode_rewards = []
         episode_times = []
-
-        # queue to track last window epsisode rewards for convergence checking
-        r_trace = np.zeros(num_episodes)
 
         if self.type == "UCB":
             param = self.c
@@ -79,17 +75,6 @@ class TDAgent(Agent):
             if verbose:
                 self.report_progress(e, num_episodes / 10, episode_timesteps)
 
-            new_reward = self.evaluate_agent(env, max_steps)
-            r_trace[e] = new_reward
-            if e > window * 2:
-                old_avg = np.mean(r_trace[e - (2 * window): e - window])
-                new_avg = np.mean(r_trace[e - window: e])
-                if abs(new_avg - old_avg) < THRESHOLD:
-                    if verbose:
-                        print("{0} {1} agent: Converged after {2} episodes"
-                              .format(self.algorithm, self.type, e))
-                    break
-
         if verbose:
             print("{0} {1} agent: Training complete after {2} episodes"
                   .format(self.algorithm, self.type, e))
@@ -107,7 +92,6 @@ class TDAgent(Agent):
         Returns:
             int ep_timesteps : number of timesteps taken for epidode
             int ep_reward : reward achieved for episode
-            float ep_time : time taken for episode
         """
         raise NotImplementedError
 
@@ -188,7 +172,6 @@ class TDAgent(Agent):
         """
         if state not in self.q_table:
             self.q_table[state] = np.zeros(len(action_space))
-
         if action is None:
             return self.q_table[state]
         return self.q_table[state][action]

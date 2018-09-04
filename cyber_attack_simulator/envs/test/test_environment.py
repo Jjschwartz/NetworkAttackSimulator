@@ -28,7 +28,7 @@ class EnvironmentTestCase(unittest.TestCase):
 
     def test_reset2(self):
         t_action = Action(self.ads_space[0], "scan")
-        o, _, _, _ = self.env.step(t_action)
+        o, _, _ = self.env.step(t_action)
         self.env.reset()
         actual_obs = self.env.reset()
         expected_obs = self.get_initial_expected_obs()
@@ -37,7 +37,7 @@ class EnvironmentTestCase(unittest.TestCase):
     def test_step_not_reachable(self):
         t_action = Action(self.ads_space[1], "scan")
         expected_obs = self.env.reset()
-        o, r, d, _ = self.env.step(t_action)
+        o, r, d = self.env.step(t_action)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
         self.assertEqual(o, expected_obs)
@@ -45,7 +45,7 @@ class EnvironmentTestCase(unittest.TestCase):
     def test_step_scan_reachable(self):
         t_action = Action(self.ads_space[0], "scan")
         expected_obs = self.env.reset()
-        o, r, d, _ = self.env.step(t_action)
+        o, r, d = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
@@ -54,7 +54,7 @@ class EnvironmentTestCase(unittest.TestCase):
     def test_step_exploit_reachable(self):
         t_action = Action(self.ads_space[0], "exploit", 0)
         expected_obs = self.env.reset()
-        o, r, d, _ = self.env.step(t_action)
+        o, r, d = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
         self.assertEqual(r, -t_action.cost)
         self.assertFalse(d)
@@ -67,7 +67,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
 
         t_action2 = Action(self.ads_space[1], "exploit", 0)
-        o, r, d, _ = self.env.step(t_action2)
+        o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
         self.assertEqual(r, loader.R_SENSITIVE - t_action.cost)
@@ -81,7 +81,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
 
         t_action2 = Action(self.ads_space[2], "exploit", 0)
-        o, r, d, _ = self.env.step(t_action2)
+        o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
         self.assertEqual(r, loader.R_USER - t_action.cost)
@@ -95,11 +95,11 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
 
         t_action1 = Action(self.ads_space[1], "exploit", 0)
-        o, r, d, _ = self.env.step(t_action1)
+        o, r, d = self.env.step(t_action1)
         self.update_obs(t_action1, expected_obs, True)
 
         t_action2 = Action(self.ads_space[2], "exploit", 0)
-        o, r, d, _ = self.env.step(t_action2)
+        o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
         self.assertTrue(d)
@@ -112,10 +112,10 @@ class EnvironmentTestCase(unittest.TestCase):
         self.update_obs(t_action, expected_obs, True)
 
         t_action2 = Action(self.ads_space[2], "exploit", 0)
-        o, r, d, _ = self.env.step(t_action2)
+        o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
-        o, r, d, _ = self.env.step(t_action2)
+        o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
         self.assertEqual(r, 0 - t_action.cost)

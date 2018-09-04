@@ -15,11 +15,13 @@ class QLearningAgent(TDAgent):
         """
         Initialize a new Q-learning agent
         """
-        super(QLearningAgent, self).__init__(type, alpha, gamma, max_epsilon,
-                                             min_epsilon, c)
+        super(QLearningAgent, self).__init__(type, alpha, gamma, max_epsilon, min_epsilon, c)
         self.algorithm = "Q-learning"
 
     def _run_episode(self, env, max_steps, param):
+        """
+        Train the agent for a single episode using Q-learning algorithm
+        """
         a_space = env.action_space
         s = env.reset()
         ep_reward = 0

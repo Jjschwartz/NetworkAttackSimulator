@@ -9,6 +9,11 @@ from cyber_attack_simulator.envs.render import Viewer
 import cyber_attack_simulator.envs.loader as loader
 
 
+# Default reward when generating a network from paramaters
+R_SENSITIVE = 1000.0
+R_USER = 1000.0
+
+
 class CyberAttackSimulatorEnv(object):
     """
     A simple simulated computer network with subnetworks and machines with
@@ -63,22 +68,24 @@ class CyberAttackSimulatorEnv(object):
         return cls(config, exploit_probs)
 
     @classmethod
-    def from_params(cls, num_machines, num_services, exploit_probs=1.0):
+    def from_params(cls, num_machines, num_services, r_sensitive=R_SENSITIVE, r_user=R_USER,
+                    exploit_probs=1.0):
         """
         Construct a new Cyber Attack Simulator Environment from a auto generated network based on
         number of machines and services.
 
         Arguments:
             int num_machines : number of machines to include in network (minimum is 3)
-            int num_exploits : number of exploits (and hence services) to use in environment
-                (minimum is 1)
+            int num_services : number of services to use in environment (minimum is 1)
+            float r_sensitive : reward for sensitive subnet documents
+            float r_user : reward for user subnet documents
             None, int or list  exploit_probs :  success probability of exploits
             bool static : whether the network changes each episode or not
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
-        config = loader.generate_config(num_machines, num_services)
+        config = loader.generate_config(num_machines, num_services, r_sensitive, r_user)
         return cls(config, exploit_probs)
 
     def reset(self):
@@ -91,8 +98,7 @@ class CyberAttackSimulatorEnv(object):
         obs = OrderedDict()
         for m in self.address_space:
             # initially the status of services on machine are unknown
-            service_info = np.full(self.num_services, Service.unknown,
-                                   Service)
+            service_info = np.full(self.num_services, Service.unknown, Service)
             compromised = False
             reachable = False
             if self.network.subnet_exposed(m[0]):
@@ -100,7 +106,7 @@ class CyberAttackSimulatorEnv(object):
             obs[m] = [compromised, reachable, service_info]
         self.current_state = State(obs)
         self.reset_count += 1
-        return hash(self.current_state)
+        return self.current_state.copy()
 
     def step(self, action):
         """
@@ -124,7 +130,7 @@ class CyberAttackSimulatorEnv(object):
         done = self._is_goal()
         reward = value - action.cost
         # Optimization: return hash of state rather than complete copy saves cost of copying state
-        obs = hash(self.current_state)
+        obs = self.current_state.copy()
         return obs, reward, done
 
     def _update_state(self, action, success, services):

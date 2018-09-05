@@ -1,7 +1,5 @@
 import unittest
-import copy
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
-import cyber_attack_simulator.envs.loader as loader
 
 
 class ActionTestCase(unittest.TestCase):
@@ -13,12 +11,11 @@ class ActionTestCase(unittest.TestCase):
         self.init_state = self.env.reset()
 
     def get_env(self, nM, nS):
-        config = loader.generate_config(nM, nS)
-        env = CyberAttackSimulatorEnv(config)
+        env = CyberAttackSimulatorEnv.from_params(nM, nS)
         return env
 
-    def test_state_deepcopy(self):
-        state_copy = copy.deepcopy(self.init_state)
+    def test_state_copy(self):
+        state_copy = self.init_state.copy()
         self.assertFalse(state_copy is self.init_state)
         self.assertTrue(state_copy == self.init_state)
 

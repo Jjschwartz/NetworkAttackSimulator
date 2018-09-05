@@ -1,6 +1,11 @@
 import numpy as np
 from collections import OrderedDict
+from collections import deque
 from cyber_attack_simulator.envs.machine import Machine
+
+
+# column in topology adjacency matrix that represents connection between subnet and public
+EXPOSED_COL = 0
 
 
 class Network(object):
@@ -30,7 +35,6 @@ class Network(object):
             dict config : network configuration
             int seed : random number generator seed
         """
-        self.config = config
         self.subnets = config["subnets"]
         self.topology = config["topology"]
         self.num_services = config["services"]
@@ -151,7 +155,26 @@ class Network(object):
         Returns:
             bool exposed : True if subnet is publicly exposed
         """
-        return self.topology[subnet][0] == 1
+        return self.topology[subnet][EXPOSED_COL] == 1
+
+    def get_number_of_subnets(self):
+        """
+        Returns the number of subnets on network
+
+        Returns:
+            int num_subnets : number of subnets on network
+        """
+        return len(self.subnets)
+
+    def get_subnet_depths(self):
+        """
+        Get the minumum depth of each subnet in the network graph in terms of steps from an exposed
+        subnet to each subnet
+
+        Returns:
+            list depths : a list of depth of each subnet ordered by subnet index in topology
+        """
+        return min_subnet_depth(self.topology)
 
     def _possible_machine_configs(self, ns):
         """
@@ -199,6 +222,43 @@ class Network(object):
         output += "Services = " + str(self.num_services) + "\n"
         output += "Sensitive machines = " + str(self.sensitive_machines)
         return output
+
+
+def min_subnet_depth(topology):
+    """
+    Find the minumum depth of each subnet in the network graph in terms of steps from an exposed
+    subnet to each subnet
+
+    Arguments:
+        2D matrix topology : An adjacency matrix representing the network, with first coloumn
+                             representing connection between subnet and public
+
+    Returns:
+        list depths : a list of depth of each subnet ordered by subnet index in topology
+    """
+    num_subnets = len(topology)
+
+    assert len(topology[0]) == num_subnets + 1
+
+    depths = []
+    Q = deque()
+    for subnet in range(num_subnets):
+        if topology[subnet][EXPOSED_COL] == 1:
+            depths.append(0)
+            Q.appendleft(subnet)
+        else:
+            depths.append(float('inf'))
+
+    while len(Q) > 0:
+        parent = Q.pop()
+        for child in range(num_subnets):
+            # +1 since one column for exposed connection
+            if topology[parent][child + 1] == 1:
+                # child is connected to parent
+                if depths[child] > depths[parent] + 1:
+                    depths[child] = depths[parent] + 1
+                    Q.appendleft(child)
+    return depths
 
 
 def permutations(n):

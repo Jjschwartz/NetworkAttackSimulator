@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
+from cyber_attack_simulator.envs.network import min_subnet_depth
 from cyber_attack_simulator.envs.loader import R_SENSITIVE
 from cyber_attack_simulator.envs.loader import R_USER
 from cyber_attack_simulator.envs.loader import generate_config
@@ -139,6 +140,19 @@ class NetworkTestCase(unittest.TestCase):
         # 4 & 5 not connected
         self.assertFalse(network.subnets_connected(4, 5))
         self.assertFalse(network.subnets_connected(5, 4))
+
+    def min_subnet_depth(self):
+        topology = [[1, 1, 1, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 1, 0, 0, 1],
+                    [0, 0, 0, 1, 1, 1, 1, 1],
+                    [1, 0, 0, 0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 1, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 1]]
+
+        expected_depths = [0, 1, 1, 1, 0, 2, 2]
+        actual_depths = min_subnet_depth(topology)
+        self.assertEqual(actual_depths, expected_depths)
 
     def test_print(self):
         m = 20

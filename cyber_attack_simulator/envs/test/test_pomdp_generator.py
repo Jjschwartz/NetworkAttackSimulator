@@ -9,7 +9,7 @@ med_config = config_path + "medium.yaml"
 
 
 def main():
-    generate_pomdp_config(small2_config)
+    generate_pomdp_config(small_config)
 
 
 if __name__ == "__main__":

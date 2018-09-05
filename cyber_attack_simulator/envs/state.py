@@ -1,4 +1,5 @@
 import numpy as np
+from collections import OrderedDict
 
 
 # index of each state variable in state list
@@ -102,6 +103,19 @@ class State(object):
             (int, int) target : the target machine address
         """
         self._obs[target][REACHABLE] = True
+
+    def copy(self):
+        """
+        Return a copy of the state
+
+        Returns:
+            State copy : a copy of this state
+        """
+        obs_copy = OrderedDict()
+        for k, v in self._obs.items():
+            service_info_copy = np.copy(v[SERVICE_INFO])
+            obs_copy[k] = [v[COMPROMISED], v[REACHABLE], service_info_copy]
+        return State(obs_copy)
 
     def __str__(self):
         return str(self._obs)

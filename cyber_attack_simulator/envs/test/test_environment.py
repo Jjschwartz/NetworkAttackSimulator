@@ -2,10 +2,10 @@ import unittest
 from collections import OrderedDict
 import numpy as np
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
+import cyber_attack_simulator.envs.environment as Environment
 from cyber_attack_simulator.envs.environment import Service
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
-import cyber_attack_simulator.envs.loader as loader
 
 
 class EnvironmentTestCase(unittest.TestCase):
@@ -70,7 +70,7 @@ class EnvironmentTestCase(unittest.TestCase):
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
-        self.assertEqual(r, loader.R_SENSITIVE - t_action.cost)
+        self.assertEqual(r, Environment.R_SENSITIVE - t_action.cost)
         self.assertFalse(d)
         self.assertEqual(o, expected_obs)
 
@@ -84,7 +84,7 @@ class EnvironmentTestCase(unittest.TestCase):
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
-        self.assertEqual(r, loader.R_USER - t_action.cost)
+        self.assertEqual(r, Environment.R_USER - t_action.cost)
         self.assertFalse(d)
         self.assertEqual(o, expected_obs)
 
@@ -128,16 +128,9 @@ class EnvironmentTestCase(unittest.TestCase):
             t_service_info = np.full(self.E, Service.unknown, Service)
             t_compromised = False
             t_reachable = False
-            t_sensitive = False
-            t_reachable = False
-            if m[0] == loader.EXPOSED:
+            if self.network.subnet_exposed(m[0]):
                 t_reachable = True
-            if m in self.network.get_sensitive_machines():
-                t_sensitive = True
-            t_obs[m] = {"service_info": t_service_info,
-                        "compromised": t_compromised,
-                        "reachable": t_reachable,
-                        "sensitive": t_sensitive}
+            t_obs[m] = [t_compromised, t_reachable, t_service_info]
         return State(t_obs)
 
     def update_obs(self, action, obs, success):

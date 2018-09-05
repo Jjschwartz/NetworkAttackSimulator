@@ -9,24 +9,26 @@ med_config = "configs/medium.yaml"
 
 
 def main():
+    generate_env = False
     exploit_probs = 1.0
-    static = True
-    num_machines = 5
-    num_services = 3
-    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, exploit_probs, static)
-    # 100 episodes, 100 steps
-    # config_path = small_config
-    # 100 episodes, 100 steps
-    # config_path = small_med_config)
-    # 500 episodes, 200 steps
-    # config_path = med_config
-    # env = CyberAttackSimulatorEnv.from_file(config_path, exploit_probs, static)
 
-    num_episodes = 100
-    max_steps = 100
-    num_runs = 1
-    window = 10
-    verbose = True
+    if generate_env:
+        num_machines = 5
+        num_services = 3
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, exploit_probs)
+    else:
+        # 100 episodes, 100 steps
+        config_path = small_config
+        # 100 episodes, 100 steps
+        # config_path = small_med_config
+        # 500 episodes, 200 steps
+        # config_path = med_config
+        env = CyberAttackSimulatorEnv.from_file(config_path, exploit_probs)
+
+    num_episodes = 500
+    max_steps = 200
+    num_runs = 50
+    verbose = False
 
     alpha = 0.1
     gamma = 0.9
@@ -34,13 +36,15 @@ def main():
     egreedy_sarsa = SarsaAgent("egreedy", alpha, gamma)
     ucb_q = QLearningAgent("UCB", alpha, gamma)
     egreedy_q = QLearningAgent("egreedy", alpha, gamma)
-    # agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
+    agents = [ucb_sarsa, egreedy_sarsa, ucb_q, egreedy_q]
     # agents = [ucb_sarsa, egreedy_sarsa]
-    agents = []
-    for i in range(1, 10):
-        agents.append(SarsaAgent("UCB", i*alpha, gamma))
+    # agents = [ucb_q]
 
-    analyser = Analyser(env, agents, num_episodes, max_steps, num_runs, window)
+    # agents = []
+    # for i in range(1, 10):
+    #     agents.append(SarsaAgent("UCB", i*alpha, gamma))
+
+    analyser = Analyser(env, agents, num_episodes, max_steps, num_runs)
     analyser.run_analysis(verbose)
     analyser.output_results()
     analyser.plot_results()

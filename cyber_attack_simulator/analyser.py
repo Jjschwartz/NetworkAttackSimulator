@@ -13,7 +13,7 @@ FIGUREDIR = "figures/"
 
 class Analyser(object):
 
-    def __init__(self, env, agents, num_episodes, max_steps, num_runs, window=10):
+    def __init__(self, env, agents, num_episodes, max_steps, num_runs):
         """
         Initialize for given network configuraiton and set of agents
 
@@ -23,16 +23,12 @@ class Analyser(object):
             int num_episodes : number of episodes to train agent for
             int max_steps : max number of steps per episode
             int num_runs : number of runs (i.e. set of episodes) to average results over
-            int window : convergence window (only used when num_runs = 1, otherwise no early
-                stopping for convergenc)
         """
         self.env = env
         self.agents = agents
         self.num_episodes = num_episodes
         self.max_steps = max_steps
         self.num_runs = num_runs
-        self.window = num_episodes if num_runs > 1 else window
-
         self.results = {}
 
     def run_analysis(self, verbose=True):
@@ -56,8 +52,7 @@ class Analyser(object):
             for run in range(self.num_runs):
                 print("Run {0} of {1}".format(run, self.num_runs))
                 agent.reset()
-                s, r, t = agent.train(self.env, self.num_episodes, self.max_steps, self.window,
-                                      verbose)
+                s, r, t = agent.train(self.env, self.num_episodes, self.max_steps, verbose)
                 run_steps.append(s)
                 run_rewards.append(r)
                 run_times.append(t)
@@ -69,25 +64,25 @@ class Analyser(object):
         """
         Plot results of last analysis run
         """
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10, 7))
         title_text = "{0}, runs = {1}".format(self.env, self.num_runs)
         title = fig.suptitle("\n".join(wrap(title_text, 60)))
 
-        ax1 = fig.add_subplot(131)
+        ax1 = fig.add_subplot(141)
         for agent, result in self.results.items():
             ax1.plot(range(len(result[0])), result[0], label=agent)
 
         ax1.set_xlabel("Episodes")
         ax1.set_ylabel("Average Timesteps")
 
-        ax2 = fig.add_subplot(132)
+        ax2 = fig.add_subplot(142)
         for agent, result in self.results.items():
             ax2.plot(range(len(result[1])), result[1], label=agent)
 
         ax2.set_xlabel("Episodes")
         ax2.set_ylabel("Average Rewards")
 
-        ax3 = fig.add_subplot(133)
+        ax3 = fig.add_subplot(143)
         for agent, result in self.results.items():
             times = np.cumsum(result[2])
             ax3.plot(times, result[1], label=agent)
@@ -95,15 +90,17 @@ class Analyser(object):
         ax3.set_xlabel("Average Time (sec)")
         ax3.set_ylabel("Average Rewards")
 
+        ax4 = fig.add_subplot(144)
+        self.env.render_network_graph(initial_state=True, axes=ax4, show=False)
+
         handles, labels = ax3.get_legend_handles_labels()
         n_agents = len(self.agents)
-        fig.legend(handles, labels, loc='lower center', ncol=n_agents // 2)
+        fig.legend(handles, labels, loc='lower center', ncol=n_agents)
 
-        fig.tight_layout()
+        # fig.tight_layout()
         # set position for title and move plots down
         title.set_y(0.95)
-        fig.subplots_adjust(top=0.85, left=0.1, right=0.9,
-                            bottom=0.11 * (n_agents // 2))
+        fig.subplots_adjust(top=0.85, left=0.07, right=0.95, bottom=0.15, wspace=0.52)
         fig_name = self._output_file_name(FIGUREDIR, "png")
         fig.savefig(fig_name)
         plt.show()

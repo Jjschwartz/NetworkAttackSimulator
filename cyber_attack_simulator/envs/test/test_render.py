@@ -26,10 +26,7 @@ def generate_episode(env, actions):
     return episode
 
 
-def test_render_generated_network(nM, nS):
-    E = 1
-    M = 40
-    env = CyberAttackSimulatorEnv.from_params(M, E)
+def test_render_network_graph(env):
     init_state = env.reset()
     viewer = Viewer(env.network)
     # Render on new seperate figure
@@ -43,26 +40,51 @@ def test_render_generated_network(nM, nS):
     plt.close(fig)
 
 
-def test_render_episode():
-
-    actions = [Action((0, 0), "exploit", 0),
-               Action((1, 0), "exploit", 0),
-               Action((2, 1), "exploit", 0),
-               Action((2, 0), "exploit", 0)]
-
-    env = CyberAttackSimulatorEnv.from_file(med_2_config)
+def test_render_episode(env, actions):
     episode = generate_episode(env, actions)
     viewer = Viewer(env.network)
     viewer.render_episode(episode)
+    # test for closing window and rendering a new episode
     viewer.render_episode(episode)
+
+
+def test_render_asci(env, actions):
+    env.render("ASCI")
+    for a in actions:
+        env.step(a)
+        env.render("ASCI")
+
+
+def test_render_readable(env, actions):
+    env.render("readable")
+    for a in actions:
+        env.step(a)
+        env.render("readable")
 
 
 def main():
     """
     Test rendering of a single episode using Viewer class in render module
     """
-    test_render_generated_network(40, 1)
-    test_render_episode()
+    generated_env = True
+    config_file = small_config
+
+    actions = [Action((0, 0), "exploit", 0),
+               Action((1, 0), "exploit", 0),
+               Action((2, 1), "exploit", 0),
+               Action((2, 0), "exploit", 0)]
+
+    if generated_env:
+        E = 1
+        M = 40
+        env = CyberAttackSimulatorEnv.from_params(M, E)
+    else:
+        env = CyberAttackSimulatorEnv.from_file(config_file)
+
+    # test_render_asci(env, actions)
+    # test_render_readable(env, actions)
+    test_render_network_graph(env)
+    # test_render_episode(env, actions)
 
 
 if __name__ == "__main__":

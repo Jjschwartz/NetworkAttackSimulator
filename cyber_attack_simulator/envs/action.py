@@ -1,10 +1,6 @@
 import numpy as np
 
 
-EXPLOIT_COST = 100.0
-SCAN_COST = 100.0
-
-
 class Action(object):
     """
     An action in the environment.
@@ -18,17 +14,19 @@ class Action(object):
             by the (subnet, machine_id) tuple
     """
 
-    def __init__(self, target, type="scan", service=None, prob=1.0):
+    def __init__(self, target, cost, type="scan", service=None, prob=1.0):
         """
         Initialize a new action
 
         Arguments:
             (int, int) target : address of target
+            float cost : cost of performing action
             str type : either "scan" or "exploit"
             int service : the target service for an exploit
             float prob : probability of success for a given action
         """
         self.target = target
+        self.cost = cost
         self.type = type
         self.service = service
         self.prob = prob
@@ -36,17 +34,9 @@ class Action(object):
     def is_scan(self):
         return self.type == "scan"
 
-    @property
-    def cost(self):
-        """
-        The cost of performing the given action
-        """
-        return SCAN_COST if self.is_scan() else EXPLOIT_COST
-
     def __str__(self):
-        return ("Action: target=" + str(self.target[0]) + "." +
-                str(self.target[1]) + ", type=" + self.type + ", service=" +
-                str(self.service))
+        return ("Action: target={0}, cost={1}, type={2}, service={3}".format(
+                    self.target, self.cost, self.type, self.service))
 
     def __hash__(self):
         return hash(self.__str__())
@@ -59,7 +49,7 @@ class Action(object):
         elif self.target != other.target or self.type != other.type:
             return False
         else:
-            return self.service == other.service
+            return self.cost == other.cost and self.service == other.service
 
     def __lt__(self, other):
         """
@@ -76,7 +66,8 @@ class Action(object):
             return self.target < other.target
 
     @staticmethod
-    def generate_action_space(address_space, num_services, exploit_probs=1.0):
+    def generate_action_space(address_space, num_services, exploit_cost, scan_cost,
+                              exploit_probs=1.0):
         """
         Generate the action space for the environment
 
@@ -91,6 +82,8 @@ class Action(object):
         Arguments:
             list address_space : list of addresses for each machine in network
             int num_services : number of possible services running on machines
+            float exploit_cost : cost of performing an exploit action
+            float scan_cost : cost of performing a scan action
             None, int or list  exploit_probs :  success probability of exploits
 
         Returns:
@@ -100,25 +93,21 @@ class Action(object):
             exploit_probs = np.random.random_sample(num_services)
         elif type(exploit_probs) is list:
             if len(exploit_probs) == num_services:
-                raise ValueError("Lengh of exploit probability list must be "
-                                 + "same as number of services")
+                raise ValueError("Lengh of exploit probability list must equal number of services")
             for e in exploit_probs:
                 if e <= 0.0 or e > 1.0:
-                    raise ValueError("Exploit probabilities must be > 0.0 "
-                                     + "and <=1.0")
+                    raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
         else:
             if exploit_probs <= 0.0 or exploit_probs > 1.0:
-                raise ValueError("Exploit probabilities must be > 0.0 and "
-                                 + "<=1.0")
+                raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
             exploit_probs = [exploit_probs] * num_services
 
         action_space = []
         for address in address_space:
-            # add scan
-            scan = Action(address, "scan")
+            scan = Action(address, scan_cost, "scan")
             action_space.append(scan)
             for service in range(num_services):
                 prob = exploit_probs[service]
-                exploit = Action(address, "exploit", service, prob)
+                exploit = Action(address, exploit_cost, "exploit", service, prob)
                 action_space.append(exploit)
         return action_space

@@ -20,7 +20,7 @@ class Agent(object):
         - report_progress
     """
 
-    def train(self, env, num_episodes=100, max_steps=100):
+    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
         """
         The main training method
 
@@ -28,9 +28,12 @@ class Agent(object):
             CyberAttackSimulatorEnv env : the environment to solve
             int num_episodes : number of episodes to run agent for
             int max_steps : max number of steps per episode
+            bool verbose : whether to print progress messages or not
 
         Returns:
-            list(int) timeteps_per_episode : cumulative timesteps per episode
+            list(int) episode_timesteps : timesteps taken per episode
+            list(float) episode_rewards : total reward recieved per episode
+            list(float) episode_times : time taken for each episode
         """
         raise NotImplementedError
 
@@ -56,7 +59,7 @@ class Agent(object):
 
     def generate_episode(self, env, max_steps=100):
         """
-        Generate and episode following the current greed-policy.
+        Generate and episode following the current greedy-policy.
         This method is used to check the current learned policy.
 
         Arguments:
@@ -86,8 +89,7 @@ class Agent(object):
 
     def evaluate_agent(self, env, max_steps=100):
         """
-        Evaluate the current agents policy by running an episode using greedy
-        policy.
+        Evaluate the current agents policy by running an episode using greedy policy.
 
         Arguments:
             CyberAttackSimulatorEnv env : environment to generate episode for

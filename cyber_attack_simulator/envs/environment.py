@@ -11,6 +11,9 @@ import cyber_attack_simulator.envs.loader as loader
 # Default reward when generating a network from paramaters
 R_SENSITIVE = 1000.0
 R_USER = 1000.0
+# Default action costs
+EXPLOIT_COST = 100.0
+SCAN_COST = 100.0
 
 
 class CyberAttackSimulatorEnv(object):
@@ -28,7 +31,7 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, config, exploit_probs=1.0):
+    def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs=1.0):
         """
         Construct a new environment and network
 
@@ -37,6 +40,8 @@ class CyberAttackSimulatorEnv(object):
 
         Arguments:
             dict config : network configuration
+            float exploit_cost : cost of performing an exploit action
+            float scan_cost : cost of performing a scan action
             None, int or list  exploit_probs :  success probability of exploits
         """
         self.config = config
@@ -46,31 +51,33 @@ class CyberAttackSimulatorEnv(object):
         self.num_services = config["services"]
         self.network = Network(config, self.seed)
         self.address_space = self.network.get_address_space()
-        self.action_space = Action.generate_action_space(
-            self.address_space, config["services"], exploit_probs)
+        self.action_space = Action.generate_action_space(self.address_space, config["services"],
+                                                         exploit_cost, scan_cost, exploit_probs)
         self.renderer = Viewer(self.network)
         self.init_state = self._generate_initial_state()
 
         self.reset()
 
     @classmethod
-    def from_file(cls, path, exploit_probs=1.0):
+    def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs=1.0):
         """
         Construct a new Cyber Attack Simulator Environment from a config file.
 
         Arguments:
             str path : path to the config file
+            float exploit_cost : cost of performing an exploit action
+            float scan_cost : cost of performing a scan action
             None, int or list  exploit_probs :  success probability of exploits
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.load_config(path)
-        return cls(config, exploit_probs)
+        return cls(config, exploit_cost, scan_cost, exploit_probs)
 
     @classmethod
     def from_params(cls, num_machines, num_services, r_sensitive=R_SENSITIVE, r_user=R_USER,
-                    exploit_probs=1.0):
+                    exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs=1.0):
         """
         Construct a new Cyber Attack Simulator Environment from a auto generated network based on
         number of machines and services.
@@ -80,13 +87,15 @@ class CyberAttackSimulatorEnv(object):
             int num_services : number of services to use in environment (minimum is 1)
             float r_sensitive : reward for sensitive subnet documents
             float r_user : reward for user subnet documents
+            float exploit_cost : cost of performing an exploit action
+            float scan_cost : cost of performing a scan action
             None, int or list  exploit_probs :  success probability of exploits
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.generate_config(num_machines, num_services, r_sensitive, r_user)
-        return cls(config, exploit_probs)
+        return cls(config, exploit_cost, scan_cost, exploit_probs)
 
     def reset(self):
         """

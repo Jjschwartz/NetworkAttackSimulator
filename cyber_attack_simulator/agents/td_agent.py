@@ -45,7 +45,7 @@ class TDAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
-    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
+    def train(self, env, num_episodes=100, max_steps=100, verbose=False, visualize_policy=0):
         if verbose:
             print("{0} {1} agent: Starting training for {1} episodes"
                   .format(self.algorithm, self.type, num_episodes))
@@ -74,6 +74,11 @@ class TDAgent(Agent):
             episode_times.append(ep_time)
             if verbose:
                 self.report_progress(e, num_episodes / 10, episode_timesteps)
+
+            if e > 0 and e % visualize_policy == 0:
+                gen_episode = self.generate_episode(env, max_steps)
+                print("Visualizing current policy. Episode length = {0}".format(len(gen_episode)))
+                env.render_episode(gen_episode)
 
         if verbose:
             print("{0} {1} agent: Training complete after {2} episodes"

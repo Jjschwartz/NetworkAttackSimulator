@@ -10,6 +10,10 @@ import matplotlib.patches as mpatches
 # Agent node in graph
 AGENT = (-1, -1)
 
+# Colors and symbols for describing state of machine
+COLORS = ['yellow', 'orange', 'magenta', 'green', 'blue', 'red']
+SYMBOLS = ['C', 'R', 'S', 'c', 'r', 'o']
+
 
 class Viewer(object):
     """
@@ -51,6 +55,7 @@ class Viewer(object):
         nx.draw_networkx_nodes(G, self.positions, node_color=colors, ax=axes)
         nx.draw_networkx_edges(G, self.positions)
         axes.axis('off')
+        axes.set_xlim(left=0.0, right=100.0)
 
         if show:
             plt.show()
@@ -71,6 +76,55 @@ class Viewer(object):
         G = self._construct_graph(init_ep_state)
         EpisodeViewer(episode, G, self.network.get_sensitive_machines(), width, height)
 
+    def render_readable(self, state):
+        """
+        Print a readable version of state to stdout
+
+        Arguments:
+            State state : state of network user wants to view (Typically will be initial state)
+        """
+        output = ""
+        for m in self.network.get_address_space():
+            output += "Machine = " + str(m) + " =>\n"
+            output += "\tServices:\n"
+            for s in range(self.network.num_services):
+                service_state = state.service_state(m, s)
+                output += "\t\t{0} = {1}".format(s, str(service_state))
+                output += "\n"
+            output += "\treachable: {0}\n".format(state.reachable(m))
+            output += "\tcompromised: {0}\n".format(state.compromised(m))
+            output += "\tsensitive: {0}\n".format(self.network.is_sensitive_machine(m))
+        print(output)
+
+    def render_asci(self, state):
+        """
+        Render state in ASCI format to stdout
+
+        Arguments:
+            State state : state of network user wants to view (Typically will be initial state)
+        """
+        sensitive_machines = self.network.get_sensitive_machines()
+        subnets = [[] for x in range(len(self.subnets))]
+        for m in self.network.get_address_space():
+            subnets[m[0]].append(get_machine_representation(state, sensitive_machines, m, SYMBOLS))
+
+        max_row_size = max([len(x) for x in subnets])
+        min_row_size = min([len(x) for x in subnets])
+
+        output = "-----------------------------"
+        for i, row in enumerate(subnets):
+            output += "\nsubnet {0}: ".format(i)
+            output += " " * ((max_row_size - len(row)) // 2)
+            for col in row:
+                output += col
+            output += "\n"
+            if i < len(subnets) - 1:
+                n_spaces = (max_row_size - min_row_size) // 2
+                output += " " * (len("subnet X: ") + n_spaces) + "|"
+        output += "-----------------------------\n\n"
+
+        print(output)
+
     def _construct_graph(self, state):
         """
         Create a network graph from the current state
@@ -87,7 +141,7 @@ class Viewer(object):
         # Create a fully connected graph for each subnet
         for subnet in self.subnets:
             for m in subnet:
-                node_color = machine_color(state, sensitive_machines, m)
+                node_color = get_machine_representation(state, sensitive_machines, m, COLORS)
                 node_pos = self.positions[m]
                 G.add_node(m, color=node_color, pos=node_pos)
             for x in subnet:
@@ -267,7 +321,7 @@ class EpisodeViewer(object):
         for m in list(G.nodes):
             if m == AGENT:
                 continue
-            node_color = machine_color(state, self.sensitive_machines, m)
+            node_color = get_machine_representation(state, self.sensitive_machines, m, COLORS)
             G.nodes[m]["color"] = node_color
         return G
 
@@ -313,14 +367,15 @@ class EpisodeViewer(object):
         return legend_entries
 
 
-def machine_color(state, sensitive_machines, m):
+def get_machine_representation(state, sensitive_machines, m, representation):
     """
-    Set machine color based on current state
+    Get the representation of a machine based on current state
 
     Arguments:
         State state : current state
         list sensitive_machines : list of addresses of sensitive machines on network
         (int, int) m : machine address
+        list representation : list of different representations (e.g. color or symbol)
 
     Returns:
         str color : machine color
@@ -330,15 +385,15 @@ def machine_color(state, sensitive_machines, m):
     sensitive = m in sensitive_machines
     if sensitive:
         if compromised:
-            color = 'yellow'
+            output = representation[0]
         elif reachable:
-            color = 'orange'
+            output = representation[1]
         else:
-            color = "magenta"
+            output = representation[2]
     elif compromised:
-        color = 'green'
+        output = representation[3]
     elif reachable:
-        color = 'blue'
+        output = representation[4]
     else:
-        color = 'red'
-    return color
+        output = representation[5]
+    return output

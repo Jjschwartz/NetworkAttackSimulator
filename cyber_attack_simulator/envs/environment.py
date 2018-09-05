@@ -1,6 +1,5 @@
 from enum import Enum
 from collections import OrderedDict
-import sys
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
 from cyber_attack_simulator.envs.action import Action
@@ -43,13 +42,15 @@ class CyberAttackSimulatorEnv(object):
         self.config = config
         self.exploit_probs = exploit_probs
         self.seed = 1
-        self.reset_count = 0
 
         self.num_services = config["services"]
         self.network = Network(config, self.seed)
         self.address_space = self.network.get_address_space()
         self.action_space = Action.generate_action_space(
             self.address_space, config["services"], exploit_probs)
+        self.renderer = Viewer(self.network)
+        self.init_state = self._generate_initial_state()
+
         self.reset()
 
     @classmethod
@@ -80,7 +81,6 @@ class CyberAttackSimulatorEnv(object):
             float r_sensitive : reward for sensitive subnet documents
             float r_user : reward for user subnet documents
             None, int or list  exploit_probs :  success probability of exploits
-            bool static : whether the network changes each episode or not
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
@@ -90,22 +90,12 @@ class CyberAttackSimulatorEnv(object):
 
     def reset(self):
         """
-        Reset the state of the environment and returns the initial observation.
+        Reset the state of the environment and returns the initial state.
 
         Returns:
-            dict obs : the intial observation of the network environment
+            State initial_state : the initial state of the environment
         """
-        obs = OrderedDict()
-        for m in self.address_space:
-            # initially the status of services on machine are unknown
-            service_info = np.full(self.num_services, Service.unknown, Service)
-            compromised = False
-            reachable = False
-            if self.network.subnet_exposed(m[0]):
-                reachable = True
-            obs[m] = [compromised, reachable, service_info]
-        self.current_state = State(obs)
-        self.reset_count += 1
+        self.current_state = self.init_state.copy()
         return self.current_state.copy()
 
     def step(self, action):
@@ -116,7 +106,7 @@ class CyberAttackSimulatorEnv(object):
             Action action : Action object from action_space
 
         Returns:
-            dict obs : agent observation of the network
+            State obs : current state of environment known by agent
             float reward : reward from performing action
             bool done : whether the episode has ended or not
         """
@@ -129,65 +119,9 @@ class CyberAttackSimulatorEnv(object):
         self._update_state(action, success, services)
         done = self._is_goal()
         reward = value - action.cost
-        # Optimization: return hash of state rather than complete copy saves cost of copying state
+        # update current state in place, then return copy since State object is muteable
         obs = self.current_state.copy()
         return obs, reward, done
-
-    def _update_state(self, action, success, services):
-        """
-        Updates the current state of network state based on if action was
-        successful and the gained service info
-
-        Arguments:
-            Action action : the action performed
-            bool success : whether action was successful
-            list services : service info gained from action
-        """
-        target = action.target
-        if action.is_scan() or (not action.is_scan() and success):
-            # 1. scan or successful exploit, all service info gained for target
-            for s in range(len(services)):
-                new_state = Service.present if services[s] else Service.absent
-                self.current_state.update_service(target, s, new_state)
-            if not action.is_scan():
-                # successful exploit so machine compromised
-                self.current_state.set_compromised(target)
-                self._update_reachable(action.target)
-        else:
-            # 2. unsuccessful exploit, targeted service is absent
-            self.current_state.update_service(target, action.service,
-                                              Service.absent)
-
-    def _update_reachable(self, compromised_m):
-        """
-        Updates the reachable status of machines on network, based on current
-        state and newly exploited machine
-
-        Arguments:
-            (int, int) compromised_m : compromised machine address
-        """
-        comp_subnet = compromised_m[0]
-        for m in self.address_space:
-            if self.current_state.reachable(m):
-                continue
-            m_subnet = m[0]
-            if self.network.subnets_connected(comp_subnet, m_subnet):
-                self.current_state.set_reachable(m)
-
-    def _is_goal(self):
-        """
-        Check if the current state is the goal state.
-        The goal state is  when all sensitive documents have been collected
-        (i.e. all rewarded machines have been compromised)
-
-        Returns:
-            bool goal : True if goal state, otherwise False
-        """
-        for sensitive_m in self.network.get_sensitive_machines():
-            if not self.current_state.compromised(sensitive_m):
-                # at least one sensitive machine not compromised
-                return False
-        return True
 
     def render(self, mode="ASCI"):
         """
@@ -209,92 +143,117 @@ class CyberAttackSimulatorEnv(object):
             str mode : rendering mode
         """
         if mode == "ASCI":
-            self._render_asci()
+            self.renderer.render_asci(self.current_state)
         elif mode == "readable":
-            self._render_readable()
+            self.renderer.render_readable(self.current_state)
         else:
-            print("Please choose correct render mode: {0}".format(
-                self.rendering_modes))
+            print("Please choose correct render mode: {0}".format(self.rendering_modes))
 
-    def render_episode(self, episode):
+    def render_episode(self, episode, width=7, height=7):
         """
-        Render an episode as sequence of network graphs
+        Render an episode as sequence of network graphs, where an episode is a sequence of
+        (state, action, reward, done) tuples generated from interactions with environment.
 
         Arguments:
-            list episode : ordered list of (State, Action, reward) tuples from
-                each timestep taken during episode
+            list episode : list of (State, Action, reward, done) tuples
+            int width : width of GUI window
+            int height : height of GUI window
         """
-        Viewer(episode, self.network)
+        self.renderer.render_episode(episode)
 
-    def _render_asci(self):
-        outfile = sys.stdout
+    def render_network_graph(self, initial_state=True, axes=None, show=False):
+        """
+        Render a plot of network as a graph with machines as nodes arranged into subnets and
+        showing connections between subnets
 
-        subnets = [[], [], []]
+        Arguments:
+            bool initial_state : whether to render current or initial state of network
+            Axes axes : matplotlib axes to plot graph on, or None to plot on new axes
+            bool show : whether to display plot, or simply setup plot and showing plot can be
+                        handled elsewhere by user
+        """
+        state = self.init_state if initial_state else self.current_state
+        self.renderer.render_graph(state, axes, show)
+
+    def _generate_initial_state(self):
+        """
+        Generate the initial state of the environment. Initial state is where no machines have been
+        compromised, only exposed subnets are reachable and no information about services has been
+        gained
+
+        Returns:
+            State initial_state : the initial state of the environment
+        """
+        obs = OrderedDict()
         for m in self.address_space:
-            subnets[m[0]].append(self._get_machine_symbol(m))
+            service_info = np.full(self.num_services, Service.unknown, Service)
+            compromised = False
+            reachable = False
+            if self.network.subnet_exposed(m[0]):
+                reachable = True
+            obs[m] = [compromised, reachable, service_info]
+        initial_state = State(obs)
+        return initial_state
 
-        max_row_size = max([len(x) for x in subnets])
-        min_row_size = min([len(x) for x in subnets])
+    def _update_state(self, action, success, services):
+        """
+        Updates the current state of environment based on if action was successful and the gained
+        service info
 
-        output = "-----------------------------"
-        for i, row in enumerate(subnets):
-            output += "\nsubnet {0}: ".format(i)
-            output += " " * ((max_row_size - len(row)) // 2)
-            for col in row:
-                output += col
-            output += "\n"
-            if i < len(subnets) - 1:
-                n_spaces = (max_row_size - min_row_size) // 2
-                output += " " * (len("subnet X: ") + n_spaces) + "|"
-        output += "-----------------------------\n\n"
-
-        outfile.write(output)
-
-    def _get_machine_symbol(self, m):
-        if self.network.is_sensitive_machine(m):
-            if self.current_state.compromised(m):
-                symbol = "C"
-            elif self.current_state.reachable(m):
-                symbol = "R"
-            else:
-                symbol = "S"
-        elif self.current_state.compromised(m):
-            symbol = "c"
-        elif self.current_state.reachable(m):
-            symbol = "r"
+        Arguments:
+            Action action : the action performed
+            bool success : whether action was successful
+            list services : service info gained from action
+        """
+        target = action.target
+        if action.is_scan() or (not action.is_scan() and success):
+            # 1. scan or successful exploit, all service info gained for target
+            for s in range(len(services)):
+                new_state = Service.present if services[s] else Service.absent
+                self.current_state.update_service(target, s, new_state)
+            if not action.is_scan():
+                # successful exploit so machine compromised
+                self.current_state.set_compromised(target)
+                self._update_reachable(action.target)
         else:
-            symbol = "o"
-        return symbol
+            # 2. unsuccessful exploit, targeted service is absent
+            self.current_state.update_service(target, action.service, Service.absent)
 
-    def _render_readable(self):
-        output = ""
+    def _update_reachable(self, compromised_m):
+        """
+        Updates the reachable status of machines on network, based on current state and newly
+        exploited machine
+
+        Arguments:
+            (int, int) compromised_m : compromised machine address
+        """
+        comp_subnet = compromised_m[0]
         for m in self.address_space:
-            output += "Machine = " + str(m) + " =>\n"
+            if self.current_state.reachable(m):
+                continue
+            m_subnet = m[0]
+            if self.network.subnets_connected(comp_subnet, m_subnet):
+                self.current_state.set_reachable(m)
 
-            output += "\tServices:\n"
-            for s in range(self.num_services):
-                service_state = self.current_state.service_state(m, s)
-                output += "\t\t{0} = {1}".format(s, str(service_state))
-                output += "\n"
+    def _is_goal(self):
+        """
+        Check if the current state is the goal state.
+        The goal state is  when all sensitive machines have been compromised
 
-            output += "\treachable: {0}\n".format(
-                self.current_state.reachable(m))
-            output += "\tcompromised: {0}\n".format(
-                self.current_state.compromised(m))
-            output += "\tsensitive: {0}\n".format(
-                (self.network.is_sensitive_machine(m)))
-        sys.stdout.write(output)
+        Returns:
+            bool goal : True if goal state, otherwise False
+        """
+        for sensitive_m in self.network.get_sensitive_machines():
+            if not self.current_state.compromised(sensitive_m):
+                # at least one sensitive machine not compromised
+                return False
+        return True
 
     def __str__(self):
         output = "Environment: "
         output += "Subnets = {}, ".format(self.network.subnets)
         output += "Services = {}, ".format(self.num_services)
-        if self.exploit_probs is None or type(self.exploit_probs) is list:
-            deterministic = False
-        else:
-            deterministic = True if self.exploit_probs == 1.0 else False
-        output += "Deterministic = {}, ".format(deterministic)
-        output += "Static = {}".format(self.static)
+        output += "Exploit Probs = {}".format(self.exploit_probs)
         return output
 
     def outfile_name(self):

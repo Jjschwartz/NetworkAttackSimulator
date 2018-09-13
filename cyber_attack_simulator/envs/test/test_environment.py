@@ -27,7 +27,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(actual_obs, expected_obs)
 
     def test_reset2(self):
-        t_action = Action(self.ads_space[0], "scan")
+        t_action = Action(self.ads_space[0], Environment.SCAN_COST, "scan")
         o, _, _ = self.env.step(t_action)
         self.env.reset()
         actual_obs = self.env.reset()
@@ -35,7 +35,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(actual_obs, expected_obs)
 
     def test_step_not_reachable(self):
-        t_action = Action(self.ads_space[1], "scan")
+        t_action = Action(self.ads_space[1], Environment.SCAN_COST, "scan")
         expected_obs = self.env.reset()
         o, r, d = self.env.step(t_action)
         self.assertEqual(r, -t_action.cost)
@@ -43,7 +43,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_step_scan_reachable(self):
-        t_action = Action(self.ads_space[0], "scan")
+        t_action = Action(self.ads_space[0], Environment.SCAN_COST, "scan")
         expected_obs = self.env.reset()
         o, r, d = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
@@ -52,7 +52,7 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_step_exploit_reachable(self):
-        t_action = Action(self.ads_space[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], Environment.EXPLOIT_COST, "exploit", 0)
         expected_obs = self.env.reset()
         o, r, d = self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
@@ -61,12 +61,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_step_exploit_sensitive(self):
-        t_action = Action(self.ads_space[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], Environment.EXPLOIT_COST, "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.ads_space[1], "exploit", 0)
+        t_action2 = Action(self.ads_space[1], Environment.EXPLOIT_COST, "exploit", 0)
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -75,12 +75,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_step_exploit_user(self):
-        t_action = Action(self.ads_space[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], Environment.EXPLOIT_COST, "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.ads_space[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], Environment.EXPLOIT_COST, "exploit", 0)
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -89,16 +89,16 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_step_done(self):
-        t_action = Action(self.ads_space[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], Environment.EXPLOIT_COST, "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action1 = Action(self.ads_space[1], "exploit", 0)
+        t_action1 = Action(self.ads_space[1], Environment.EXPLOIT_COST, "exploit", 0)
         o, r, d = self.env.step(t_action1)
         self.update_obs(t_action1, expected_obs, True)
 
-        t_action2 = Action(self.ads_space[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], Environment.EXPLOIT_COST, "exploit", 0)
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 
@@ -106,12 +106,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def test_already_rewarded(self):
-        t_action = Action(self.ads_space[0], "exploit", 0)
+        t_action = Action(self.ads_space[0], Environment.EXPLOIT_COST, "exploit", 0)
         expected_obs = self.env.reset()
         self.env.step(t_action)
         self.update_obs(t_action, expected_obs, True)
 
-        t_action2 = Action(self.ads_space[2], "exploit", 0)
+        t_action2 = Action(self.ads_space[2], Environment.EXPLOIT_COST, "exploit", 0)
         o, r, d = self.env.step(t_action2)
         self.update_obs(t_action2, expected_obs, True)
 

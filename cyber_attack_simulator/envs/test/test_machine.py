@@ -3,6 +3,8 @@ import unittest
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.machine import Machine
 
+A_COST = 10
+
 
 class MachineTestCase(unittest.TestCase):
 
@@ -14,7 +16,7 @@ class MachineTestCase(unittest.TestCase):
 
     def test_successful_exploit(self):
         # address is ignored as this is controlled and checked at Network level
-        exploit = Action((1, 1), "exploit", 0)
+        exploit = Action((1, 1), A_COST, "exploit", 0)
 
         # Test on machine with no sensitive docs (i.e. 0 value)
         outcome, reward, services = self.test_m1.perform_action(exploit)
@@ -30,7 +32,7 @@ class MachineTestCase(unittest.TestCase):
 
     def test_unsuccessful_exploit(self):
         # address is ignored as this is controlled and checked at Network level
-        exploit = Action((1, 1), "exploit", 1)
+        exploit = Action((1, 1), A_COST,  "exploit", 1)
 
         # Test on machine with no sensitive docs (i.e. 0 value)
         outcome, reward, services = self.test_m1.perform_action(exploit)
@@ -46,7 +48,7 @@ class MachineTestCase(unittest.TestCase):
 
     def test_scan(self):
         # address is ignored as this is controlled and checked at Network level
-        exploit = Action((1, 1), "scan", None)
+        exploit = Action((1, 1), A_COST, "scan", None)
 
         # Test on machine with no sensitive docs (i.e. 0 value)
         outcome, reward, services = self.test_m1.perform_action(exploit)
@@ -65,6 +67,7 @@ class MachineTestCase(unittest.TestCase):
         s2 = np.asarray([True, False, True])
         m1 = Machine((1, 1), s1)
         m2 = Machine((1, 1), s2)
+        print(m1 == m2)
         self.assertTrue(m1 == m2)
 
         m3 = Machine((1, 1), s1, self.test_r)

@@ -63,4 +63,4 @@ class Machine(object):
             return False
         if self._value != other._value:
             return False
-        return (self._services == other._services).all()
+        return np.equal(self._services, other._services).all()

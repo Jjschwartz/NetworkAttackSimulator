@@ -21,7 +21,7 @@ class Network(object):
         info and also the value (reward) of accessing info
     """
 
-    def __init__(self, config, seed=1):
+    def __init__(self, config, uniform=False, alpha_H=2.0, alpha_V=2.0, lambda_V=1.0, seed=1):
         """
         Construct a new network based on provided configuration.
 
@@ -31,22 +31,57 @@ class Network(object):
             - services
             - sensitive_machines
 
+        Machine Configuration distribution:
+            1. if uniform=True
+                => machine configurations are chosen uniformly at random from set of all valid
+                   possible configurations
+            2. if uniform=False
+                => machine configurations are chosen to be corelated (see below)
+
+        CORELATED CONFIGURATIONS:
+        The distribution of configurations of each machine in the network are generated using a
+        Nested Dirichlet Process, so that across the network machines will have corelated
+        configurations (i.e. certain services/configurations will be more common across machines on
+        the network), the degree of corelation is controlled by alpha_H and alpha_V, with lower
+        values leading to greater corelation.
+
+        lambda_V controls the average number of services running per machine. Higher values will
+        mean more services (so more vulnerable) machines on average.
+
         Arguments:
             dict config : network configuration
+            bool uniform : whether to use uniform distribution of machine configs or corelated
+                           machine configs
+            float alpha_H : (only used when uniform=False), scaling/concentration parameter for
+                            controlling corelation between machine configurations (must be > 0)
+            float alpha_V : (only used when uniform=False) scaling/concentration parameter for
+                            controlling corelation between services across machine configurations
+                            (must be > 0)
+            float lambda_V : (only used when uniform=False) parameter for controlling average
+                             number of services running per machine configuration (must be > 0)
             int seed : random number generator seed
         """
+        assert 0 < alpha_H and 0 < alpha_V and 0 < lambda_V
         self.subnets = config["subnets"]
         self.topology = config["topology"]
         self.num_services = config["services"]
         self.sensitive_machines = config["sensitive_machines"]
-        self.machines = self.generate_network(seed)
+        self.machines = self._generate_network(uniform, alpha_H, alpha_V, lambda_V, seed)
         self.sensitive_addresses = self._get_sensitive_addresses()
 
-    def generate_network(self, seed):
+    def _generate_network(self, uniform, alpha_H, alpha_V, lambda_V, seed):
         """
         Generate the network.
 
         Argument:
+            bool uniform : whether to use uniform distribution of machine configs or corelated
+                           machine configs
+            float alpha_H : scaling/concentration parameter for controlling corelation between
+                            machine configurations
+            float alpha_V : scaling/concentration parameter for controlling corelation between
+                            services across machine configurations
+            float lambda_V : parameter for controlling average number of services running per
+                             machine configuration
             int seed : random number generator seed
 
         Returns:
@@ -57,17 +92,57 @@ class Network(object):
         np.random.seed(seed)
         machines = OrderedDict()
 
-        machine_config_set = self._possible_machine_configs(self.num_services)
-        num_configs = machine_config_set.shape[0]
+        if uniform:
+            machine_config_set = self._possible_machine_configs(self.num_services)
+            num_configs = len(machine_config_set)
+        else:
+            prev_configs = []
+            prev_vuls = []
+            host_num = 0
 
         for subnet, size in enumerate(self.subnets):
             for m in range(size):
-                cfg = machine_config_set[np.random.choice(num_configs)]
+                if uniform:
+                    cfg = machine_config_set[np.random.choice(num_configs)]
+                else:
+                    cfg = self._get_machine_config(host_num, alpha_H, prev_configs, alpha_V,
+                                                   prev_vuls, lambda_V, self.num_services)
+                    host_num += 1
                 address = (subnet, m)
                 value = self._get_machine_value(address)
                 machine = Machine(address, cfg, value)
                 machines[address] = machine
         return machines
+
+    def _get_machine_config(self, host_num, alpha_H, prev_configs, alpha_V, prev_vuls, lambda_V,
+                            num_services):
+
+        if host_num == 0 or np.random.rand() < (alpha_H / (alpha_H + host_num - 1)):
+            # if first host or with prob proportional to alpha_H choose new config
+            new_config = self._sample_config(alpha_V, prev_vuls, lambda_V, num_services)
+        else:
+            # sample uniformly from previous sampled configs
+            new_config = prev_configs[np.random.choice(len(prev_configs))]
+        prev_configs.append(new_config)
+        return new_config
+
+    def _sample_config(self, alpha_V, prev_vuls, lambda_V, num_services):
+        # no services present by default
+        new_config = [False for i in range(num_services)]
+        # randomly get number of times to sample using poission dist in range (0, num_services)
+        # minimum 1 service running
+        n = max(np.random.poisson(lambda_V), 1)
+        # draw n samples from Dirichlet Process (alpha_V, uniform dist of services)
+        for i in range(n):
+            if i == 0 or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
+                # draw randomly from uniform dist over services
+                x = np.random.randint(0, num_services)
+            else:
+                # draw uniformly at random from previous choices
+                x = np.random.choice(prev_vuls)
+            new_config[x] = True
+            prev_vuls.append(x)
+        return new_config
 
     def perform_action(self, action):
         """
@@ -194,7 +269,7 @@ class Network(object):
         """
         # remove last permutation which is all False
         configs = permutations(ns)[:-1]
-        return np.asarray(configs)
+        return configs
 
     def _get_sensitive_addresses(self):
         """

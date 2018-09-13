@@ -1,4 +1,5 @@
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
+from cyber_attack_simulator.envs.environment import EXPLOIT_COST
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.render import Viewer
 # Must import matplotlib this way for compatibility with TKinter
@@ -69,10 +70,10 @@ def main():
     generated_env = True
     config_file = small_config
 
-    actions = [Action((0, 0), "exploit", 0),
-               Action((1, 0), "exploit", 0),
-               Action((2, 1), "exploit", 0),
-               Action((2, 0), "exploit", 0)]
+    actions = [Action((0, 0), EXPLOIT_COST, "exploit", 0),
+               Action((1, 0), EXPLOIT_COST, "exploit", 0),
+               Action((2, 1), EXPLOIT_COST, "exploit", 0),
+               Action((2, 0), EXPLOIT_COST, "exploit", 0)]
 
     if generated_env:
         E = 1
@@ -81,10 +82,10 @@ def main():
     else:
         env = CyberAttackSimulatorEnv.from_file(config_file)
 
-    # test_render_asci(env, actions)
-    # test_render_readable(env, actions)
+    test_render_asci(env, actions)
+    test_render_readable(env, actions)
     test_render_network_graph(env)
-    # test_render_episode(env, actions)
+    test_render_episode(env, actions)
 
 
 if __name__ == "__main__":

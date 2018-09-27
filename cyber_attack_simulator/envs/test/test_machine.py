@@ -67,7 +67,6 @@ class MachineTestCase(unittest.TestCase):
         s2 = np.asarray([True, False, True])
         m1 = Machine((1, 1), s1)
         m2 = Machine((1, 1), s2)
-        print(m1 == m2)
         self.assertTrue(m1 == m2)
 
         m3 = Machine((1, 1), s1, self.test_r)

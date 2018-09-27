@@ -9,9 +9,9 @@ class ActionTestCase(unittest.TestCase):
         self.test_scan_cost = 100.0
         self.E = 1
         self.M = 3
-        m1 = (0, 0)
-        m2 = (1, 0)
-        m3 = (2, 0)
+        m1 = (1, 0)
+        m2 = (2, 0)
+        m3 = (3, 0)
         self.ads_space = [m1, m2, m3]
 
     def test_action_space(self):

@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 # Agent node in graph
-AGENT = (-1, -1)
+AGENT = (0, 0)
 
 # Colors and symbols for describing state of machine
-COLORS = ['yellow', 'orange', 'magenta', 'green', 'blue', 'red']
-SYMBOLS = ['C', 'R', 'S', 'c', 'r', 'o']
+COLORS = ['yellow', 'orange', 'magenta', 'green', 'blue', 'red', 'black']
+SYMBOLS = ['C', 'R', 'S', 'c', 'r', 'o', 'A']
 
 
 class Viewer(object):
@@ -162,12 +162,12 @@ class Viewer(object):
                 if self.network.subnets_connected(x[0], y[0]):
                     G.add_edge(x, y)
 
-        # Add agent node
-        G.add_node(AGENT, color='black', pos=self.positions[AGENT])
-        # Add edge between agent and first machine on each exposed subnet
-        for x in subnet_prime_nodes:
-            if self.network.subnet_exposed(x[0]):
-                G.add_edge(x, AGENT)
+        # # Add agent node
+        # G.add_node(AGENT, color='black', pos=self.positions[AGENT])
+        # # Add edge between agent and first machine on each exposed subnet
+        # for x in subnet_prime_nodes:
+        #     if self.network.subnet_exposed(x[0]):
+        #         G.add_edge(x, AGENT)
 
         return G
 
@@ -237,6 +237,8 @@ class Viewer(object):
         subnets = [[] for i in range(network.get_number_of_subnets())]
         for m in network.get_address_space():
             subnets[m[0]].append(m)
+        # add internet machine
+        subnets[0].append(AGENT)
         return subnets
 
 
@@ -380,6 +382,9 @@ def get_machine_representation(state, sensitive_machines, m, representation):
     Returns:
         str color : machine color
     """
+    # agent not in state so return straight away
+    if m == AGENT:
+        return representation[6]
     compromised = state.compromised(m)
     reachable = state.reachable(m)
     sensitive = m in sensitive_machines

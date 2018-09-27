@@ -9,25 +9,37 @@ med_config = "configs/medium.yaml"
 
 def main():
     generate = True
+    # network configuration params
+    num_machines = 8
+    num_services = 5
     exploit_probs = 1.0
+    uniform = False
+    restrictiveness = 5
 
+    print("Simple test")
     if generate:
-        num_machines = 5
-        num_services = 3
+        print("Generating network configuration")
+        print("M={}, E={}, pr(E)={}, uniform={}, restrictiveness={}"
+              .format(num_machines, num_services, exploit_probs, uniform, restrictiveness))
         env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-                                                  exploit_probs=exploit_probs)
+                                                  exploit_probs=exploit_probs,
+                                                  uniform=uniform,
+                                                  restrictiveness=restrictiveness)
     else:
+        print("Loading network configuration from file")
+        print("File={}")
         # 100 episodes, 100 steps
-        config_path = small_config
+        # config_path = small_config
         # 100 episodes, 100 steps
-        # config_path = small_med_config)
+        # config_path = small_med_config
         # 500 episodes, 200 steps
-        # config_path = med_config
+        config_path = med_config
+        print("File={}".format(config_path))
         env = CyberAttackSimulatorEnv.from_file(config_path, exploit_probs=exploit_probs)
 
-    num_episodes = 400
-    max_steps = 100
-    visualize_policy = num_episodes // 2.5
+    num_episodes = 1000
+    max_steps = 200
+    visualize_policy = num_episodes // 1
     verbose = True
 
     alpha = 0.1

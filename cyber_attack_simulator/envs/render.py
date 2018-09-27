@@ -162,13 +162,6 @@ class Viewer(object):
                 if self.network.subnets_connected(x[0], y[0]):
                     G.add_edge(x, y)
 
-        # # Add agent node
-        # G.add_node(AGENT, color='black', pos=self.positions[AGENT])
-        # # Add edge between agent and first machine on each exposed subnet
-        # for x in subnet_prime_nodes:
-        #     if self.network.subnet_exposed(x[0]):
-        #         G.add_edge(x, AGENT)
-
         return G
 
     def _get_machine_positions(self, network):

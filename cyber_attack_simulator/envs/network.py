@@ -105,6 +105,18 @@ class Network(object):
         """
         return m in self.sensitive_addresses
 
+    def get_machine_value(self, m):
+        """
+        Returns the value of a machine
+
+        Arguments:
+            (int, int) m : machine address
+
+        Returns:
+            float value : the value of machine with address m
+        """
+        return self.machines[m].get_value()
+
     def subnets_connected(self, subnet_1, subnet_2):
         """
         Checks whether two subnets are directly connected. A subnet is also

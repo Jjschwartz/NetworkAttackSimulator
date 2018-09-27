@@ -125,7 +125,7 @@ class CyberAttackSimulatorEnv(object):
             State initial_state : the initial state of the environment
         """
         self.current_state = self.init_state.copy()
-        self.compromised_subnets = [loader.INTERNET]
+        self.compromised_subnets = set([loader.INTERNET])
         return self.current_state.copy()
 
     def step(self, action):
@@ -145,6 +145,10 @@ class CyberAttackSimulatorEnv(object):
         if not self._action_traffic_permitted(action):
             return self.current_state, 0 - action.cost, False
 
+        # non-deterministic actions
+        if np.random.rand() > action.prob:
+            return self.current_state, 0 - action.cost, False
+
         success, value, services = self.network.perform_action(action)
         value = 0 if self.current_state.compromised(action.target) else value
         self._update_state(action, success, services)
@@ -158,17 +162,11 @@ class CyberAttackSimulatorEnv(object):
         """
         Render current state.
 
+        See render module for more details on modes and symbols.
+
         If mode = ASCI:
             Machines displayed in rows, with one row for each subnet and
             machines displayed in order of id within subnet
-
-            Key, for each machine:
-                C   sensitive & compromised
-                R   sensitive & reachable
-                S   sensitive
-                c   compromised
-                r   reachable
-                o   non-of-above
 
         Arguments:
             str mode : rendering mode
@@ -268,7 +266,7 @@ class CyberAttackSimulatorEnv(object):
             if not action.is_scan():
                 # successful exploit so machine compromised
                 self.current_state.set_compromised(target)
-                self.compromised_subnets.append(target[0])
+                self.compromised_subnets.add(target[0])
                 self._update_reachable(action.target)
         else:
             # 2. unsuccessful exploit, targeted service is absent

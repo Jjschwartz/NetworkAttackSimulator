@@ -48,6 +48,15 @@ class Machine(object):
             # service absent, exploit fails
             return False, 0, np.asarray([])
 
+    def get_value(self):
+        """
+        Returns value of this machine
+
+        Returns:
+            float value : value of this machine
+        """
+        return self._value
+
     def __str__(self):
         return ("Machine: " + str(self.address) + ", " + str(self._value))
 

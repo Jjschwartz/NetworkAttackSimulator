@@ -10,17 +10,20 @@ med_config = "configs/medium.yaml"
 def main():
     generate = True
     # network configuration params
-    num_machines = 8
-    num_services = 5
-    exploit_probs = 1.0
+    num_machines = 3
+    num_services = 2
+    exploit_probs = 0.8
     uniform = False
-    restrictiveness = 5
+    restrictiveness = 1
 
     print("Simple test")
     if generate:
         print("Generating network configuration")
-        print("M={}, E={}, pr(E)={}, uniform={}, restrictiveness={}"
-              .format(num_machines, num_services, exploit_probs, uniform, restrictiveness))
+        print("\tnumber of machines =", num_machines)
+        print("\tnumber of services =", num_services)
+        print("\texploit success probability =", exploit_probs)
+        print("\tuniform =", uniform)
+        print("\tfirewall restrictiveness =", restrictiveness)
         env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
                                                   exploit_probs=exploit_probs,
                                                   uniform=uniform,
@@ -51,6 +54,8 @@ def main():
     # egreedy_q = QLearningAgent("egreedy", alpha, gamma)
 
     ucb_sarsa.train(env, num_episodes, max_steps, verbose, visualize_policy)
+    exp_total_reward = ucb_sarsa.evaluate_agent(env, 100, max_steps)
+    print("Expected Total Reward = {}".format(exp_total_reward))
 
 
 if __name__ == "__main__":

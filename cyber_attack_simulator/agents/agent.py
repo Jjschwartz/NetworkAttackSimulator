@@ -87,28 +87,32 @@ class Agent(object):
             state = new_state
         return episode
 
-    def evaluate_agent(self, env, max_steps=100):
+    def evaluate_agent(self, env, runs=1, max_steps=100):
         """
         Evaluate the current agents policy by running an episode using greedy policy.
 
         Arguments:
             CyberAttackSimulatorEnv env : environment to generate episode for
+            int runs : number of runs to perform and average expected results over
             int max_steps : max number of steps allowed for episode
 
         Returns:
-            int reward : total reward recieved for episode
+            int reward_sum : total reward recieved for episode
         """
-        state = env.reset()
         action_space = env.action_space
-        reward_sum = 0
-        for t in range(max_steps):
-            action = self._choose_greedy_action(state, action_space)
-            new_state, reward, done = env.step(action_space[action])
-            reward_sum += reward
-            if done:
-                break
-            state = new_state
-        return reward_sum
+        reward_sums = []
+        for r in range(runs):
+            state = env.reset()
+            reward_sum = 0
+            for t in range(max_steps):
+                action = self._choose_greedy_action(state, action_space)
+                new_state, reward, done = env.step(action_space[action])
+                reward_sum += reward
+                if done:
+                    break
+                state = new_state
+            reward_sums.append(reward_sum)
+        return sum(reward_sums) / runs
 
     def report_progress(self, episode_num, interval, episodes):
         """

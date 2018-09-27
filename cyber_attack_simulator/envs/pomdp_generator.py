@@ -13,17 +13,31 @@ NOT_COMPROMISED = "NotC"
 FAILURE = "Fail"
 SUCCESS = "Success"
 
-# goal reward
-SENSITIVE_REWARD = 1000
 
-
-def generate_pomdp_config(config_path, output_name="pompdp.pompdp", discount=0.95):
+def generate_pomdp_config(config_path, output_name="pomdp.pomdp", discount=0.95):
     """
     Generate a pompdp from a given config file
     """
     print("Generating POMDP")
     print(">> Loading environment")
-    env = CyberAttackSimulatorEnv.from_file(config_path)
+
+    # config params
+    num_machines = 3
+    num_services = 2
+    exploit_prob = 1.0
+    uniform = False
+    restrictiveness = 1
+
+    print("\tnumber of machines =", num_machines)
+    print("\tnumber of services =", num_services)
+    print("\texploit success probability =", exploit_prob)
+    print("\tuniform =", uniform)
+    print("\tfirewall restrictiveness =", restrictiveness)
+
+    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
+                                              exploit_probs=exploit_prob,
+                                              uniform=uniform,
+                                              restrictiveness=restrictiveness)
 
     # 1 open file for writing
     fout = open(output_name, "w")
@@ -36,38 +50,35 @@ def generate_pomdp_config(config_path, output_name="pompdp.pompdp", discount=0.9
     # 3 state space
     print(">> Generating state space")
     state_space = generate_state_space(env)
-    print(">> State space size = {0}".format(len(state_space)))
+    print("\tState space size = {0}".format(len(state_space)))
     print(">> Writing state space")
     write_state_space(state_space, fout)
-    fout.write("\n")
 
     # 4 action space
     print(">> Loading action space")
     action_space = env.action_space
-    print(">> Action space size = {0}".format(len(action_space)))
+    print("\tAction space size = {0}".format(len(action_space)))
     print(">> Writing action space")
     write_action_space(action_space, fout)
-    fout.write("\n")
 
     # 6 observation space
     print(">> Generating observation space")
     obs_space = generate_obs_space(env)
-    print(">> Observation space size = {0}".format(len(obs_space)))
+    print("\tObservation space size = {0}".format(len(obs_space)))
     print(">> Writing observation space")
     write_obs_space(obs_space, fout)
-    fout.write("\n")
 
     # 8 initial belief distribution
     print(">> Generating initial belief")
     init_belief = generate_init_belief(state_space)
-    print(">> Writing initial belief")
+    print(">>Writing initial belief")
     write_init_belief(init_belief, fout)
     fout.write("\n")
 
     # 9 observation function
     print(">> Generating observation function")
     obs_function = generate_obs_function(env, state_space, action_space)
-    print(">> Observation function size = {0}".format(len(obs_function)))
+    print("\tObservation function size = {0}".format(len(obs_function)))
     print(">> Writing observation function")
     write_obs_functions(obs_function, fout)
     fout.write("\n")
@@ -75,7 +86,7 @@ def generate_pomdp_config(config_path, output_name="pompdp.pompdp", discount=0.9
     # 10 transition function
     print(">> Generating transition function")
     trans_function = generate_transition_function(env, state_space, action_space)
-    print(">> Transition function size = {0}".format(len(trans_function)))
+    print("\tTransition function size = {0}".format(len(trans_function)))
     print(">> Writing transition function")
     write_transition_functions(trans_function, fout)
     fout.write("\n")
@@ -83,7 +94,7 @@ def generate_pomdp_config(config_path, output_name="pompdp.pompdp", discount=0.9
     # 11 reward function
     print(">> Generating reward function")
     rew_function = generate_reward_function(env, state_space, action_space)
-    print(">> Reward function size = {0}".format(len(rew_function)))
+    print("\tReward function size = {0}".format(len(rew_function)))
     print(">> Writing reward function")
     write_reward_function(rew_function, fout)
     fout.write("\n")
@@ -203,12 +214,12 @@ def format_action(a):
     Convert Action object into string representation for pompdp file
 
     e.g scan machine (0, 0)
-        (0,0)scan
+        0.0scan
 
     e.g. exploit service 1 on machine (1, 0)
-        (0,0)exp1
+        1.0exp1
     """
-    address = "({0},{1})".format(a.target[0], a.target[1])
+    address = "a{0}{1}".format(a.target[0], a.target[1])
     if a.is_scan():
         return address + "scan"
     else:
@@ -302,8 +313,9 @@ def generate_obs_function(env, state_space, action_space):
         a_string = format_action(a)
         for s in state_space:
             s_string = str(s)
-            obs, prob = observation_function(env, a, s)
-            obs_function.append((a_string, s_string, obs, prob))
+            results = observation_function(env, a, s)
+            for obs, prob in results:
+                obs_function.append((a_string, s_string, obs, prob))
     return obs_function
 
 
@@ -312,13 +324,19 @@ def observation_function(env, action, state):
     Given an action and state returns the set of possible observations and observation
     probabilities
     """
+    result = []
     if action_failed(env, action, state):
-        return FAILURE, 1.0
-
-    obs = SUCCESS
-    obs += NOT_COMPROMISED if action.is_scan() else COMPROMISED
-    obs += state.get_machine_service_obs(action.target)
-    return obs, 1.0
+        result.append((FAILURE, 1.0))
+    else:
+        exploit_prob = action.prob
+        # 1. success with given probability
+        success_obs = SUCCESS
+        success_obs += NOT_COMPROMISED if action.is_scan() else COMPROMISED
+        success_obs += state.get_machine_service_obs(action.target)
+        result.append((success_obs, exploit_prob))
+        if exploit_prob < 1.0:
+            result.append((FAILURE, 1 - exploit_prob))
+    return result
 
 
 def action_failed(env, action, state):
@@ -332,7 +350,10 @@ def action_failed(env, action, state):
     # 1. if action.target is not reachable
     if not target_reachable(env, action.target, state):
         return True
-    # 2. if action is an exploit and target doesn't have service running
+    # 2. if firewall prevents action.service traffic
+    if not action_traffic_permitted(env, state, action):
+        return True
+    # 3. if action is an exploit and target doesn't have service running
     if not action.is_scan() and not state.machine_has_service(action.target, action.service):
         return True
     return False
@@ -358,12 +379,32 @@ def target_reachable(env, target, state):
     return False
 
 
+def action_traffic_permitted(env, state, action):
+    """
+    Return True if action is permitted in terms of firewall traffic
+    """
+    if action.is_scan():
+        return True
+    network = env.network
+    service = action.service
+    dest = action.target[0]
+    # add 0 since 0 = internet
+    compromised_subnets = set([0])
+    for m in env.address_space:
+        if state.machine_compromised(m):
+            compromised_subnets.add(m[0])
+    for src in compromised_subnets:
+        if network.traffic_permitted(src, dest, service):
+            return True
+    return False
+
+
 def write_obs_functions(obs_function, fout):
     """
     Write observation function to file
     """
     for o in obs_function:
-        fout.write("O:{0} : {1} : {2} {3}\n".format(o[0], o[1], o[2], o[3]))
+        fout.write("O:{0} : {1} : {2} {3:.3f}\n".format(o[0], o[1], o[2], o[3]))
 
 
 def generate_transition_function(env, state_space, action_space):
@@ -375,8 +416,9 @@ def generate_transition_function(env, state_space, action_space):
         a_string = format_action(a)
         for s in state_space:
             s = s
-            new_s, prob = transition_function(env, a, s)
-            trans_function.append((a_string, str(s), str(new_s), prob))
+            results = transition_function(env, a, s)
+            for new_s, prob in results:
+                trans_function.append((a_string, str(s), str(new_s), prob))
     return trans_function
 
 
@@ -384,9 +426,19 @@ def transition_function(env, action, state):
     """
     Generate next state/s and probabilities for performing action in given state
     """
-    if action_failed(env, action, state) or action.is_scan():
-        return str(state), 1.0
-    return state.get_successor_state(action.target), 1.0
+    result = []
+    if state.machine_compromised(action.target):
+        result.append((str(state), 1.0))
+    elif action_failed(env, action, state) or action.is_scan():
+        result.append((str(state), 1.0))
+    else:
+        successor = state.get_successor_state(action.target)
+        exploit_prob = action.prob
+        # 1. success with given probability
+        result.append((str(successor), exploit_prob))
+        if exploit_prob < 1.0:
+            result.append((str(state), 1 - exploit_prob))
+    return result
 
 
 def write_transition_functions(trans_function, fout):
@@ -394,7 +446,7 @@ def write_transition_functions(trans_function, fout):
     Write transition function to file
     """
     for t in trans_function:
-        fout.write("T:{0} : {1} : {2} {3}\n".format(t[0], t[1], t[2], t[3]))
+        fout.write("T:{0} : {1} : {2} {3:.3f}\n".format(t[0], t[1], t[2], t[3]))
 
 
 def generate_reward_function(env, state_space, action_space):
@@ -404,10 +456,10 @@ def generate_reward_function(env, state_space, action_space):
     rew_function = []
     for a in action_space:
         a_string = format_action(a)
-        for s in state_space:
-            s = s
-            r = reward_function(env, a, s)
-            rew_function.append((a_string, str(s), r))
+        for start_state in state_space:
+            result = reward_function(env, a, start_state)
+            for end_state, r in result:
+                rew_function.append((a_string, str(start_state), end_state, r))
     return rew_function
 
 
@@ -416,11 +468,20 @@ def reward_function(env, action, state):
     Return the reward for taking action in given state
     """
     action_cost = action.cost
-    if action_failed(env, action, state) or action.is_scan():
-        return -action_cost
-    if env.network.is_sensitive_machine(action.target):
-        return SENSITIVE_REWARD - action_cost
-    return -action_cost
+    result = []
+    if state.machine_compromised(action.target):
+        result.append(("*", 0.0))
+    elif action_failed(env, action, state) or action.is_scan():
+        result.append(("*", -action_cost))
+    else:
+        successor = state.get_successor_state(action.target)
+        target_value = env.network.get_machine_value(action.target)
+        exploit_prob = action.prob
+        # 1. success with given probability
+        result.append((str(successor), target_value - action_cost))
+        if exploit_prob < 1.0:
+            result.append((str(state), - action_cost))
+    return result
 
 
 def write_reward_function(reward_function, fout):
@@ -428,7 +489,7 @@ def write_reward_function(reward_function, fout):
     Write reward function to file
     """
     for r in reward_function:
-        fout.write("R:{0} : {1} : * : * {2}\n".format(r[0], r[1], r[2]))
+        fout.write("R:{0} : {1} : {2} : * {3}\n".format(r[0], r[1], r[2], r[3]))
 
 
 class POMDPState(object):
@@ -488,11 +549,11 @@ class POMDPState(object):
         return True
 
     def __str__(self):
-        output = ""
+        output = "s"
         for m, s in self.network_state.items():
             comp = s[0]
             services = s[1]
-            output += "({0},{1})".format(m[0], m[1])
+            output += "{0}{1}".format(m[0], m[1])
             if comp:
                 output += COMPROMISED
             else:

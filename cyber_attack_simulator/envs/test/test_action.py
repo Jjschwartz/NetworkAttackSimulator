@@ -26,6 +26,25 @@ class ActionTestCase(unittest.TestCase):
                 expected_A_space.append(exploit)
         self.assertEqual(actual_A_space, expected_A_space)
 
+    def test_gen_action_space_mixed(self):
+        actual_A_space = Action.generate_action_space(self.ads_space, self.E,
+                                                      self.test_exploit_cost, self.test_scan_cost,
+                                                      exploit_probs="mixed")
+        for a in actual_A_space:
+            if a.is_scan():
+                self.assertTrue(a.prob == 1.0)
+            else:
+                self.assertTrue(a.prob == 0.5 or a.prob == 0.8)
+
+        actual_A_space = Action.generate_action_space(self.ads_space, 5,
+                                                      self.test_exploit_cost, self.test_scan_cost,
+                                                      exploit_probs="mixed")
+        for a in actual_A_space:
+            if a.is_scan():
+                self.assertTrue(a.prob == 1.0)
+            else:
+                self.assertTrue(a.prob == 0.2 or a.prob == 0.5 or a.prob == 0.8)
+
 
 if __name__ == "__main__":
     unittest.main()

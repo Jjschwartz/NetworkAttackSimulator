@@ -13,18 +13,18 @@ NOT_COMPROMISED = "NotC"
 FAILURE = "Fail"
 SUCCESS = "Success"
 
+config_path = "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/"
+small_config = "configs/" + "small.yaml"
+small2_config = "configs/" + "small2.yaml"
+small_med_config = "configs/" + "small_med.yaml"
+med_config = "configs/" + "medium.yaml"
 
-def generate_pomdp_config(config_path, output_name="pomdp.pomdp", discount=0.95):
-    """
-    Generate a pompdp from a given config file
-    """
-    print("Generating POMDP")
-    print(">> Loading environment")
 
+def main():
     # config params
-    num_machines = 3
-    num_services = 2
-    exploit_prob = 1.0
+    num_machines = 5
+    num_services = 3
+    exploit_prob = "mixed"
     uniform = False
     restrictiveness = 1
 
@@ -34,13 +34,41 @@ def generate_pomdp_config(config_path, output_name="pomdp.pomdp", discount=0.95)
     print("\tuniform =", uniform)
     print("\tfirewall restrictiveness =", restrictiveness)
 
+    pompdp_from_params(num_machines, num_services, exploit_probs=exploit_prob,
+                       uniform=uniform, restrictiveness=restrictiveness)
+
+
+def pomdp_from_file(config_path, output_name="pomdp.pomdp", discount=0.95):
+    """
+    Generate a pomdp from a given config file
+    """
+    env = CyberAttackSimulatorEnv.from_file(config_path)
+    generate_pomdp(env, output_name, discount)
+
+
+def pompdp_from_params(num_machines, num_services, exploit_probs=1.0, uniform=False,
+                       restrictiveness=5, discount=0.95):
+    """
+    Generate a pomdp from given set of environment parameters
+    """
     env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-                                              exploit_probs=exploit_prob,
+                                              exploit_probs=exploit_probs,
                                               uniform=uniform,
                                               restrictiveness=restrictiveness)
+    output_name = "{}_{}_{}_{}_{}.pomdp".format(num_machines, num_services, exploit_probs, uniform,
+                                                restrictiveness)
+    generate_pomdp(env, output_name, discount)
+
+
+def generate_pomdp(env, output_name="pomdp.pomdp", discount=0.95):
+    """
+    Generate a pompdp from a given environemt
+    """
+    print("Generating POMDP")
+    print(">> Loading environment")
 
     # 1 open file for writing
-    fout = open(output_name, "w")
+    fout = open("out/" + output_name, "w")
 
     # 2 discount and value
     print(">> Writing discount and value")
@@ -71,7 +99,7 @@ def generate_pomdp_config(config_path, output_name="pomdp.pomdp", discount=0.95)
     # 8 initial belief distribution
     print(">> Generating initial belief")
     init_belief = generate_init_belief(state_space)
-    print(">>Writing initial belief")
+    print(">> Writing initial belief")
     write_init_belief(init_belief, fout)
     fout.write("\n")
 
@@ -564,3 +592,7 @@ class POMDPState(object):
                 else:
                     output += "no"
         return output
+
+
+if __name__ == "__main__":
+    main()

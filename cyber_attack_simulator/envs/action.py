@@ -73,6 +73,9 @@ class Action(object):
 
         Success probabilities of each exploit are determined as follows:
             - None - probabilities generated randomly from uniform distribution
+            - "mixed" - probabilities randomly chosen from distribution of low: 0.2,
+                med: 0.5 and high: 0.8 with probability of level based on attack complexity
+                distribution of top 10 vulnerabilities in 2017.
             - single-float - probability of each exploit is set to value
             - list of float - probability of each exploit is set to
                 corresponding value in list
@@ -84,13 +87,24 @@ class Action(object):
             int num_services : number of possible services running on machines
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            None, int or list  exploit_probs :  success probability of exploits
+            mixed exploit_probs :  success probability of exploits
 
         Returns:
             list action_space : list of actions
         """
         if exploit_probs is None:
             exploit_probs = np.random.random_sample(num_services)
+        elif exploit_probs == 'mixed':
+            # success probability of low, med, high attack complexity
+            if num_services == 1:
+                # for case where only 1 service ignore low probability actions
+                # since could lead to unnecessarily long attack paths
+                levels = [0.5, 0.8]
+                probs = [0.5, 0.5]
+            else:
+                levels = [0.2, 0.5, 0.8]
+                probs = [0.2, 0.4, 0.4]
+            exploit_probs = np.random.choice(levels, num_services, p=probs)
         elif type(exploit_probs) is list:
             if len(exploit_probs) == num_services:
                 raise ValueError("Lengh of exploit probability list must equal number of services")

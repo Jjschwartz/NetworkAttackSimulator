@@ -11,10 +11,10 @@ def main():
     generate = True
     # network configuration params
     num_machines = 3
-    num_services = 2
-    exploit_probs = 0.8
+    num_services = 1
+    exploit_probs = 'mixed'
     uniform = False
-    restrictiveness = 1
+    restrictiveness = 3
 
     print("Simple test")
     if generate:
@@ -42,7 +42,7 @@ def main():
 
     num_episodes = 1000
     max_steps = 200
-    visualize_policy = num_episodes // 1
+    visualize_policy = num_episodes - 1
     verbose = True
 
     alpha = 0.1
@@ -54,8 +54,10 @@ def main():
     # egreedy_q = QLearningAgent("egreedy", alpha, gamma)
 
     ucb_sarsa.train(env, num_episodes, max_steps, verbose, visualize_policy)
-    exp_total_reward = ucb_sarsa.evaluate_agent(env, 100, max_steps)
-    print("Expected Total Reward = {}".format(exp_total_reward))
+
+    runs = 100
+    exp_total_reward = ucb_sarsa.evaluate_agent(env, runs, max_steps)
+    print("Expected Total Reward over {} runs = {}".format(runs, exp_total_reward))
 
 
 if __name__ == "__main__":

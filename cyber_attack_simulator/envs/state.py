@@ -7,6 +7,11 @@ COMPROMISED = 0
 REACHABLE = 1
 SERVICE_INFO = 2
 
+# values for possible service knowledge states
+UNKNOWN = 0     # service may or may not be running on machine
+PRESENT = 1     # service is running on the machine
+ABSENT = 2      # service not running on the machine
+
 
 class State(object):
     """
@@ -18,13 +23,14 @@ class State(object):
 
     State variables:
         - Defined by :
-            1. service_info : list of ServiceState, for each service
-            2. compromised : True/False
-            3. reachable : True/False (whether machine is currently reachable)
+            1. compromised : True/False
+            2. reachable : True/False (whether machine is currently reachable)
+            3. service_info : list of knowledge for each service (UNKNOWN, PRESENT, ABSENT)
 
     Main methods:
-        - reachable : whether machine is reachable
-        - compromised : whether machine is compromised
+        - reachable : whether a given machine is reachable
+        - compromised : whether a given machine is compromised
+        - service_state : get the knowledge state for a given service and machine
         - next_state : get next state given an action
     """
 
@@ -75,16 +81,19 @@ class State(object):
         """
         return self._obs[target][SERVICE_INFO][service]
 
-    def update_service(self, target, service, new_service_state):
+    def update_service(self, target, service, present):
         """
         Update a service on the specified target machines
 
         Arguments:
             (int, int) target : the target machine address
             int service : the service number
-            ServiceState new_service_state : new service state
+            bool present : whether service is present or absent
         """
-        self._obs[target][SERVICE_INFO][service] = new_service_state
+        if present:
+            self._obs[target][SERVICE_INFO][service] = PRESENT
+        else:
+            self._obs[target][SERVICE_INFO][service] = ABSENT
 
     def set_compromised(self, target):
         """
@@ -144,3 +153,28 @@ class State(object):
             if not np.array_equal(v[SERVICE_INFO], other_v[SERVICE_INFO]):
                 return False
         return True
+
+    @staticmethod
+    def generate_initial_state(network, num_services):
+        """
+        Generate the initial state of the environment. Initial state is where no machines have been
+        compromised, only DMZ subnets are reachable and no information about services has been
+        gained
+
+        Arguments:
+            Network network : the environment network object
+            int num_services : number of services running in environment
+
+        Returns:
+            State initial_state : the initial state of the environment
+        """
+        obs = OrderedDict()
+        for m in network.get_address_space():
+            service_info = np.full(num_services, UNKNOWN)
+            compromised = False
+            reachable = False
+            if network.subnet_exposed(m[0]):
+                reachable = True
+            obs[m] = [compromised, reachable, service_info]
+        initial_state = State(obs)
+        return initial_state

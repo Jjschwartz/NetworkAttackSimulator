@@ -1,5 +1,3 @@
-from enum import Enum
-from collections import OrderedDict
 import numpy as np
 from cyber_attack_simulator.envs.network import Network
 from cyber_attack_simulator.envs.action import Action
@@ -213,16 +211,7 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             State initial_state : the initial state of the environment
         """
-        obs = OrderedDict()
-        for m in self.address_space:
-            service_info = np.full(self.num_services, Service.unknown, Service)
-            compromised = False
-            reachable = False
-            if self.network.subnet_exposed(m[0]):
-                reachable = True
-            obs[m] = [compromised, reachable, service_info]
-        initial_state = State(obs)
-        return initial_state
+        return State.generate_initial_state(self.network, self.num_services)
 
     def _action_traffic_permitted(self, action):
         """
@@ -261,16 +250,13 @@ class CyberAttackSimulatorEnv(object):
         if action.is_scan() or (not action.is_scan() and success):
             # 1. scan or successful exploit, all service info gained for target
             for s in range(len(services)):
-                new_state = Service.present if services[s] else Service.absent
-                self.current_state.update_service(target, s, new_state)
+                self.current_state.update_service(target, s, services[s])
             if not action.is_scan():
                 # successful exploit so machine compromised
                 self.current_state.set_compromised(target)
                 self.compromised_subnets.add(target[0])
                 self._update_reachable(action.target)
-        else:
-            # 2. unsuccessful exploit, targeted service is absent
-            self.current_state.update_service(target, action.service, Service.absent)
+        # 2. unsuccessful exploit, targeted service may or may not be present so do nothing
 
     def _update_reachable(self, compromised_m):
         """
@@ -324,25 +310,3 @@ class CyberAttackSimulatorEnv(object):
             deterministic = "det" if self.exploit_probs == 1.0 else False
         output += "{}".format(deterministic)
         return output
-
-
-class Service(Enum):
-    """
-    Possible states for a service running on a machine, from the agents point
-    of view
-
-    Possible service state observations:
-    0. unknown : the service may or may not be running on machine
-    1. present : the service is running on the machine
-    2. absent : the service is not running on the machine
-    """
-    unknown = 0
-    present = 1
-    absent = 2
-
-    def __str__(self):
-        if self.value == 0:
-            return "unknown"
-        if self.value == 1:
-            return "present"
-        return "absent"

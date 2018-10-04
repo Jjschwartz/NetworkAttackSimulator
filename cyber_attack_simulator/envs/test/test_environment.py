@@ -1,9 +1,6 @@
 import unittest
-from collections import OrderedDict
-import numpy as np
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 import cyber_attack_simulator.envs.environment as Environment
-from cyber_attack_simulator.envs.environment import Service
 from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
 
@@ -123,22 +120,14 @@ class EnvironmentTestCase(unittest.TestCase):
         self.assertEqual(o, expected_obs)
 
     def get_initial_expected_obs(self):
-        t_obs = OrderedDict()
-        for m in self.ads_space:
-            t_service_info = np.full(self.E, Service.unknown, Service)
-            t_compromised = False
-            t_reachable = False
-            if self.network.subnet_exposed(m[0]):
-                t_reachable = True
-            t_obs[m] = [t_compromised, t_reachable, t_service_info]
-        return State(t_obs)
+        return State.generate_initial_state(self.network, self.E)
 
     def update_obs(self, action, obs, success):
         """ Valid for test where E = 1 """
         target = action.target
         if success:
             for s in range(self.E):
-                obs.update_service(target, s, Service.present)
+                obs.update_service(target, s, True)
         if not action.is_scan() and success:
             obs.set_compromised(target)
             for m in self.ads_space:
@@ -146,8 +135,6 @@ class EnvironmentTestCase(unittest.TestCase):
                     continue
                 if self.network.subnets_connected(target[0], m[0]):
                     obs.set_reachable(m)
-        elif not action.is_scan() and not success:
-            obs.update_service(target, action.service, Service.absent)
         return obs
 
 

@@ -1,8 +1,9 @@
 import unittest
+import numpy as np
 from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv
 
 
-class ActionTestCase(unittest.TestCase):
+class StateTestCase(unittest.TestCase):
 
     def setUp(self):
         self.E = 1
@@ -10,6 +11,7 @@ class ActionTestCase(unittest.TestCase):
         self.env = self.get_env(self.M, self.E)
         self.init_state = self.env.reset()
 
+    """ Helper method """
     def get_env(self, nM, nS):
         env = CyberAttackSimulatorEnv.from_params(nM, nS)
         return env
@@ -18,6 +20,11 @@ class ActionTestCase(unittest.TestCase):
         state_copy = self.init_state.copy()
         self.assertFalse(state_copy is self.init_state)
         self.assertTrue(state_copy == self.init_state)
+
+    def test_state_flatten(self):
+        expected_flat = np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0]])
+        actual_flat = self.init_state.flatten()
+        self.assertTrue(np.equal(expected_flat, actual_flat).all())
 
 
 if __name__ == "__main__":

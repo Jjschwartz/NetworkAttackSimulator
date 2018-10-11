@@ -20,7 +20,7 @@ class Agent(object):
         - report_progress
     """
 
-    def train(self, env, num_episodes=100, max_steps=100, verbose=False):
+    def train(self, env, num_episodes=100, max_steps=100, timeout=None, verbose=False, **kwargs):
         """
         The main training method
 
@@ -28,7 +28,9 @@ class Agent(object):
             CyberAttackSimulatorEnv env : the environment to solve
             int num_episodes : number of episodes to run agent for
             int max_steps : max number of steps per episode
-            bool verbose : whether to print progress messages or not
+            int timeout : time limit to train agent for (if none, then no limit)
+            bool verbose : whether to print progress mesaages to stdout or not
+            dict kwargs : any other parameters for taining (see method for implementing agent)
 
         Returns:
             list(int) episode_timesteps : timesteps taken per episode
@@ -114,7 +116,7 @@ class Agent(object):
             reward_sums.append(reward_sum)
         return sum(reward_sums) / runs
 
-    def report_progress(self, episode_num, interval, episodes):
+    def report_progress(self, episode_num, interval, episodes, verbose):
         """
         Print a progress message to standard out, reporting on current episode number and average
         timesteps per episode
@@ -123,16 +125,18 @@ class Agent(object):
             int episode_num : current episode number
             int interval : reporting interval (how often to report)
             list[int] episodes : list of timesteps for each episode up to current episode
+            bool verbose : whether to print message
         """
-        message = "Episode = {0} - avg timesteps for last {1} episodes = {2}"
-        interval = int(math.ceil(interval))
-        if episode_num % interval == 0:
-            if episode_num > 0:
-                episode_avg = sum(episodes[-interval:])
-                episode_avg /= interval
-                print(message.format(episode_num, interval, episode_avg))
-            else:
-                print(message.format(episode_num, interval, episodes[0]))
+        if verbose:
+            message = "Episode = {0} - avg timesteps for last {1} episodes = {2}"
+            interval = int(math.ceil(interval))
+            if episode_num % interval == 0:
+                if episode_num > 0:
+                    episode_avg = sum(episodes[-interval:])
+                    episode_avg /= interval
+                    print(message.format(episode_num, interval, episode_avg))
+                else:
+                    print(message.format(episode_num, interval, episodes[0]))
 
     def __str__(self):
         raise NotImplemented

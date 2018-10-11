@@ -2,9 +2,6 @@ import numpy as np
 import time
 from cyber_attack_simulator.agents.agent import Agent
 
-# For measuring difference between rewards when checking for convergence
-THRESHOLD = 1e-6
-
 
 class TDAgent(Agent):
     """
@@ -18,7 +15,7 @@ class TDAgent(Agent):
     types = ["UCB", "egreedy"]
     algorithm = "TD"
 
-    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.02, c=1.0):
+    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.01, c=1.0):
         """
         Initialize a new TD agent
 
@@ -45,11 +42,15 @@ class TDAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
-    def train(self, env, num_episodes=100, max_steps=100, verbose=False, visualize_policy=0):
+    def train(self, env, num_episodes=100, max_steps=100, timeout=None,
+              verbose=False, **kwargs):
 
-        if verbose:
-            print("{0} {1} agent: Starting training for {1} episodes"
-                  .format(self.algorithm, self.type, num_episodes))
+        if "visualize_policy" in kwargs:
+            visualize_policy = kwargs["visualize_policy"]
+        else:
+            visualize_policy = 0
+
+        self._print_message("Starting training for {} episodes".format(num_episodes), verbose)
 
         # stores timesteps, rewards and time taken for each episode
         episode_timesteps = []
@@ -60,6 +61,8 @@ class TDAgent(Agent):
             param = self.c
         else:
             param = self.max_epsilon
+
+        training_start_time = time.time()
 
         for e in range(num_episodes):
             start_time = time.time()
@@ -74,19 +77,29 @@ class TDAgent(Agent):
             episode_timesteps.append(timesteps)
             episode_times.append(ep_time)
 
-            if verbose:
-                # reports progress every 1/10th of total episdes run
-                self.report_progress(e, num_episodes / 10, episode_timesteps)
+            # reports progress every 1/10th of total episdes run
+            self.report_progress(e, num_episodes / 10, episode_timesteps)
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)
-                print("Visualizing current policy. Episode length = {0}".format(len(gen_episode)))
+                self._print_message("Visualizing current policy. Episode length = {0}"
+                                    .format(len(gen_episode)), verbose)
                 env.render_episode(gen_episode)
 
+            # check for timeout
+            if timeout is not None and time.time() - training_start_time > timeout:
+                self._print_message("Timed out after {} sec on episode {}".format(timeout, e),
+                                    verbose)
+
+        total_training_time = time.time() - training_start_time
+        self._print_message("Training complete after {} episodes and {} sec"
+                            .format(e, total_training_time), verbose)
+
+        return episode_timesteps, episode_rewards, total_training_time
+
+    def _print_message(self, message, verbose):
         if verbose:
-            print("{0} {1} agent: Training complete after {2} episodes"
-                  .format(self.algorithm, self.type, e))
-        return episode_timesteps, episode_rewards, episode_times
+            print("{} {} agent: {}".format(self.algorithm, self.type, message))
 
     def _run_episode(self, env, max_steps, param):
         """

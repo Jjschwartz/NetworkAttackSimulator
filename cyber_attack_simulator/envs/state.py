@@ -1,7 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 
-
 # index of each state variable in state list
 COMPROMISED = 0
 REACHABLE = 1
@@ -77,9 +76,9 @@ class State(object):
             int service : the service number
 
         Returns
-            ServiceState state : state of service
+            int service_state : state of service
         """
-        return self._obs[target][SERVICE_INFO][service]
+        return self._obs[target][SERVICE_INFO + service]
 
     def update_service(self, target, service, present):
         """
@@ -91,9 +90,9 @@ class State(object):
             bool present : whether service is present or absent
         """
         if present:
-            self._obs[target][SERVICE_INFO][service] = PRESENT
+            self._obs[target][SERVICE_INFO + service] = PRESENT
         else:
-            self._obs[target][SERVICE_INFO][service] = ABSENT
+            self._obs[target][SERVICE_INFO + service] = ABSENT
 
     def set_compromised(self, target):
         """
@@ -102,7 +101,7 @@ class State(object):
         Arguments:
             (int, int) target : the target machine address
         """
-        self._obs[target][COMPROMISED] = True
+        self._obs[target][COMPROMISED] = 1
 
     def set_reachable(self, target):
         """
@@ -111,7 +110,7 @@ class State(object):
         Arguments:
             (int, int) target : the target machine address
         """
-        self._obs[target][REACHABLE] = True
+        self._obs[target][REACHABLE] = 1
 
     def copy(self):
         """
@@ -121,10 +120,29 @@ class State(object):
             State copy : a copy of this state
         """
         obs_copy = OrderedDict()
-        for k, v in self._obs.items():
-            service_info_copy = np.copy(v[SERVICE_INFO])
-            obs_copy[k] = [v[COMPROMISED], v[REACHABLE], service_info_copy]
+        for m, v in self._obs.items():
+            machine_state_copy = np.copy(v)
+            obs_copy[m] = machine_state_copy
         return State(obs_copy)
+
+    def flatten(self):
+        """
+        Return a copy of the state as a 1D numpy array, with the state of each
+        machine in state stacked on top of each other in order of address.
+
+        Returns:
+            ndarray flattened : state as a 1D numpy array
+        """
+        return np.concatenate(list(self._obs.values()))
+
+    def get_state_size(self):
+        """
+        Return the size of state in terms of the flattened state.
+
+        Returns:
+            int state_size : size of flattened state
+        """
+        return self.flatten().shape[0]
 
     def __str__(self):
         return str(self._obs)
@@ -134,9 +152,7 @@ class State(object):
         # Also using an OrderedDict so order is stable
         hash_list = []
         for v in self._obs.values():
-            hash_list.append(v[COMPROMISED])
-            hash_list.append(v[REACHABLE])
-            hash_list.append(hash(v[SERVICE_INFO].tostring()))
+            hash_list.append(hash(v.tostring()))
         return hash(tuple(hash_list))
 
     def __eq__(self, other):
@@ -148,9 +164,7 @@ class State(object):
             other_v = other._obs.get(m)
             if other_v is None:
                 return False
-            if (v[COMPROMISED] != other_v[COMPROMISED] or v[REACHABLE] != other_v[REACHABLE]):
-                return False
-            if not np.array_equal(v[SERVICE_INFO], other_v[SERVICE_INFO]):
+            if not np.array_equal(v, other_v):
                 return False
         return True
 
@@ -170,11 +184,13 @@ class State(object):
         """
         obs = OrderedDict()
         for m in network.get_address_space():
-            service_info = np.full(num_services, UNKNOWN)
-            compromised = False
-            reachable = False
+            # one vector for each machine, with compromised and reachable as first two values
+            # and service knowledge state for each service as other values
+            machine_state = np.full(num_services + SERVICE_INFO, UNKNOWN)
+            machine_state[COMPROMISED] = 0
+            machine_state[REACHABLE] = 0
             if network.subnet_exposed(m[0]):
-                reachable = True
-            obs[m] = [compromised, reachable, service_info]
+                machine_state[REACHABLE] = 1
+            obs[m] = machine_state
         initial_state = State(obs)
         return initial_state

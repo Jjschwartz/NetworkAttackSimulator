@@ -202,6 +202,12 @@ class CyberAttackSimulatorEnv(object):
         state = self.init_state if initial_state else self.current_state
         self.renderer.render_graph(state, axes, show)
 
+    def get_state_size(self):
+        return self.init_state.get_state_size()
+
+    def get_num_actions(self):
+        return len(self.action_space)
+
     def _generate_initial_state(self):
         """
         Generate the initial state of the environment. Initial state is where no machines have been

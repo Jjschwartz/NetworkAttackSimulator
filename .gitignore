@@ -9,4 +9,6 @@ cyber_attack_simulator/results/
 
 cyber_attack_simulator/prof/
 
+cyber_attack_simulator/pomdp/out/
+
 *.cprof

@@ -10,8 +10,8 @@ med_config = "configs/medium.yaml"
 def main():
     generate = True
     # network configuration params
-    num_machines = 3
-    num_services = 1
+    num_machines = 8
+    num_services = 3
     exploit_probs = 'mixed'
     uniform = False
     restrictiveness = 3
@@ -42,21 +42,20 @@ def main():
 
     num_episodes = 1000
     max_steps = 200
-    visualize_policy = num_episodes - 1
     verbose = True
 
     alpha = 0.1
     gamma = 0.9
     c = 10.0
-    ucb_sarsa = SarsaAgent("UCB", alpha, gamma, c)
+    # ucb_sarsa = SarsaAgent("UCB", alpha, gamma, c)
     # egreedy_sarsa = SarsaAgent("egreedy", alpha, gamma)
     # ucb_q = QLearningAgent("UCB", alpha, gamma)
-    # egreedy_q = QLearningAgent("egreedy", alpha, gamma)
+    egreedy_q = QLearningAgent("egreedy", alpha, gamma)
 
-    ucb_sarsa.train(env, num_episodes, max_steps, verbose, visualize_policy)
+    egreedy_q.train(env, num_episodes, max_steps, verbose=verbose)
 
     runs = 100
-    exp_total_reward = ucb_sarsa.evaluate_agent(env, runs, max_steps)
+    exp_total_reward = egreedy_q.evaluate_agent(env, runs, max_steps)
     print("Expected Total Reward over {} runs = {}".format(runs, exp_total_reward))
 
 

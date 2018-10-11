@@ -8,11 +8,12 @@ class SarsaAgent(TDAgent):
     """
 
     def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0,
-                 min_epsilon=0.02, c=1.0):
+                 min_epsilon=0.02, epsilon_decay_lambda=0.001, c=1.0):
         """
         Initialize a new Q-learning agent
         """
-        super(SarsaAgent, self).__init__(type, alpha, gamma, max_epsilon, min_epsilon, c)
+        super(SarsaAgent, self).__init__(type, alpha, gamma, max_epsilon, min_epsilon,
+                                         epsilon_decay_lambda, c)
         self.algorithm = "Sarsa"
 
     def _run_episode(self, env, max_steps, param):

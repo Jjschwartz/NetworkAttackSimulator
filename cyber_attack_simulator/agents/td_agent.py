@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import math
 from cyber_attack_simulator.agents.agent import Agent
 
 
@@ -15,7 +16,8 @@ class TDAgent(Agent):
     types = ["UCB", "egreedy"]
     algorithm = "TD"
 
-    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.01, c=1.0):
+    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.01,
+                 epsilon_decay_lambda=0.001, c=1.0):
         """
         Initialize a new TD agent
 
@@ -25,6 +27,7 @@ class TDAgent(Agent):
             float gamma: the discount rate
             float max_epsilon : initial max epsilon value (for e-greedy agent)
             float min_epsilon: minimum epsilon value (for e-greedy agent)
+            float epsilon_decay_lamda : lambda for exponential epsilon decay
             float c: the exploration hyperparameter (used for UCB agent)
         """
         if type not in self.types:
@@ -34,7 +37,9 @@ class TDAgent(Agent):
         self.gamma = gamma
         self.max_epsilon = max_epsilon
         self.min_epsilon = min_epsilon
+        self.epsilon_decay_lambda = epsilon_decay_lambda
         self.c = c
+
         self.reset()
 
     def reset(self):
@@ -56,6 +61,7 @@ class TDAgent(Agent):
         episode_timesteps = []
         episode_rewards = []
         episode_times = []
+        steps = 0
 
         if self.type == "UCB":
             param = self.c
@@ -68,17 +74,17 @@ class TDAgent(Agent):
             start_time = time.time()
             timesteps, reward = self._run_episode(env, max_steps, param)
             ep_time = time.time() - start_time
-
-            # slowly decrease exploration for egreedy agent
-            if self.type == "egreedy":
-                param = self._epsilon_decay(num_episodes, e)
-
             episode_rewards.append(reward)
             episode_timesteps.append(timesteps)
             episode_times.append(ep_time)
+            steps += timesteps
+
+            # slowly decrease exploration for egreedy agent
+            if self.type == "egreedy":
+                param = self._epsilon_decay(steps)
 
             # reports progress every 1/10th of total episdes run
-            self.report_progress(e, num_episodes / 10, episode_timesteps)
+            self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)
@@ -90,12 +96,13 @@ class TDAgent(Agent):
             if timeout is not None and time.time() - training_start_time > timeout:
                 self._print_message("Timed out after {} sec on episode {}".format(timeout, e),
                                     verbose)
+                break
 
         total_training_time = time.time() - training_start_time
-        self._print_message("Training complete after {} episodes and {} sec"
+        self._print_message("Training complete after {} episodes and {:.2f} sec"
                             .format(e, total_training_time), verbose)
 
-        return episode_timesteps, episode_rewards, total_training_time
+        return episode_timesteps, episode_rewards, episode_times
 
     def _print_message(self, message, verbose):
         if verbose:
@@ -217,12 +224,14 @@ class TDAgent(Agent):
             return self.n_table[state]
         return self.n_table[state][action]
 
-    def _epsilon_decay(self, num_episodes, e):
+    def _epsilon_decay(self, steps):
         """
         Decay epsilon value.
         """
-        step = (self.max_epsilon - self.min_epsilon) / num_episodes
-        return self.max_epsilon - (step * e)
+        temp = (self.max_epsilon - self.min_epsilon) * math.exp(-self.epsilon_decay_lambda * steps)
+        return self.min_epsilon + temp
+        # step = (self.max_epsilon - self.min_epsilon) / num_episodes
+        # return self.max_epsilon - (step * e)
 
     def _choose_greedy_action(self, state, action_space):
         return self._choose_action(state, action_space)

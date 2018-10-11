@@ -7,8 +7,12 @@ from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv as C
 from cyber_attack_simulator.agents.q_learning import QLearningAgent
 from cyber_attack_simulator.agents.dqn import DQNAgent
 
-# Experiment scenarios to run
-scenarios_list = ["tiny", "small"]
+# To control progress message printing for individual episodes within runs
+VERBOSE = True
+
+# Experiment scenarios and agents to run
+scenarios_list = ["tiny"]
+agent_list = ["td_egreedy", "dqn"]
 
 
 # Experiment scenarios
@@ -46,25 +50,31 @@ scenarios["huge"] = {"machines": 37,
 
 # Experiment agents
 agents = OrderedDict()
-agents["td_egreedy"] = {"tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                        "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                        "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                        "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                        "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "c": 1.0}}
-agents["td_ucb"] = {"tiny": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-                    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0}}
-agents["dqn"] = {"tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambdac": 0.001},
-                 "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambdac": 0.001},
-                 "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambdac": 0.001},
-                 "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambdac": 0.001},
-                 "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambdac": 0.001}}
+agents["td_egreedy"] = {
+    "tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001}
+    }
+agents["td_ucb"] = {
+    "tiny": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
+    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
+    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
+    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
+    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0}
+    }
+agents["dqn"] = {
+    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
+     }
 
 
 # Experiment constants
-RUNS = 5      # number of training runs to do
+RUNS = 3      # number of training runs to do
 EVAL_WINDOW = 100      # number of episodes to evaluate policy over
 
 # Environment constants
@@ -89,7 +99,7 @@ def get_expected_rewards(ep_rewards):
     return sum(ep_rewards[-EVAL_WINDOW:]) / EVAL_WINDOW
 
 
-def run_experiment(scenario, agent_name):
+def run_experiment(scenario, agent_name, result_file):
 
     scenario_params = scenarios[scenario]
     M = scenario_params["machines"]
@@ -99,32 +109,34 @@ def run_experiment(scenario, agent_name):
     max_steps = scenario_params["steps"]
     timeout = scenario_params["timeout"]
 
-    print("Running experiment: Scenario={}, M={}, S={}, R={}"
-          .format(scenario, M, S, rve))
-
-    solved = []
-    exp_rewards = []
+    print("Running experiment: Scenario={}, agent={}, M={}, S={}, R={}"
+          .format(scenario, agent_name, M, S, rve))
 
     for t in range(RUNS):
         env = Cyber.from_params(M, S,
-                                r_sensitivere=R_SENS,  r_user=R_USR,
+                                r_sensitive=R_SENS,  r_user=R_USR,
                                 exploit_cost=COST_EXP, scan_cost=COST_SCAN,
                                 restrictiveness=rve, exploit_probs=EXPLOIT_PROB, seed=t)
         agent = get_agent(agent_name, scenario, env)
-        ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout)
+        ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout, VERBOSE)
 
         path_found = is_path_found(ep_tsteps, max_steps)
-        solved.append(path_found)
-
         exp_reward = get_expected_rewards(ep_rews)
-        exp_rewards.append(exp_reward)
-        print("\tTraining run {0} - path_found={1} - exp_reward={2}"
-              .format(t, path_found, exp_reward))
+        training_time = sum(ep_times)
 
-    path_found_prob = sum(solved) / RUNS
-    exp_reward = sum(exp_rewards) / RUNS
+        write_results(result_file, scenario, agent_name, t, ep_tsteps, ep_rews, ep_times)
 
-    return path_found_prob, exp_reward, train_time
+        print("\tTraining run {0} - path_found={1} - exp_reward={2} - train_time={3:.2f}"
+              .format(t, path_found, exp_reward, training_time))
+
+
+def write_results(result_file, scenario, agent, run, timesteps, rewards, times):
+    """ Write results to file """
+
+    for e in range(len(timesteps)):
+        # scenario,agent,run,episode,timesteps,rewards,time
+        result_file.write("{0},{1},{2},{3},{4},{5},{6:2f}\n".format(scenario, agent, run, e,
+                          timesteps[e], rewards[e], times[e]))
 
 
 def get_agent(agent_name, scenario, env):
@@ -145,14 +157,13 @@ def main():
 
     print("Welcome to your friendly experiment runner")
     result_file = open(sys.argv[1], 'w')
+
     # write header line
-    result_file.write("scenario,path_found,exp_reward,time\n")
+    result_file.write("scenario,agent,run,episode,timesteps,rewards,time\n")
 
     for scenario in scenarios_list:
-        for agent_name in agents.keys():
-            path_found_prob, exp_reward, train_time = run_experiment(scenario, agent_name)
-            result_file.write("{0},{1:.2f},{2}{3:.2f}\n"
-                              .format(scenario, path_found_prob, exp_reward))
+        for agent_name in agent_list:
+            run_experiment(scenario, agent_name, result_file)
 
     result_file.close()
 

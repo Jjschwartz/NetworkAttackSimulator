@@ -32,17 +32,21 @@ def main():
     agent = DQNAgent(env.get_state_size(), env.get_num_actions(),
                      epsilon_decay_lambda=0.001)
 
-    ep_timesteps, ep_rewards,  = agent.train(env, num_episodes=num_episodes,
-                                             max_steps=max_steps, verbose=verbose)
+    ep_timesteps, ep_rewards, ep_times = agent.train(env, num_episodes=num_episodes,
+                                                     max_steps=max_steps, verbose=verbose)
 
     # plot reward vs episode
-    plt.subplot(121)
+    plt.subplot(131)
     plt.plot(list(range(num_episodes)), ep_rewards)
-    plt.title("Rewards")
+    plt.title("Rewards per episode")
 
-    plt.subplot(122)
+    plt.subplot(132)
+    plt.plot(np.cumsum(ep_times), ep_rewards)
+    plt.title("Rewards over time")
+
+    plt.subplot(133)
     plt.plot(list(range(num_episodes)), np.cumsum(ep_timesteps))
-    plt.title("Cumulative Timesteps")
+    plt.title("Cumulative Timesteps per episode")
     plt.show()
 
 

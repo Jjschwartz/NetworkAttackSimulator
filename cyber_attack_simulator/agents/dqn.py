@@ -25,8 +25,8 @@ class Brain:
 
     def _create_model(self):
         model = Sequential()
-        model.add(Dense(output_dim=self.hidden_units, activation='relu', input_dim=self.state_size))
-        model.add(Dense(output_dim=self.num_actions, activation='linear'))
+        model.add(Dense(self.hidden_units, activation='relu', input_dim=self.state_size))
+        model.add(Dense(self.num_actions, activation='linear'))
         opt = RMSprop(lr=RMSPROP_LR)
         model.compile(loss='mse', optimizer=opt)
         return model
@@ -111,29 +111,32 @@ class DQNAgent(Agent):
         # stores timesteps and rewards for each episode
         episode_timesteps = []
         episode_rewards = []
+        episode_times = []
 
         training_start_time = time.time()
 
         for e in range(num_episodes):
+            start_time = time.time()
             timesteps, reward = self._run_episode(env, max_steps)
+            ep_time = time.time() - start_time
             episode_rewards.append(reward)
             episode_timesteps.append(timesteps)
+            episode_times.append(ep_time)
 
             self.epsilon = self.epsilon_decay()
-            print("epsilon =", self.epsilon)
 
-            self.print_message("Episode - {} - Timesteps = {} - Reward = {}"
-                               .format(e, timesteps, reward), verbose)
+            self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
 
             if timeout is not None and time.time() - training_start_time > timeout:
-                self.print_message("Timed out after {} sec on episode {:2f}".format(timeout, e),
+                self.print_message("Timed out after {} sec on episode {:.2f}".format(timeout, e),
                                    verbose)
+                break
 
         total_training_time = time.time() - training_start_time
-        self.print_message("Training complete after {} episodes and {:2f} sec"
+        self.print_message("Training complete after {} episodes and {:.2f} sec"
                            .format(e, total_training_time), verbose)
 
-        return episode_timesteps, episode_rewards, total_training_time
+        return episode_timesteps, episode_rewards, episode_times
 
     def reset(self):
         self.brain.reset()
@@ -195,8 +198,9 @@ class DQNAgent(Agent):
     def epsilon_decay(self):
         """ Decay the epsilon value based on episode number """
         # exponential decay by steps
-        temp = self.min_epsilon + (self.max_epsilon - self.min_epsilon)
-        return temp * math.exp(-self.epsilon_decay_lambda * self.steps)
+        diff = self.max_epsilon - self.min_epsilon
+        temp = diff * math.exp(-self.epsilon_decay_lambda * self.steps)
+        return self.min_epsilon + temp
 
     def replay(self):
         """ Perform parameter updates """

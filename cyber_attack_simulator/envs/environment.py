@@ -203,10 +203,34 @@ class CyberAttackSimulatorEnv(object):
         self.renderer.render_graph(state, axes, show)
 
     def get_state_size(self):
+        """
+        Get the size of an environment state representation in terms of the number of features,
+        where a feature is a value for an individual machine (i.e. compromised, reachable,
+        service1, ...).
+
+        Returns:
+            int state_size : size of state representation
+        """
         return self.init_state.get_state_size()
 
     def get_num_actions(self):
+        """
+        Get the size of the action space for environment
+
+        Returns:
+            int num_actions : action space size
+        """
         return len(self.action_space)
+
+    def get_minimum_actions(self):
+        """
+        Get the minimum possible actions required to exploit all sensitive machines from the
+        initial state
+
+        Returns:
+            int minimum_actions : minumum possible actions
+        """
+        return self.network.get_minimal_steps()
 
     def _generate_initial_state(self):
         """
@@ -232,7 +256,7 @@ class CyberAttackSimulatorEnv(object):
         """
         if not self.current_state.reachable(action.target):
             return False
-        # TODO: scan should only return info on allowed service traffic
+        # We assume scannning uses alternative methods to work around firewall (e.g. UDP, ARP)
         if action.is_scan():
             return True
         service = action.service

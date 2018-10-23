@@ -206,6 +206,44 @@ class NetworkTestCase(unittest.TestCase):
             max_vulns, avg_vulns = self.num_exploits_avail(nS, nM, network)
             print("\tlambda_V={0}, max_vulns={1}, avg_vulns={2}".format(l, max_vulns, avg_vulns))
 
+    def test_minimum_steps(self):
+        nS = 1
+
+        nM = 3
+        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
+        network = Network(config)
+        actual = network.get_minimal_steps()
+        expected = 3
+        self.assertEqual(actual, expected)
+
+        nM = 8
+        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
+        network = Network(config)
+        actual = network.get_minimal_steps()
+        expected = 4
+        self.assertEqual(actual, expected)
+
+        nM = 13
+        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
+        network = Network(config)
+        actual = network.get_minimal_steps()
+        expected = 4
+        self.assertEqual(actual, expected)
+
+        nM = 18
+        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
+        network = Network(config)
+        actual = network.get_minimal_steps()
+        expected = 5
+        self.assertEqual(actual, expected)
+
+        nM = 38
+        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
+        network = Network(config)
+        actual = network.get_minimal_steps()
+        expected = 6
+        self.assertEqual(actual, expected)
+
     def num_similiar_configs(self, network):
         seen_configs = []
         seen_configs_count = []

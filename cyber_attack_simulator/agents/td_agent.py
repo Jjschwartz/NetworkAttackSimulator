@@ -47,6 +47,11 @@ class TDAgent(Agent):
         self.n_table = dict()
         self.q_table = dict()
 
+        if self.type == "UCB":
+            self.param = self.c
+        else:
+            self.param = self.max_epsilon
+
     def train(self, env, num_episodes=100, max_steps=100, timeout=None,
               verbose=False, **kwargs):
 
@@ -63,16 +68,11 @@ class TDAgent(Agent):
         episode_times = []
         steps = 0
 
-        if self.type == "UCB":
-            param = self.c
-        else:
-            param = self.max_epsilon
-
         training_start_time = time.time()
 
         for e in range(num_episodes):
             start_time = time.time()
-            timesteps, reward = self._run_episode(env, max_steps, param)
+            timesteps, reward = self._run_episode(env, max_steps, self.param)
             ep_time = time.time() - start_time
             episode_rewards.append(reward)
             episode_timesteps.append(timesteps)
@@ -81,7 +81,7 @@ class TDAgent(Agent):
 
             # slowly decrease exploration for egreedy agent
             if self.type == "egreedy":
-                param = self._epsilon_decay(steps)
+                self.param = self._epsilon_decay(steps)
 
             # reports progress every 1/10th of total episdes run
             self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)

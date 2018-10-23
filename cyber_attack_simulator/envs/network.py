@@ -1,4 +1,6 @@
 from collections import deque
+from itertools import permutations
+import numpy as np
 
 
 # column in topology adjacency matrix that represents connection between subnet and public
@@ -177,6 +179,50 @@ class Network(object):
             list depths : a list of depth of each subnet ordered by subnet index in topology
         """
         return min_subnet_depth(self.topology)
+
+    def get_minimal_steps(self):
+        """
+        Get the minimum total number of steps required to reach all sensitive machines in the
+        network starting from outside the network (i.e. can only reach exposed subnets).
+
+        Returns:
+            int minumum_steps : minimum number of steps to reach all sensitive machines
+        """
+        num_subnets = len(self.topology)
+        max_value = np.iinfo(np.int32).max
+        distance = np.full((num_subnets, num_subnets), max_value)
+
+        # set distances for each edge to 1
+        for s1 in range(num_subnets):
+            for s2 in range(num_subnets):
+                if s1 == s2:
+                    distance[s1][s2] = 0
+                elif self.topology[s1][s2] == 1:
+                    distance[s1][s2] = 1
+
+        # find all pair minimum shortest path distance
+        for k in range(num_subnets):
+            for i in range(num_subnets):
+                for j in range(num_subnets):
+                    if distance[i][j] > distance[i][k] + distance[k][j]:
+                        distance[i][j] = distance[i][k] + distance[k][j]
+
+        # get list of all subnets we need to visit
+        subnets_to_visit = [INTERNET]
+        for subnet, machine in self.sensitive_addresses:
+            if subnet not in subnets_to_visit:
+                subnets_to_visit.append(subnet)
+
+        # find minimum shortest path that visits internet subnet and all sensitive subnets
+        # by checking all possible permutations
+        shortest = max_value
+        for pm in permutations(subnets_to_visit):
+            pm_sum = 0
+            for i in range(len(pm) - 1):
+                pm_sum += distance[pm[i]][pm[i+1]]
+            shortest = min(shortest, pm_sum)
+
+        return shortest
 
     def _get_sensitive_addresses(self):
         """

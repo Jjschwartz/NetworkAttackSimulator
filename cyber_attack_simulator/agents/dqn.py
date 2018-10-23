@@ -46,10 +46,11 @@ class Brain:
 
 class Memory:
     """Replay buffer"""
-    samples = []
 
     def __init__(self, capacity):
         self.capacity = capacity
+        self.samples = []
+        self.reset()
 
     def add(self, sample):
         self.samples.append(sample)
@@ -66,8 +67,6 @@ class Memory:
 
 
 class DQNAgent(Agent):
-
-    steps = 0
 
     def __init__(self, state_size, num_actions, hidden_units=256,
                  gamma=0.99,
@@ -98,6 +97,7 @@ class DQNAgent(Agent):
         self.max_epsilon = max_epsilon
         self.epsilon_decay_lambda = epsilon_decay_lambda
         self.epsilon = max_epsilon
+        self.steps = 0
 
         self.batch_size = batch_size
 
@@ -189,7 +189,7 @@ class DQNAgent(Agent):
             return np.argmax(self.brain.predictOne(s))
 
     def _choose_greedy_action(self, state, action_space):
-        return np.argmax(self.brain.predictOne(state))
+        return np.argmax(self.brain.predictOne(self.process_state(state)))
 
     def observe(self, sample):
         """ Add an observation to replay memory and also adjust epsilon """

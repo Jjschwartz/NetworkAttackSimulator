@@ -32,18 +32,27 @@ AGENTS = {"DQN": {"constructor": DQNAgent,
 H_PARAMS = {}
 H_PARAMS["alpha"] = [0.1000, 0.0100, 0.0500, 0.3000, 0.5000, 0.7000, 0.9000]
 # H_PARAMS["alpha"] = [0.1000]
-H_PARAMS["gamma"] = [0.9000, 0.5000, 0.8000, 0.9900, 0.9990]
+# H_PARAMS["gamma"] = [0.9000, 0.5000, 0.8000, 0.9900, 0.9990]
+H_PARAMS["gamma"] = [0.5000]    # DQN - tiny
 H_PARAMS["c"] = [1.0000, 2.0000, 5.0000, 10.0000]
-H_PARAMS["hidden_units"] = [64, 128, 256, 512]
-H_PARAMS["epsilon_decay_lambda"] = [0.0100, 0.0001, 0.0010, 0.1000, 0.2000, 0.5000]
+# H_PARAMS["hidden_units"] = [64, 128, 256, 512]
+H_PARAMS["hidden_units"] = [256]    # DQN - tiny
+# H_PARAMS["epsilon_decay_lambda"] = [0.0100, 0.0001, 0.0010, 0.1000, 0.2000, 0.5000]
+H_PARAMS["epsilon_decay_lambda"] = [0.0100, 0.0001, 0.0010, 0.1000]  #
 
 # Experiment scenarios
 scenarios = OrderedDict()
+# scenarios["tiny"] = {"machines": 3,
+#                      "services": 1,
+#                      "restrictiveness": 1,
+#                      "episodes": 1000,
+#                      "steps": 200,
+#                      "timeout": 300}
 scenarios["tiny"] = {"machines": 3,
                      "services": 1,
                      "restrictiveness": 1,
-                     "episodes": 1000,
-                     "steps": 200,
+                     "episodes": 700,
+                     "steps": 100,
                      "timeout": 300}
 scenarios["small"] = {"machines": 8,
                       "services": 3,
@@ -86,7 +95,13 @@ VERBOSE = False
 
 # Experiment scenarios to tune agent for
 scenarios_list = ["tiny"]
-scenarios_list = ["large", "huge"]
+# scenarios_list = ["large", "huge"]
+
+
+def param_dict_string(params):
+    output = ""
+    for k, v in params.items():
+        output += "{}={} ".format(k, v)
 
 
 def load_agent(agent_type, env, agent_params):
@@ -141,7 +156,7 @@ def test_hyperparam(scenario, agent_type, agent_params, tune_param):
     """ """
 
     print("\nTuning hyperparam {}".format(tune_param))
-    print("Using scenario hyperparameters {}".format(agent_params))
+    print("Using scenario hyperparameters {}".format(param_dict_string(agent_params)))
 
     h_results = []
     h_values = H_PARAMS[tune_param]
@@ -227,19 +242,23 @@ def main():
     print("Tuning {} agent".format(agent_type))
 
     agent_params = get_default_agent_params(agent_type)
-    print("Default params = {}".format(agent_params))
+    print("Default params = {}".format(param_dict_string(agent_params)))
 
     for scenario in scenarios_list:
         print("Tuning for scenario = {}".format(scenario))
-        print("Aaaaand awaaaay weeee goooo!!")
+        print("Aaaaand awaaaay weeee goooo!!\n")
         scenario_params = deepcopy(agent_params)
         for h in scenario_params.keys():
-            results = test_hyperparam(scenario, agent_type, scenario_params, h)
-            if not AUTOMODE:
-                report_results(scenario, agent_type, h, results)
-                new_val = get_user_choice(h)
+            if len(H_PARAMS[h]) == 1:
+                print("Only one choice so choosing that..")
+                new_val = H_PARAMS[h][0]
             else:
-                new_val = get_best_hyperparam_value(results)
+                results = test_hyperparam(scenario, agent_type, scenario_params, h)
+                if not AUTOMODE:
+                    report_results(scenario, agent_type, h, results)
+                    new_val = get_user_choice(h)
+                else:
+                    new_val = get_best_hyperparam_value(results)
             print("Selected {}={} for new value".format(h, new_val))
             scenario_params[h] = new_val
         # 2. print final hyperparam values for given scenario

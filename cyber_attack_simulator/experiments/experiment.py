@@ -12,16 +12,22 @@ VERBOSE = True
 
 # Experiment scenarios and agents to run
 scenarios_list = ["tiny"]
-agent_list = ["td_egreedy", "dqn"]
+agent_list = ["td_egreedy", "td_ucb", "dqn"]
 
 
 # Experiment scenarios
 scenarios = OrderedDict()
+# scenarios["tiny"] = {"machines": 3,
+#                      "services": 1,
+#                      "restrictiveness": 1,
+#                      "episodes": 1000,
+#                      "steps": 200,
+#                      "timeout": 300}
 scenarios["tiny"] = {"machines": 3,
                      "services": 1,
                      "restrictiveness": 1,
-                     "episodes": 1000,
-                     "steps": 200,
+                     "episodes": 500,
+                     "steps": 100,
                      "timeout": 300}
 scenarios["small"] = {"machines": 8,
                       "services": 3,
@@ -51,21 +57,21 @@ scenarios["huge"] = {"machines": 37,
 # Experiment agents
 agents = OrderedDict()
 agents["td_egreedy"] = {
-    "tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "tiny": {"type": "egreedy", "alpha": 0.05, "gamma": 0.9, "epsilon_decay_lambda": 0.01},
     "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
     "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
     "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
     "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001}
     }
 agents["td_ucb"] = {
-    "tiny": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
+    "tiny": {"type": "UCB", "alpha": 0.05, "gamma": 0.9, "c": 1.0},
     "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
     "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
     "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
     "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0}
     }
 agents["dqn"] = {
-    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "tiny": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
     "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
@@ -74,7 +80,7 @@ agents["dqn"] = {
 
 
 # Experiment constants
-RUNS = 3      # number of training runs to do
+RUNS = 5      # number of training runs to do
 EVAL_WINDOW = 100      # number of episodes to evaluate policy over
 
 # Environment constants
@@ -135,7 +141,7 @@ def write_results(result_file, scenario, agent, run, timesteps, rewards, times):
 
     for e in range(len(timesteps)):
         # scenario,agent,run,episode,timesteps,rewards,time
-        result_file.write("{0},{1},{2},{3},{4},{5},{6:2f}\n".format(scenario, agent, run, e,
+        result_file.write("{0},{1},{2},{3},{4},{5},{6:.2f}\n".format(scenario, agent, run, e,
                           timesteps[e], rewards[e], times[e]))
 
 

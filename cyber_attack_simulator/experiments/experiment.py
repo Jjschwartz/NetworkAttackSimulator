@@ -72,10 +72,10 @@ agents["td_ucb"] = {
     }
 agents["dqn"] = {
     "tiny": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
-    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
+    "small": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
+    "medium": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
+    "large": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
+    "huge": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01}
      }
 
 
@@ -84,7 +84,7 @@ RUNS = 5      # number of training runs to do
 EVAL_WINDOW = 100      # number of episodes to evaluate policy over
 
 # Environment constants
-UNIFORM = True
+UNIFORM = False
 EXPLOIT_PROB = "mixed"
 R_SENS = R_USR = 10
 COST_EXP = COST_SCAN = 1

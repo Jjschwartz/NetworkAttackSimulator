@@ -32,13 +32,13 @@ class Viewer(object):
         self.subnets = self._get_subnets(network)
         self.positions = self._get_machine_positions(network)
 
-    def render_graph(self, state, axes=None, show=False):
+    def render_graph(self, state, ax=None, show=False):
         """
         Render graph structure representing network that can be then be visualized
 
         Arguments:
             State state : state of network user wants to view (Typically will be initial state)
-            Axes axes : matplotlib axes to plot graph on, or None to plot on new axes
+            Axes ax : matplotlib axis to plot graph on, or None to plot on new axis
             bool show : whether to display plot, or simply construct plot
         """
         G = self._construct_graph(state)
@@ -46,18 +46,22 @@ class Viewer(object):
         for n in list(G.nodes):
             colors.append(G.nodes[n]["color"])
 
-        if axes is None:
+        if ax is None:
             fig = plt.figure()
-            axes = fig.add_subplot(111)
+            ax = fig.add_subplot(111)
         else:
-            fig = axes.get_figure()
+            fig = ax.get_figure()
 
-        nx.draw_networkx_nodes(G, self.positions, node_color=colors, ax=axes)
+        nx.draw_networkx_nodes(G, self.positions, node_color=colors, ax=ax)
         nx.draw_networkx_edges(G, self.positions)
-        axes.axis('off')
-        axes.set_xlim(left=0.0, right=100.0)
+        ax.axis('off')
+        ax.set_xlim(left=0.0, right=100.0)
+
+        legend_entries = EpisodeViewer.legend(compromised=False)
+        ax.legend(handles=legend_entries)
 
         if show:
+            fig.tight_layout()
             plt.show()
             plt.close(fig)
 
@@ -336,7 +340,7 @@ class EpisodeViewer(object):
         nx.draw_networkx_edges(G, pos)
         plt.axis('off')
         # generate and plot legend
-        legend_entries = self._legend()
+        legend_entries = self.legend()
         plt.legend(handles=legend_entries)
         # add title
         state, action, reward, done = self.episode[self.timestep]
@@ -347,7 +351,8 @@ class EpisodeViewer(object):
         self.axes.set_title(title)
         self.canvas.draw()
 
-    def _legend(self):
+    @staticmethod
+    def legend(compromised=True):
         """
         Manually setup the display legend
         """
@@ -355,10 +360,12 @@ class EpisodeViewer(object):
         s = mpatches.Patch(color='magenta', label='Sensitive (S)')
         c = mpatches.Patch(color='green', label='Compromised (C)')
         r = mpatches.Patch(color='blue', label='Reachable (R)')
-        sc = mpatches.Patch(color='yellow', label='S & C')
-        sr = mpatches.Patch(color='orange', label='S & R')
-        o = mpatches.Patch(color='red', label='not S, C or R')
-        legend_entries = [a, s, c, r, sc, sr, o]
+        legend_entries = [a, s, c, r]
+        if compromised:
+            sc = mpatches.Patch(color='yellow', label='S & C')
+            sr = mpatches.Patch(color='orange', label='S & R')
+            o = mpatches.Patch(color='red', label='not S, C or R')
+            legend_entries.extend([sc, sr, o])
         return legend_entries
 
 

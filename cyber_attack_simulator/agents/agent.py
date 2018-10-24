@@ -80,7 +80,7 @@ class Agent(object):
         for t in range(max_steps):
             action = self._choose_greedy_action(state, action_space)
             new_state, reward, done = env.step(action_space[action])
-            episode.append((state, action_space[action], reward, False))
+            episode.append((state.copy(), action_space[action], reward, False))
             reward_sum += reward
             steps += 1
             if done:

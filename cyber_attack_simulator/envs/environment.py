@@ -7,11 +7,11 @@ import cyber_attack_simulator.envs.loader as loader
 
 
 # Default reward when generating a network from paramaters
-R_SENSITIVE = 1000.0
-R_USER = 1000.0
+R_SENSITIVE = 10
+R_USER = 10
 # Default action costs
-EXPLOIT_COST = 100.0
-SCAN_COST = 100.0
+EXPLOIT_COST = 1
+SCAN_COST = 1
 
 
 class CyberAttackSimulatorEnv(object):
@@ -29,7 +29,8 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs=1.0):
+    def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST,
+                 exploit_probs='mixed'):
         """
         Construct a new environment and network
 
@@ -40,7 +41,7 @@ class CyberAttackSimulatorEnv(object):
             dict config : network configuration
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            None, int or list  exploit_probs :  success probability of exploits
+            mixed exploit_probs :  success probability of exploits (see action class for details)
         """
         self.config = config
         self.exploit_probs = exploit_probs
@@ -57,7 +58,7 @@ class CyberAttackSimulatorEnv(object):
         self.reset()
 
     @classmethod
-    def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs=1.0):
+    def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs='mixed'):
         """
         Construct a new Cyber Attack Simulator Environment from a config file.
 
@@ -65,7 +66,7 @@ class CyberAttackSimulatorEnv(object):
             str path : path to the config file
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            None, int or list  exploit_probs :  success probability of exploits
+            mixed exploit_probs :  success probability of exploits (see action class for details)
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
@@ -77,7 +78,7 @@ class CyberAttackSimulatorEnv(object):
     def from_params(cls, num_machines, num_services,
                     r_sensitive=R_SENSITIVE, r_user=R_USER,
                     exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST,
-                    exploit_probs=1.0,
+                    exploit_probs='mixed',
                     uniform=False, alpha_H=2.0, alpha_V=2.0, lambda_V=1.0,
                     restrictiveness=5,
                     seed=1):
@@ -92,7 +93,7 @@ class CyberAttackSimulatorEnv(object):
             float r_user : reward for user subnet documents
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            None, int or list  exploit_probs :  success probability of exploits
+            mixed exploit_probs :  success probability of exploits
             bool uniform : whether to use uniform distribution of machine configs or corelated
                            machine configs
             float alpha_H : (only used when uniform=False), scaling/concentration parameter for
@@ -188,19 +189,19 @@ class CyberAttackSimulatorEnv(object):
         """
         self.renderer.render_episode(episode)
 
-    def render_network_graph(self, initial_state=True, axes=None, show=False):
+    def render_network_graph(self, initial_state=True, ax=None, show=False):
         """
         Render a plot of network as a graph with machines as nodes arranged into subnets and
         showing connections between subnets
 
         Arguments:
             bool initial_state : whether to render current or initial state of network
-            Axes axes : matplotlib axes to plot graph on, or None to plot on new axes
+            Axes ax : matplotlib axis to plot graph on, or None to plot on new axis
             bool show : whether to display plot, or simply setup plot and showing plot can be
                         handled elsewhere by user
         """
         state = self.init_state if initial_state else self.current_state
-        self.renderer.render_graph(state, axes, show)
+        self.renderer.render_graph(state, ax, show)
 
     def get_state_size(self):
         """

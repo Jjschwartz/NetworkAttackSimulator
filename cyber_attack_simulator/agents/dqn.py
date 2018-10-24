@@ -106,6 +106,11 @@ class DQNAgent(Agent):
 
     def train(self, env, num_episodes=100, max_steps=100, timeout=None, verbose=False, **kwargs):
 
+        if "visualize_policy" in kwargs:
+            visualize_policy = kwargs["visualize_policy"]
+        else:
+            visualize_policy = 0
+
         self.print_message("Starting training for {} episodes".format(num_episodes), verbose)
 
         # stores timesteps and rewards for each episode
@@ -126,6 +131,12 @@ class DQNAgent(Agent):
             self.epsilon = self.epsilon_decay()
 
             self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
+
+            if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
+                gen_episode = self.generate_episode(env, max_steps)
+                self.print_message("Visualizing current policy. Episode length = {0}"
+                                   .format(len(gen_episode)), verbose)
+                env.render_episode(gen_episode)
 
             if timeout is not None and time.time() - training_start_time > timeout:
                 self.print_message("Timed out after {} sec on episode {:.2f}".format(timeout, e),

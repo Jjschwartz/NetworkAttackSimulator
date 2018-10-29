@@ -276,7 +276,7 @@ class EpisodeViewer(object):
         plt.tight_layout(pad=2)
         # a tk.DrawingArea
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.canvas.show()
+        self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
         # buttons for moving between observations
         back = Tk.Button(self.root, text="back", command=self._previous_graph)

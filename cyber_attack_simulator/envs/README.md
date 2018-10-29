@@ -131,14 +131,17 @@ The distribution of configurations of each machine in the network are generated 
 
 lambda_V controls the average number of services running per machine. Higher values will mean more services (so more vulnerable) machines on average.
 
+
 ## Interacting with the environment
+
 Once an environment has been initialized, interacting with it is easy. There are only a few methods for interaction:
 1. **reset()** : which resets the environment back to the initial state (i.e. no machines compromised and state of each machine is unknown) and returns the initial state
 2. **step(action)** : which takes an action and performs one step in the environment, applying action and returning the new state, a reward and whether the new state is the goal state or not
-3. **render(mode) **: for rendering the environment. See function comments for more details of options. Also see render_episode for rendering an entire episode sequence that can be stepped through action by action.
+3. **render(mode)**: for rendering the environment. See function comments for more details of options. Also see render_episode for rendering an entire episode sequence that can be stepped through action by action.
 
 
 ## References
+
 [1] C. Sarraute, O. Buffet, and J. Hoffmann, “POMDPs Make Better Hackers: Accounting for Uncertainty in Penetration Testing.,” in AAAI, 2012.
 
 [2] M. Backes, J. Hoffmann, R. Künnemann, P. Speicher, and M. Steinmetz, “Simulated Penetration Testing and Mitigation Analysis,” arXiv:1705.05088 [cs], May 2017.

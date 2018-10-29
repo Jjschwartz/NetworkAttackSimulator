@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from cyber_attack_simulator.agents.q_learning import QLearningAgent
-from cyber_attack_simulator.agents.dqn import DQNAgent
 
 
 # experiment scenarios
@@ -101,6 +100,8 @@ def get_agent(agent_name, scenario_name, env):
 
     agent_params = agents[agent_name][scenario_name]
     if agent_name == "dqn":
+        # only import when necessary
+        from cyber_attack_simulator.agents.dqn import DQNAgent
         state_size = env.get_state_size()
         num_actions = env.get_num_actions()
         return DQNAgent(state_size, num_actions, **agent_params)

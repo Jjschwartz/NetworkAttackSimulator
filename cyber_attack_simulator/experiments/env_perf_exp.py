@@ -53,8 +53,8 @@ def run_experiment(M, S, actions_per_run, run):
     return a_per_sec, load_time
 
 
-def write_result(M, S, a_per_sec, load_time, result_file):
-    result_file.write("{},{},{},{}\n".format(M, S, a_per_sec, load_time))
+def write_result(M, S, run, a_per_sec, load_time, result_file):
+    result_file.write("{},{},{},{},{}\n".format(M, S, run, a_per_sec, load_time))
 
 
 def main():
@@ -86,7 +86,7 @@ def main():
         print("Writing to new file", sys.argv[1])
         result_file = open(sys.argv[1], 'w')
         # write header line
-        write_result("M", "S", "a_per_sec", "load_time", result_file)
+        write_result("M", "S", "run", "a_per_sec", "load_time", result_file)
 
     for M in range(minM, maxM + 1, intM):
         for S in range(minS, maxS + 1, intS):
@@ -95,13 +95,13 @@ def main():
             run_results_load = np.empty(runs, dtype=float)
             for run in range(runs):
                 a_per_sec, load_time = run_experiment(M, S, actions_per_run, run)
+                write_result(M, S, run, a_per_sec, load_time, result_file)
                 run_results_actions[run] = a_per_sec
                 run_results_load[run] = load_time
             avg_a_per_sec = np.mean(run_results_actions)
             avg_load_time = np.mean(run_results_load)
             print("\tAverage actions per action = {:.6f}".format(avg_a_per_sec))
             print("\tAverage load time = {:.6f}".format(avg_load_time))
-            write_result(M, S, avg_a_per_sec, load_time, result_file)
 
     return 0
 

@@ -46,8 +46,8 @@ def run_experiment(M, S, actions_per_run, run):
         s, _, done = env.step(a)
         if done:
             env.reset()
-        if t % (actions_per_run // 5) == 0:
-            print("\t\tActions performed = {}".format(t))
+        # if t % (actions_per_run // 5) == 0:
+        #     print("\t\tActions performed = {}".format(t))
 
     a_per_sec = actions_per_run / (time.time() - start_time)
     return a_per_sec, load_time
@@ -81,10 +81,10 @@ def main():
 
     if len(sys.argv) == 8 and sys.argv[7] == "1":
         print("Appending to", sys.argv[1])
-        result_file = open(sys.argv[1], 'a+')
+        result_file = open(sys.argv[1], 'a+', buffering=1)
     else:
         print("Writing to new file", sys.argv[1])
-        result_file = open(sys.argv[1], 'w')
+        result_file = open(sys.argv[1], 'w', buffering=1)
         # write header line
         write_result("M", "S", "run", "a_per_sec", "load_time", result_file)
 

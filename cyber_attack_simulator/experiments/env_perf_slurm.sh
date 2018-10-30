@@ -32,7 +32,7 @@ runs=10
 append=0
 
 module load anaconda3
-stdbuf -oL -eL time python env_perf_exp.py $outfile $minM $maxM $intM $minS $maxS $intS $aPerRun $runs $append
+time python env_perf_exp.py $outfile $minM $maxM $intM $minS $maxS $intS $aPerRun $runs $append
 
 DATE=$(date +"%Y%m%d%H%M%S")
 echo "time finished "$DATE

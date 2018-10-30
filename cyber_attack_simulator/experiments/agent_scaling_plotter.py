@@ -40,8 +40,7 @@ def plot_solve_time_vs_machines(ax, df):
         machines = mean_agent_df["M"]
         label = get_agent_label(agent)
         ax.plot(machines, solve_times, label=label)
-        ax.fill_between(machines, solve_times-err, solve_times+err,
-                        alpha=0.3)
+        ax.fill_between(machines, solve_times-err, solve_times+err, alpha=0.3)
 
     ax.set_xlabel("Machines", fontsize=12)
     ax.set_ylabel("Mean Solve Time (Sec)", fontsize=12)

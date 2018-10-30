@@ -361,8 +361,8 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
     """
     num_subnets = len(subnets)
     # Plus 1 since we have Internet subnet
-    firewall = np.full((num_subnets, num_subnets, num_services), True)
-    subnet_services = np.full((num_subnets, num_services), False)
+    firewall = np.full((num_subnets, num_subnets, num_services), True, dtype=np.bool_)
+    subnet_services = np.full((num_subnets, num_services), False, dtype=np.bool_)
 
     # find services running on each subnet, and set to true
     for m in machines.values():

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=cosc
-#SBATCH --time=01:30:00
+#SBATCH --time=02:00:00
 #SBATCH --job-name=env_experiment
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -20,13 +20,13 @@ echo "running with SLURM_NPROCS= $SLURM_NPROCS "
 echo "Now we start the show:"
 export TIMEFORMAT="%E sec"
 
-outfile="test.csv"
+outfile="results/test2.csv"
 minM=3
-maxM=3
-intM=1
+maxM=103
+intM=10
 minS=1
-maxS=3
-intS=1
+maxS=101
+intS=10
 aPerRun=100000
 runs=10
 append=0

@@ -3,7 +3,7 @@ Generates plots for env_perf_exp
 
 1. Actions per second vs M vs S
 """
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D     # noqa F401
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import pandas as pd
@@ -127,8 +127,8 @@ def main():
     print("Watch as it grows and grows and grows!")
     results_df = import_data(sys.argv[1])
 
-    # fig = plt.figure(1)
-    # ax = fig.add_subplot(111, projection='3d')
+    # fig1 = plt.figure(1)
+    # ax = fig1.add_subplot(111, projection='3d')
     # plot_action_per_sec_3D(results_df, ax)
 
     fig2 = plt.figure(2)

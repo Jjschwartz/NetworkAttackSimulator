@@ -17,8 +17,8 @@ import sys
 
 
 # Environment constants used for all experiments
-UNIFORM = False
-EXPLOIT_PROB = "mixed"
+UNIFORM = True
+EXPLOIT_PROB = 1.0
 RVE = 3
 
 
@@ -32,29 +32,36 @@ def load_env(M, S, seed):
 
 def run_experiment(M, S, actions_per_run, run):
 
+    # so actions performed are the same for each run
+    np.random.seed(1)
+
     print("\tRun = {}".format(run))
     load_time_start = time.time()
     env = load_env(M, S, run)
     load_time = time.time() - load_time_start
     action_space = np.array(env.action_space)
-    # action_space = np.random.choice(action_space, S)
-    start_time = time.time()
+    actions = np.random.choice(action_space, size=actions_per_run)
     s = env.reset()
+    reset_time = 0
 
+    start_time = time.time()
     for t in range(actions_per_run):
-        a = get_random_action(action_space)
+        a = actions[t]
         s, _, done = env.step(a)
         if done:
+            reset_start_time = time.time()
             env.reset()
+            reset_time += (time.time() - reset_start_time)
         # if t % (actions_per_run // 5) == 0:
         #     print("\t\tActions performed = {}".format(t))
 
-    a_per_sec = actions_per_run / (time.time() - start_time)
-    return a_per_sec, load_time
+    a_per_sec = actions_per_run / ((time.time() - start_time) - reset_time)
+    t_per_a = ((time.time() - start_time) - reset_time) / actions_per_run
+    return a_per_sec, t_per_a, load_time
 
 
-def write_result(M, S, run, a_per_sec, load_time, result_file):
-    result_file.write("{},{},{},{},{}\n".format(M, S, run, a_per_sec, load_time))
+def write_result(M, S, run, a_per_sec, t_per_a, load_time, result_file):
+    result_file.write("{},{},{},{},{},{}\n".format(M, S, run, a_per_sec, t_per_a, load_time))
 
 
 def main():
@@ -86,21 +93,25 @@ def main():
         print("Writing to new file", sys.argv[1])
         result_file = open(sys.argv[1], 'w', buffering=1)
         # write header line
-        write_result("M", "S", "run", "a_per_sec", "load_time", result_file)
+        write_result("M", "S", "run", "a_per_sec", "t_per_a", "load_time", result_file)
 
     for M in range(minM, maxM + 1, intM):
         for S in range(minS, maxS + 1, intS):
             print("\nRunning experiment with M={} S={}".format(M, S))
             run_results_actions = np.empty(runs, dtype=float)
+            run_results_time = np.empty(runs, dtype=float)
             run_results_load = np.empty(runs, dtype=float)
             for run in range(runs):
-                a_per_sec, load_time = run_experiment(M, S, actions_per_run, run)
-                write_result(M, S, run, a_per_sec, load_time, result_file)
-                run_results_actions[run] = a_per_sec
-                run_results_load[run] = load_time
+                results = run_experiment(M, S, actions_per_run, run)
+                write_result(M, S, run, results[0], results[1], results[2], result_file)
+                run_results_actions[run] = results[0]
+                run_results_time[run] = results[1]
+                run_results_load[run] = results[2]
             avg_a_per_sec = np.mean(run_results_actions)
+            avg_t_per_a = np.mean(run_results_time)
             avg_load_time = np.mean(run_results_load)
-            print("\tAverage actions per action = {:.6f}".format(avg_a_per_sec))
+            print("\tAverage actions per second = {:.6f}".format(avg_a_per_sec))
+            print("\tAverage time per action = {:.6f}".format(avg_t_per_a))
             print("\tAverage load time = {:.6f}".format(avg_load_time))
 
     return 0

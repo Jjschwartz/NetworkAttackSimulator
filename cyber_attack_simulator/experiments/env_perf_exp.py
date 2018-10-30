@@ -91,8 +91,8 @@ def main():
     for M in range(minM, maxM + 1, intM):
         for S in range(minS, maxS + 1, intS):
             print("\nRunning experiment with M={} S={}".format(M, S))
-            run_results_actions = np.empty(runs)
-            run_results_load = np.empty(runs)
+            run_results_actions = np.empty(runs, dtype=float)
+            run_results_load = np.empty(runs, dtype=float)
             for run in range(runs):
                 a_per_sec, load_time = run_experiment(M, S, actions_per_run, run)
                 run_results_actions[run] = a_per_sec

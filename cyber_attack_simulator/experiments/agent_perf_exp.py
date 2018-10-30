@@ -1,5 +1,10 @@
 """
 Run Experimental scenarios
+
+Gets results for multiple agents and scenarios
+    - whether scenario was solved
+    - reward vs episode
+    - time vs episode
 """
 import sys
 from collections import OrderedDict

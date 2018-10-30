@@ -190,7 +190,7 @@ class Network(object):
         """
         num_subnets = len(self.topology)
         max_value = np.iinfo(np.int32).max
-        distance = np.full((num_subnets, num_subnets), max_value)
+        distance = np.full((num_subnets, num_subnets), max_value, dtype=np.int32)
 
         # set distances for each edge to 1
         for s1 in range(num_subnets):

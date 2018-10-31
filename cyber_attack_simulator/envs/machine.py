@@ -18,8 +18,8 @@ class Machine(object):
 
         Arguments:
             tuple address : address of machine as (subnet, id)
-            list services: a list of ordered bools indicating which services
-                are present/absent
+            list or dict services: an ordered list of bools or a (service_name, bool) dictionary
+                indicating which services are present/absent
             float value : value of the machine
         """
         self.address = address

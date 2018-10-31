@@ -33,7 +33,7 @@ class QLearningAgent(TDAgent):
             self._n(s, a_space)[a] += 1
             new_s, reward, done = env.step(a_space[a])
             self._q_update(s, a, new_s, reward, a_space)
-            s = new_s
+            s = new_s.copy()
             ep_reward += reward
             ep_timesteps += 1
             if done:

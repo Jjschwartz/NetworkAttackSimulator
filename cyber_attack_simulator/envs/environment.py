@@ -4,6 +4,7 @@ from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
 from cyber_attack_simulator.envs.render import Viewer
 import cyber_attack_simulator.envs.loader as loader
+import cyber_attack_simulator.envs.generator as generator
 
 
 # Default reward when generating a network from paramaters
@@ -110,10 +111,10 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
-        config = loader.generate_config(num_machines, num_services,
-                                        r_sensitive, r_user,
-                                        uniform, alpha_H, alpha_V, lambda_V,
-                                        restrictiveness, seed)
+        config = generator.generate_config(num_machines, num_services,
+                                           r_sensitive, r_user,
+                                           uniform, alpha_H, alpha_V, lambda_V,
+                                           restrictiveness, seed)
         return cls(config, exploit_cost, scan_cost, exploit_probs)
 
     def reset(self):
@@ -125,11 +126,14 @@ class CyberAttackSimulatorEnv(object):
         """
         self.current_state = self.init_state.copy()
         self.compromised_subnets = set([loader.INTERNET])
-        return self.current_state.copy()
+        return self.current_state
 
     def step(self, action):
         """
         Run one step of the environment using action.
+
+        N.B. Does not return a copy of the state, and state is changed by simulator. So if you
+        need to store the state you may need to copy it (see State.copy method)
 
         Arguments:
             Action action : Action object from action_space
@@ -154,7 +158,7 @@ class CyberAttackSimulatorEnv(object):
         done = self._is_goal()
         reward = value - action.cost
         # update current state in place, then return copy since State object is muteable
-        obs = self.current_state.copy()
+        obs = self.current_state
         return obs, reward, done
 
     def render(self, mode="ASCI"):

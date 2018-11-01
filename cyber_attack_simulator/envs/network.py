@@ -41,7 +41,7 @@ class Network(object):
         """
         self.subnets = config["subnets"]
         self.topology = config["topology"]
-        self.num_services = config["services"]
+        self.num_services = config["num_services"]
         self.sensitive_machines = config["sensitive_machines"]
         self.machines = config["machines"]
         self.firewall = config["firewall"]
@@ -67,10 +67,6 @@ class Network(object):
         tgt_subnet, tgt_id = action.target
         assert 0 < tgt_subnet and tgt_subnet < len(self.subnets)
         assert tgt_id <= self.subnets[tgt_subnet]
-
-        # check if valid action type and service
-        if not action.is_scan():
-            assert 0 <= action.service and action.service < self.num_services
 
         # action is valid, so perform against machine
         t_machine = self.machines[action.target]
@@ -146,7 +142,9 @@ class Network(object):
         Returns:
             bool permitted : True if traffic is permitted, False otherwise
         """
-        return self.firewall[src][dest][service]
+        if (src, dest) not in self.firewall:
+            return False
+        return service in self.firewall[(src, dest)]
 
     def subnet_exposed(self, subnet):
         """

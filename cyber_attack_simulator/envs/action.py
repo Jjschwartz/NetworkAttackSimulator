@@ -125,3 +125,27 @@ class Action(object):
                 exploit = Action(address, exploit_cost, "exploit", service, prob)
                 action_space.append(exploit)
         return action_space
+
+    @staticmethod
+    def load_action_space(address_space, service_exploits, scan_cost):
+        """
+        Load the action space for the environment from service exploits list
+
+        Arguments:
+            list address_space : list of addresses for each machine in network
+            dict service_exploits : map from service name to (prob, cost) tuple
+            float scan_cost : cost of performing a scan action
+
+        Returns:
+            list action_space : list of actions
+        """
+        action_space = []
+        for address in address_space:
+            scan = Action(address, scan_cost, "scan")
+            action_space.append(scan)
+            for service, val in service_exploits.items():
+                prob = val[0]
+                cost = val[1]
+                exploit = Action(address, cost, "exploit", service, prob)
+                action_space.append(exploit)
+        return action_space

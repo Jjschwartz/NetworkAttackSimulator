@@ -1,6 +1,7 @@
 # A tiny standard (one public network) network configuration
 subnets: [1, 1, 1]
-topology: [[ 1, 1, 1, 1],
+topology: [[ 1, 1, 0, 0],
+           [ 1, 1, 1, 1],
            [ 0, 1, 1, 1],
            [ 0, 1, 1, 1]]
 sensitive_machines: [[2, 0, 10],

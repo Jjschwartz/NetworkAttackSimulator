@@ -31,7 +31,7 @@ class CyberAttackSimulatorEnv(object):
     current_state = None
 
     def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST,
-                 exploit_probs='mixed'):
+                 exploit_probs='mixed', seed=1):
         """
         Construct a new environment and network
 
@@ -43,20 +43,42 @@ class CyberAttackSimulatorEnv(object):
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
             mixed exploit_probs :  success probability of exploits (see action class for details)
+            int seed : random seed
         """
         self.config = config
         self.exploit_probs = exploit_probs
-        self.seed = 1
+        self.seed = seed
+        np.random.seed(seed)
 
-        self.num_services = config["services"]
+        self.num_services = config["num_services"]
         self.network = Network(config)
         self.address_space = self.network.get_address_space()
-        self.action_space = Action.generate_action_space(self.address_space, config["services"],
-                                                         exploit_cost, scan_cost, exploit_probs)
+
+        self.service_map = {}
+        service_exploits = config["service_exploits"]
+        if service_exploits:
+            for i, service in enumerate(service_exploits.keys()):
+                self.service_map[service] = i
+            print(self.service_map)
+            self.action_space = Action.load_action_space(self.address_space,
+                                                         config["service_exploits"],
+                                                         scan_cost)
+        else:
+            self.action_space = Action.generate_action_space(self.address_space,
+                                                             self.num_services,
+                                                             exploit_cost, scan_cost,
+                                                             exploit_probs)
+
         self.renderer = Viewer(self.network)
         self.init_state = self._generate_initial_state()
         self.compromised_subnets = None
         self.reset()
+
+    def _get_service_index(self, service):
+        if len(self.service_map) != 0:
+            return self.service_map[service]
+        else:
+            service
 
     @classmethod
     def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs='mixed'):
@@ -115,7 +137,7 @@ class CyberAttackSimulatorEnv(object):
                                            r_sensitive, r_user,
                                            uniform, alpha_H, alpha_V, lambda_V,
                                            restrictiveness, seed)
-        return cls(config, exploit_cost, scan_cost, exploit_probs)
+        return cls(config, exploit_cost, scan_cost, exploit_probs, seed * 5)
 
     def reset(self):
         """
@@ -154,12 +176,22 @@ class CyberAttackSimulatorEnv(object):
 
         success, value, services = self.network.perform_action(action)
         value = 0 if self.current_state.compromised(action.target) else value
-        self._update_state(action, success, services)
+        service_vector = self.vectorize(services)
+        self._update_state(action, success, service_vector)
         done = self._is_goal()
         reward = value - action.cost
         # update current state in place, then return copy since State object is muteable
         obs = self.current_state
         return obs, reward, done
+
+    def vectorize(self, services):
+        if len(services) == 0:
+            return services
+        vector = np.zeros(len(services), dtype=int)
+        for s, v in services.items():
+            i = self._get_service_index(s)
+            vector[i] = v
+        return vector
 
     def render(self, mode="ASCI"):
         """

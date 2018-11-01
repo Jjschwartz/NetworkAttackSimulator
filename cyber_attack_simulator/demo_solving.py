@@ -61,7 +61,8 @@ def main():
     num_machines = scenario["machines"]
     num_services = scenario["services"]
     restrictiveness = scenario["restrictiveness"]
-    num_episodes = scenario["episodes"]
+    # num_episodes = scenario["episodes"]
+    num_episodes = 1500
     max_steps = scenario["steps"]
     timeout = scenario["timeout"]
 
@@ -70,8 +71,9 @@ def main():
     print("\tnumber of services =", num_services)
     print("\tfirewall restrictiveness =", restrictiveness)
     # print("\tnumber of subnets =", 3 + (num_machines - 3) // 5)
-    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-                                              restrictiveness=restrictiveness)
+    # env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
+    #                                           restrictiveness=restrictiveness)
+    env = CyberAttackSimulatorEnv.from_file("configs/small.yaml")
 
     agent_name = sys.argv[1]
     agent = get_agent(agent_name, scenario_name, env)

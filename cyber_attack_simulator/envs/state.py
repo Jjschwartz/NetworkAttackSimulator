@@ -30,7 +30,6 @@ class State(object):
         - reachable : whether a given machine is reachable
         - compromised : whether a given machine is compromised
         - service_state : get the knowledge state for a given service and machine
-        - next_state : get next state given an action
     """
 
     def __init__(self, obs):

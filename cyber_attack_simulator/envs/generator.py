@@ -70,7 +70,7 @@ def generate_config(num_machines, num_services, r_sensitive, r_user, uniform=Fal
     subnets = generate_subnets(num_machines)
     config["subnets"] = subnets
     config["topology"] = generate_topology(subnets)
-    config["services"] = num_services
+    config["num_services"] = num_services
     s_machines = generate_sensitive_machines(subnets, r_sensitive, r_user)
     config["sensitive_machines"] = s_machines
     machines = generate_machines(subnets, num_services, s_machines, uniform,
@@ -374,4 +374,22 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
                     firewall[src][dest][dest_allowed] = True
                     allowed.add(dest_allowed)
                     dest_avail.remove(dest_allowed)
-    return firewall
+    # return firewall
+    return firewall_matrix_to_map(firewall, subnets)
+
+
+def firewall_matrix_to_map(firewall, subnets):
+
+    firewall_dict = {}
+
+    for src in range(len(subnets)):
+        for dest in range(len(subnets)):
+            if src == dest:
+                continue
+            allowed = set()
+            for i, service in enumerate(firewall[src][dest]):
+                if service:
+                    allowed.add(i)
+            firewall_dict[src, dest] = allowed
+
+    return firewall_dict

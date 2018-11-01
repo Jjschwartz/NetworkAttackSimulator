@@ -94,10 +94,10 @@ def check_config_valid(config):
 
     # 3. check topology is valid adjacency matrix
     topology = config["topology"]
-    if len(topology) != len(subnets):
+    if len(topology) != len(subnets) + 1:
         raise ValueError(("Number of rows in topology adjacency "
                          "matrix must equal number of subnets: {0} != {1}")
-                         .format(len(topology), len(subnets)))
+                         .format(len(topology), len(subnets) + 1))
     for row in config["topology"]:
         if type(row) is not list:
             raise ValueError("topology must be 2D adjacency matrix "
@@ -137,7 +137,7 @@ def check_config_valid(config):
         if not is_valid_subnet_ID(m[0], subnets):
             raise ValueError(("Invalid sensitive machine tuple: subnet_id must"
                               " be a valid subnet: {0} != non-negative int "
-                              "less than {1}").format(m[0], len(subnets)))
+                              "less than {1}").format(m[0], len(subnets) + 1))
         if not is_valid_machine_address(m[0], m[1], subnets):
             raise ValueError(("Invalid sensitive machine tuple: machine_id "
                               "must be a valid int: {0} != non-negative int "
@@ -159,7 +159,7 @@ def check_config_valid(config):
     if len(service_exploits) != num_services:
         raise ValueError("Service exploits dictionary must contain an entry for each service:"
                          " {} != {}".format(len(service_exploits), num_services))
-    for e in service_exploits:
+    for e in service_exploits.values():
         if not is_valid_service_exploit(e):
             raise ValueError("{}. Service exploit must be a list of form: [probability, cost]."
                              .format(e))
@@ -184,7 +184,7 @@ def check_config_valid(config):
         raise ValueError("Firewall dictionary must contain two entries for each subnet connection "
                          "in network (including from outside) as defined by network topology "
                          "matrix")
-    for f in firewall.items():
+    for f in firewall.values():
         if not is_valid_firewall_setting(f, service_exploits):
             raise ValueError("Firewall setting must be a list, contain only service exploits and "
                              "contain no duplicates: {} is not valid".format(f))
@@ -194,7 +194,7 @@ def is_valid_subnet_ID(subnet_ID, subnets):
     """
     Check if given subnet_ID is a valid subnet given subnet list
     """
-    if type(subnet_ID) is not int or subnet_ID < 1 or subnet_ID >= len(subnets):
+    if type(subnet_ID) is not int or subnet_ID < 1 or subnet_ID > len(subnets):
         return False
     return True
 
@@ -205,7 +205,7 @@ def is_valid_machine_address(subnet_ID, machine_ID, subnets):
     """
     if not is_valid_subnet_ID(subnet_ID, subnets):
         return False
-    if type(machine_ID) is not int or machine_ID < 0 or machine_ID >= subnets[subnet_ID]:
+    if type(machine_ID) is not int or machine_ID < 0 or machine_ID >= subnets[subnet_ID - 1]:
         return False
     return True
 
@@ -216,7 +216,7 @@ def is_valid_service_exploit(e):
     """
     if type(e) != list or len(e) != 2:
         return False
-    if type(e[0]) != float or (type(e[1]) != float or type(e[1]) != int):
+    if type(e[0]) != float or (type(e[1]) != float and type(e[1]) != int):
         return False
     if e[0] < 0 or e[0] > 1 or e[1] < 0:
         return False
@@ -231,7 +231,7 @@ def has_all_machine_addresses(addresses, subnets):
     for s_id, s_size in enumerate(subnets):
         for m in range(s_size):
             # +1 to s_id since first subnet is 1
-            if (s_id + 1, m) not in addresses:
+            if str((s_id + 1, m)) not in addresses:
                 return False
     return True
 
@@ -258,9 +258,11 @@ def contains_all_required_firewalls(firewall, topology):
     """
     Check that the list of firewall settings contains all necessary firewall settings
     """
-    for row in topology:
-        for col in row:
-            if col == 1 and ((row, col) not in firewall or (col, row) not in firewall):
+    for src, row in enumerate(topology):
+        for dest, col in enumerate(row):
+            if src == dest:
+                continue
+            if col == 1 and (str((src, dest)) not in firewall or str((dest, src)) not in firewall):
                 return False
     return True
 
@@ -286,13 +288,19 @@ def parse_config(config):
     Parse config file so that it is in the correct form for the environment class
     """
     parsed_config = {}
-    parsed_config["subnets"] = config["subnets"]
+    subnets = config["subnets"]
+    subnets.insert(0, 1)
+    parsed_config["subnets"] = subnets
     parsed_config["num_services"] = config["num_services"]
     parsed_config["topology"] = config["topology"]
     parsed_config["sensitive_machines"] = config["sensitive_machines"]
     parsed_config["machines"] = parse_machines(config["machine_configurations"],
                                                config["service_exploits"],
                                                config["sensitive_machines"])
+    parsed_config["firewall"] = parse_firewall(config["firewall"])
+    parsed_config["service_exploits"] = config["service_exploits"]
+
+    return parsed_config
 
 
 def parse_machines(machine_configurations, service_exploits, sensitive_machines):
@@ -307,7 +315,7 @@ def parse_machines(machine_configurations, service_exploits, sensitive_machines)
     for address, services in machine_configurations.items():
         cfg = construct_machine_config(services, service_exploits)
         value = get_machine_value(sensitive_machines, address)
-        machines[address] = Machine(address, cfg, value)
+        machines[eval(address)] = Machine(eval(address), cfg, value)
     return machines
 
 
@@ -322,3 +330,13 @@ def construct_machine_config(m_services, service_exploits):
         else:
             cfg[service] = False
     return cfg
+
+
+def parse_firewall(firewall):
+    """
+    Parse firewall into firewall dict
+    """
+    firewall_dict = {}
+    for connect, v in firewall.items():
+        firewall_dict[eval(connect)] = v
+    return firewall_dict

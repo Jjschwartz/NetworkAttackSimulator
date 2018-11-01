@@ -25,8 +25,9 @@ def main():
     print("\tnumber of services =", num_services)
     print("\tfirewall restrictiveness =", restrictiveness)
     print("\tnumber of subnets =", 2 + (num_machines - 2) // 5)
-    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-                                              restrictiveness=restrictiveness)
+    # env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
+    #                                           restrictiveness=restrictiveness)
+    env = CyberAttackSimulatorEnv.from_file("configs/small.yaml")
 
     env.render_network_graph(show=True)
 

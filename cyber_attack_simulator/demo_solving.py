@@ -81,7 +81,7 @@ def main():
     print("Solving {} scenario using {} agent".format(scenario_name, agent_name))
 
     train_args = {}
-    train_args["visualize_policy"] = num_episodes // 2.5
+    train_args["visualize_policy"] = num_episodes // 1
     ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout,
                                                verbose=True, **train_args)
 

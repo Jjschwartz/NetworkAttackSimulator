@@ -41,7 +41,7 @@ class Network(object):
         """
         self.subnets = config["subnets"]
         self.topology = config["topology"]
-        self.num_services = config["services"]
+        self.num_services = config["num_services"]
         self.sensitive_machines = config["sensitive_machines"]
         self.machines = config["machines"]
         self.firewall = config["firewall"]
@@ -67,10 +67,6 @@ class Network(object):
         tgt_subnet, tgt_id = action.target
         assert 0 < tgt_subnet and tgt_subnet < len(self.subnets)
         assert tgt_id <= self.subnets[tgt_subnet]
-
-        # check if valid action type and service
-        if not action.is_scan():
-            assert 0 <= action.service and action.service < self.num_services
 
         # action is valid, so perform against machine
         t_machine = self.machines[action.target]
@@ -146,7 +142,12 @@ class Network(object):
         Returns:
             bool permitted : True if traffic is permitted, False otherwise
         """
-        return self.firewall[src][dest][service]
+        if src == dest:
+            # in same subnet so permitted
+            return True
+        if not self.subnets_connected(src, dest):
+            return False
+        return service in self.firewall[(src, dest)]
 
     def subnet_exposed(self, subnet):
         """
@@ -235,11 +236,21 @@ class Network(object):
         return sensitive_addresses
 
     def __str__(self):
-        output = "Network:\n"
-        output += "Subnets = " + str(self.subnets) + "\n"
-        output += "Topology =\n" + str(self.topology) + "\n"
-        output += "Services = " + str(self.num_services) + "\n"
-        output += "Sensitive machines = " + str(self.sensitive_machines)
+        output = "\n--- Network ---\n"
+        output += "Subnets: " + str(self.subnets) + "\n"
+        output += "Topology:\n"
+        for row in self.topology:
+            output += "\t{}\n".format(row)
+        output += "Sensitive machines: \n"
+        for m in self.sensitive_machines:
+            output += "\t{}\n".format(m)
+        output += "Num_services: " + str(self.num_services) + "\n"
+        output += "Machines:\n"
+        for m in self.machines.values():
+            output += str(m) + "\n"
+        output += "Firewall:\n"
+        for c, a in self.firewall.items():
+            output += "\t{}: {}\n".format(c, a)
         return output
 
 

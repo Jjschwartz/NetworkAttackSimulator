@@ -1,0 +1,29 @@
+# A tiny standard (one public network) network configuration
+subnets: [1, 1, 1]
+topology: [[ 1, 1, 0, 0],
+           [ 1, 1, 1, 1],
+           [ 0, 1, 1, 1],
+           [ 0, 1, 1, 1]]
+sensitive_machines: [[2, 0, 10],
+                     [3, 0, 10]]
+num_services: 1
+service_exploits:
+  ssh:
+    - 0.8
+    - 1
+machine_configurations:
+  (1, 0): [ssh]
+  (2, 0): [ssh]
+  (3, 0): [ssh]
+# two row for each connection between subnets as defined by topology
+# one for each direction of connection
+# list which services to allow
+firewall:
+  (0, 1): [ssh]
+  (1, 0): []
+  (1, 2): []
+  (2, 1): [ssh]
+  (1, 3): [ssh]
+  (3, 1): [ssh]
+  (2, 3): [ssh]
+  (3, 2): [ssh]

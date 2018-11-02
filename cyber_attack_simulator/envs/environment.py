@@ -4,6 +4,7 @@ from cyber_attack_simulator.envs.action import Action
 from cyber_attack_simulator.envs.state import State
 from cyber_attack_simulator.envs.render import Viewer
 import cyber_attack_simulator.envs.loader as loader
+import cyber_attack_simulator.envs.generator as generator
 
 
 # Default reward when generating a network from paramaters
@@ -30,7 +31,7 @@ class CyberAttackSimulatorEnv(object):
     current_state = None
 
     def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST,
-                 exploit_probs='mixed'):
+                 exploit_probs='mixed', seed=1):
         """
         Construct a new environment and network
 
@@ -42,16 +43,26 @@ class CyberAttackSimulatorEnv(object):
             float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
             mixed exploit_probs :  success probability of exploits (see action class for details)
+            int seed : random seed
         """
         self.config = config
         self.exploit_probs = exploit_probs
-        self.seed = 1
+        self.seed = seed
+        np.random.seed(seed)
 
-        self.num_services = config["services"]
+        self.num_services = config["num_services"]
         self.network = Network(config)
         self.address_space = self.network.get_address_space()
-        self.action_space = Action.generate_action_space(self.address_space, config["services"],
-                                                         exploit_cost, scan_cost, exploit_probs)
+
+        self.service_map = {}
+        service_exploits = config["service_exploits"]
+
+        for i, service in enumerate(service_exploits.keys()):
+            self.service_map[service] = i
+        self.action_space = Action.load_action_space(self.address_space,
+                                                     service_exploits,
+                                                     scan_cost)
+
         self.renderer = Viewer(self.network)
         self.init_state = self._generate_initial_state()
         self.compromised_subnets = None
@@ -110,11 +121,12 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
-        config = loader.generate_config(num_machines, num_services,
-                                        r_sensitive, r_user,
-                                        uniform, alpha_H, alpha_V, lambda_V,
-                                        restrictiveness, seed)
-        return cls(config, exploit_cost, scan_cost, exploit_probs)
+        config = generator.generate_config(num_machines, num_services,
+                                           r_sensitive, r_user,
+                                           exploit_cost, exploit_probs,
+                                           uniform, alpha_H, alpha_V, lambda_V,
+                                           restrictiveness, seed)
+        return cls(config, exploit_cost, scan_cost, exploit_probs, seed * 5)
 
     def reset(self):
         """
@@ -125,11 +137,14 @@ class CyberAttackSimulatorEnv(object):
         """
         self.current_state = self.init_state.copy()
         self.compromised_subnets = set([loader.INTERNET])
-        return self.current_state.copy()
+        return self.current_state
 
     def step(self, action):
         """
         Run one step of the environment using action.
+
+        N.B. Does not return a copy of the state, and state is changed by simulator. So if you
+        need to store the state you may need to copy it (see State.copy method)
 
         Arguments:
             Action action : Action object from action_space
@@ -149,12 +164,12 @@ class CyberAttackSimulatorEnv(object):
             return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
+        service_vector = self._vectorize(services)
         value = 0 if self.current_state.compromised(action.target) else value
-        self._update_state(action, success, services)
+        self._update_state(action, success, service_vector)
         done = self._is_goal()
         reward = value - action.cost
-        # update current state in place, then return copy since State object is muteable
-        obs = self.current_state.copy()
+        obs = self.current_state
         return obs, reward, done
 
     def render(self, mode="ASCI"):
@@ -318,6 +333,30 @@ class CyberAttackSimulatorEnv(object):
                 # at least one sensitive machine not compromised
                 return False
         return True
+
+    def _get_service_index(self, service):
+        """
+        Return the State service info index for a given service
+
+        Arguments:
+            int or str service : the id of the service
+
+        Returns:
+            int index : the index of the service in the state info list
+        """
+        return self.service_map[service]
+
+    def _vectorize(self, services):
+        """
+        Converts a service map into a 1D bool vector
+        """
+        if len(services) == 0:
+            return services
+        vector = np.zeros(len(services), dtype=int)
+        for s, v in services.items():
+            i = self._get_service_index(s)
+            vector[i] = v
+        return vector
 
     def __str__(self):
         output = "Environment: "

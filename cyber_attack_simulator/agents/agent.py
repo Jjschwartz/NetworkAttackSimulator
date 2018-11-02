@@ -73,7 +73,7 @@ class Agent(object):
                 from each timestep taken during episode
         """
         episode = []
-        state = env.reset()
+        state = env.reset().copy()
         action_space = env.action_space
         reward_sum = 0
         steps = 0

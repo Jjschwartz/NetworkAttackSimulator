@@ -1,8 +1,0 @@
-# A small standard (one public network) network configuration
-subnets: [1, 1, 1]
-topology: [[ 1, 1, 1, 1],
-           [ 0, 1, 1, 1],
-           [ 0, 1, 1, 1]]
-services: 2
-sensitive_machines: [[1, 0, 1000],
-                     [2, 0, 1000]]

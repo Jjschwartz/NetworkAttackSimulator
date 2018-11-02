@@ -18,12 +18,15 @@ class Machine(object):
 
         Arguments:
             tuple address : address of machine as (subnet, id)
-            list services: a list of ordered bools indicating which services
-                are present/absent
+            list or dict services: an ordered list of bools or a (service_name, bool) dictionary
+                indicating which services are present/absent
             float value : value of the machine
         """
         self.address = address
-        self._services = services
+        if type(services) == list:
+            self._services = self._convert_services_list_to_map(services)
+        else:
+            self._services = services
         self._value = value
 
     def perform_action(self, action):
@@ -57,8 +60,26 @@ class Machine(object):
         """
         return self._value
 
+    def _convert_services_list_to_map(self, services):
+        service_map = {}
+        for srv, val in enumerate(services):
+            service_map[srv] = val
+        return service_map
+
     def __str__(self):
-        return ("Machine: " + str(self.address) + ", " + str(self._value))
+        output = "Machine: {\n"
+        output += "\taddress: {}\n".format(self.address)
+        output += "\tvalue: {}\n".format(self._value)
+        output += "\tservices: {\n"
+        if type(self._services) is list:
+            for i, val in enumerate(self._services):
+                output += "\t\t{}: {}\n".format(i, val)
+        else:
+            for name, val in self._services.items():
+                output += "\t\t{}: {}\n".format(name, val)
+        output += "\t}\n"
+        output += "}"
+        return output
 
     def __hash__(self):
         return hash(self.__str__())

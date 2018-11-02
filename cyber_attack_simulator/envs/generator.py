@@ -14,8 +14,11 @@ SENSITIVE = 2
 USER = 3
 
 
-def generate_config(num_machines, num_services, r_sensitive, r_user, uniform=False, alpha_H=2.0,
-                    alpha_V=2.0, lambda_V=1.0, restrictiveness=5, seed=1):
+def generate_config(num_machines, num_services,
+                    r_sensitive, r_user,
+                    exploit_cost=1, exploit_probs=1.0,
+                    uniform=False, alpha_H=2.0, alpha_V=2.0, lambda_V=1.0,
+                    restrictiveness=5, seed=1):
     """
     Generate the network configuration based on standard formula.
 
@@ -36,6 +39,17 @@ def generate_config(num_machines, num_services, r_sensitive, r_user, uniform=Fal
     lambda_V controls the average number of services running per machine. Higher values will
     mean more services (so more vulnerable) machines on average.
 
+    EXPLOIT PROBABILITIES
+    Success probabilities of each exploit are determined as follows:
+        - None - probabilities generated randomly from uniform distribution
+        - "mixed" - probabilities randomly chosen from distribution of low: 0.2,
+            med: 0.5 and high: 0.8 with probability of level based on attack complexity
+            distribution of top 10 vulnerabilities in 2017.
+        - single-float - probability of each exploit is set to value
+        - list of float - probability of each exploit is set to
+            corresponding value in list
+
+    For deterministic exploits set exploit_probs=1.0
 
     Arguments:
         int num_machines : number of machines to include in network
@@ -44,6 +58,8 @@ def generate_config(num_machines, num_services, r_sensitive, r_user, uniform=Fal
             in environment (minimum is 1)
         float r_sensitive : reward for sensitive subnet documents
         float r_user : reward for user subnet documents
+        int exploit_cost : cost for an exploit
+        mixed exploit_probs : success probability of exploits
         bool uniform : whether to use uniform distribution of machine configs or corelated
                        machine configs
         float alpha_H : (only used when uniform=False), scaling/concentration parameter for
@@ -77,6 +93,8 @@ def generate_config(num_machines, num_services, r_sensitive, r_user, uniform=Fal
                                  alpha_H, alpha_V, lambda_V)
     config["machines"] = machines
     config['firewall'] = generate_firewalls(subnets, num_services, machines, restrictiveness)
+    config["service_exploits"] = generate_service_exploits(num_services, exploit_cost,
+                                                           exploit_probs)
     return config
 
 
@@ -313,8 +331,9 @@ def get_machine_value(sensitive_machines, address):
 
 def generate_firewalls(subnets, num_services, machines, restrictiveness):
     """
-    Generate the firewall rules as a 3D adjacency matrix, which defines for each service
-    whether traffic using that service is allowed between pairs of subnets.
+    Generate the firewall rules as a mapping from (src, dest) connection to set of allowed services,
+    which defines for each service whether traffic using that service is allowed between pairs of
+    subnets.
 
     Restrictiveness parameter controls how many services are blocked by firewall between zones
     (i.e. between internet, DMZ, sensitive and user zones). Traffic from at least one service
@@ -329,8 +348,26 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
         int restrictiveness : max number of services allowed to pass through a firewall
 
     Returns:
-        dict firewalls : a dict with (src_subnet, dest_subnet) tuples as keys and set of permitted
-            services as values
+        dict firewall_dict : firewall map
+    """
+    firewall_matrix = generate_firewall_matrix(subnets, num_services, machines, restrictiveness)
+    return firewall_matrix_to_map(firewall_matrix)
+
+
+def generate_firewall_matrix(subnets, num_services, machines, restrictiveness):
+    """
+    Generate the firewall rules as a 3D adjacency matrix, which defines for each service
+    whether traffic using that service is allowed between pairs of subnets.
+
+    Arguments:
+        list subnets : list of subnet sizes
+        int num_services : number if services running in network
+        dict machine : ordered dictionary of machines in network, with address as keys and
+                       machine objects as values
+        int restrictiveness : max number of services allowed to pass through a firewall
+
+    Returns:
+        3D matrix firewalls : 3D adjacency matrix
     """
     num_subnets = len(subnets)
     # Plus 1 since we have Internet subnet
@@ -340,7 +377,8 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
     # find services running on each subnet, and set to true
     for m in machines.values():
         subnet = m.address[0]
-        np.logical_or(subnet_services[subnet], m._services, out=subnet_services[subnet])
+        m_services = convert_service_map_to_list(m._services)
+        np.logical_or(subnet_services[subnet], m_services, out=subnet_services[subnet])
 
     # for each valid source and destination pair of subnets
     for src in range(num_subnets):
@@ -375,24 +413,80 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
                     firewall[src][dest][dest_allowed] = True
                     allowed.add(dest_allowed)
                     dest_avail.remove(dest_allowed)
-    return convert_firewall_matrix_to_dict(firewall, num_subnets)
+    return firewall
 
 
-def convert_firewall_matrix_to_dict(firewall, num_subnets):
+def convert_service_map_to_list(service_map):
+    srv_list = np.full(len(service_map), False, dtype=np.bool_)
+    for k, v in service_map.items():
+        srv_list[k] = v
+    return srv_list
+
+
+def firewall_matrix_to_map(firewall):
     """
-    Convert 3D firewall matrix into a dict with (src_subnet, dest_subnet) tuples as keys and set
-    of permitted services as values
+    Convert 3D [src][dest][services] firewall matrix into a firewall map which maps connection
+    (src, dest) tuple to allowed services set
+
+    Arguments:
+        3D matrix firewalls : 3D adjacency matrix
+
+    Returns:
+        dict firewall_dict : firewall map
     """
     firewall_dict = {}
 
-    for src in range(num_subnets):
-        for dest in range(num_subnets):
+    for src, row in enumerate(firewall):
+        for dest, col in enumerate(row):
             if src == dest:
                 continue
-            permitted_set = set()
-            for name, allowed in enumerate(firewall[src][dest]):
+            allowed_set = set()
+            for service, allowed in enumerate(col):
                 if allowed:
-                    permitted_set.add(name)
-            firewall_dict[(src, dest)] = permitted_set
+                    allowed_set.add(service)
+            firewall_dict[(src, dest)] = allowed_set
 
     return firewall_dict
+
+
+def generate_service_exploits(num_services, exploit_cost, exploit_probs):
+    """
+    Generate service exploit dictionary which maps services to (probability, cost) tuples
+
+    Arguments:
+        int num_services : number of services that agent has exploit for (minimum is 1)
+        int exploit_cost : cost for an exploit
+        mixed exploit_probs : success probability of exploits (see contstructor comment for info)
+
+    Returns:
+        dict service_exploits : service exploits map
+    """
+    service_exploits = {}
+    if exploit_probs is None:
+        exploit_probs = np.random.random_sample(num_services)
+    elif exploit_probs == 'mixed':
+        # success probability of low, med, high attack complexity
+        if num_services == 1:
+            # for case where only 1 service ignore low probability actions
+            # since could lead to unnecessarily long attack paths
+            levels = [0.5, 0.8]
+            probs = [0.5, 0.5]
+        else:
+            levels = [0.2, 0.5, 0.8]
+            probs = [0.2, 0.4, 0.4]
+        exploit_probs = np.random.choice(levels, num_services, p=probs)
+    elif type(exploit_probs) is list:
+        if len(exploit_probs) == num_services:
+            raise ValueError("Lengh of exploit probability list must equal number of services")
+        for e in exploit_probs:
+            if e <= 0.0 or e > 1.0:
+                raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
+    else:
+        if exploit_probs <= 0.0 or exploit_probs > 1.0:
+            raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
+        exploit_probs = [exploit_probs] * num_services
+
+    for srv in range(num_services):
+        service_exploits[srv] = (exploit_probs[srv], exploit_cost)
+
+    return service_exploits

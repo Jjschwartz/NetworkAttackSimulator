@@ -31,7 +31,7 @@ class SarsaAgent(TDAgent):
             new_s, reward, done = env.step(a_space[a])
             new_a = self._choose_action(new_s, a_space, param)
             self._q_update(s, a, new_s, new_a, reward, a_space)
-            s = new_s
+            s = new_s.copy()
             a = new_a
             ep_reward += reward
             ep_timesteps += 1

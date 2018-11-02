@@ -1,0 +1,55 @@
+# A network with
+# - 3 service exploits
+# - 8 machines organized into 6 subnets
+# - subnets organized in a linear network
+# - sensitive documents located in two middle subnets
+# - end subnets are both connected to internet
+# - two middle subnets are not connected
+subnets: [1, 1, 2, 1, 2, 1]
+topology: [[ 1, 1, 0, 0, 0, 0, 1],  # 0 connected to 1 and 6
+           [ 1, 1, 1, 0, 0, 0, 0],  # 1 connected to 0 and 2
+           [ 0, 1, 1, 1, 0, 0, 0],  # 2 connected to 1 and 3
+           [ 0, 0, 1, 1, 1, 0, 0],  # 3 connected to 2 and 4
+           [ 0, 0, 0, 1, 1, 1, 0],  # 4 connected to 3 and 5
+           [ 0, 0, 0, 0, 1, 1, 1],  # 5 connected to 4 and 6
+           [ 1, 0, 0, 0, 0, 1, 1]]  # 6 connected to 5 and 0
+sensitive_machines: [[3, 0, 10],
+                     [4, 0, 10]]
+num_services: 3
+service_exploits:
+  ssh:
+    - 0.8
+    - 3
+  ftp:
+    - 0.5
+    - 1
+  http:
+    - 0.8
+    - 2
+machine_configurations:
+  (1, 0): [http]
+  (2, 0): [ssh, ftp]
+  (3, 0): [ftp]
+  (3, 1): [ssh]
+  (4, 0): [ftp]
+  (5, 0): [ftp, ssh]
+  (5, 1): [ftp]
+  (6, 0): [http]
+# two row for each connection between subnets as defined by topology
+# one for each direction of connection
+# list which services to allow
+firewall:
+  (0, 1): [http]
+  (1, 0): []
+  (1, 2): [ssh, ftp]
+  (2, 1): [http]
+  (2, 3): [ssh]
+  (3, 2): [ssh, ftp]
+  (3, 4): []  # no traffic permitted between middle networks
+  (4, 3): []  # no traffic permitted between middle networks
+  (4, 5): [ftp]
+  (5, 4): [ftp]
+  (5, 6): [http]
+  (6, 5): [ssh]
+  (6, 0): []
+  (0, 6): [http]

@@ -142,7 +142,10 @@ class Network(object):
         Returns:
             bool permitted : True if traffic is permitted, False otherwise
         """
-        if (src, dest) not in self.firewall:
+        if src == dest:
+            # in same subnet so permitted
+            return True
+        if not self.subnets_connected(src, dest):
             return False
         return service in self.firewall[(src, dest)]
 
@@ -233,11 +236,21 @@ class Network(object):
         return sensitive_addresses
 
     def __str__(self):
-        output = "Network:\n"
-        output += "Subnets = " + str(self.subnets) + "\n"
-        output += "Topology =\n" + str(self.topology) + "\n"
-        output += "Services = " + str(self.num_services) + "\n"
-        output += "Sensitive machines = " + str(self.sensitive_machines)
+        output = "\n--- Network ---\n"
+        output += "Subnets: " + str(self.subnets) + "\n"
+        output += "Topology:\n"
+        for row in self.topology:
+            output += "\t{}\n".format(row)
+        output += "Sensitive machines: \n"
+        for m in self.sensitive_machines:
+            output += "\t{}\n".format(m)
+        output += "Num_services: " + str(self.num_services) + "\n"
+        output += "Machines:\n"
+        for m in self.machines.values():
+            output += str(m) + "\n"
+        output += "Firewall:\n"
+        for c, a in self.firewall.items():
+            output += "\t{}: {}\n".format(c, a)
         return output
 
 

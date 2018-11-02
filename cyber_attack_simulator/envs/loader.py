@@ -4,7 +4,6 @@ files and also for generating configurations based on number of machines and
 services in network using standard formula.
 """
 import yaml
-import numpy as np
 from collections import OrderedDict
 from cyber_attack_simulator.envs.machine import Machine
 from cyber_attack_simulator.envs.generator import get_machine_value
@@ -313,9 +312,10 @@ def parse_machines(machine_configurations, service_exploits, sensitive_machines)
     """
     machines = OrderedDict()
     for address, services in machine_configurations.items():
+        formatted_address = eval(address)
         cfg = construct_machine_config(services, service_exploits)
-        value = get_machine_value(sensitive_machines, address)
-        machines[eval(address)] = Machine(eval(address), cfg, value)
+        value = get_machine_value(sensitive_machines, formatted_address)
+        machines[formatted_address] = Machine(formatted_address, cfg, value)
     return machines
 
 

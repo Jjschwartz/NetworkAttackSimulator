@@ -58,7 +58,19 @@ class Machine(object):
         return self._value
 
     def __str__(self):
-        return ("Machine: " + str(self.address) + ", " + str(self._value))
+        output = "Machine: {\n"
+        output += "\taddress: {}\n".format(self.address)
+        output += "\tvalue: {}\n".format(self._value)
+        output += "\tservices: {\n"
+        if type(self._services) is list:
+            for i, val in enumerate(self._services):
+                output += "\t\t{}: {}\n".format(i, val)
+        else:
+            for name, val in self._services.items():
+                output += "\t\t{}: {}\n".format(name, val)
+        output += "\t}\n"
+        output += "}"
+        return output
 
     def __hash__(self):
         return hash(self.__str__())

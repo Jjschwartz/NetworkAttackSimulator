@@ -59,7 +59,6 @@ class CyberAttackSimulatorEnv(object):
         if service_exploits:
             for i, service in enumerate(service_exploits.keys()):
                 self.service_map[service] = i
-            print(self.service_map)
             self.action_space = Action.load_action_space(self.address_space,
                                                          config["service_exploits"],
                                                          scan_cost)
@@ -165,22 +164,34 @@ class CyberAttackSimulatorEnv(object):
             float reward : reward from performing action
             bool done : whether the episode has ended or not
         """
+        # if action.target == (3, 1):
+        #     print(action)
+        #
         if not self.current_state.reachable(action.target):
             return self.current_state, 0 - action.cost, False
         if not self._action_traffic_permitted(action):
             return self.current_state, 0 - action.cost, False
+
+        # if action.target == (3, 1):
+        #     print("reached")
 
         # non-deterministic actions
         if np.random.rand() > action.prob:
             return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
+
+        # if success and action.target == (3, 1):
+        #     print("success")
+        #
+        # if value > 0:
+        #     print(action)
+
         value = 0 if self.current_state.compromised(action.target) else value
         service_vector = self.vectorize(services)
         self._update_state(action, success, service_vector)
         done = self._is_goal()
         reward = value - action.cost
-        # update current state in place, then return copy since State object is muteable
         obs = self.current_state
         return obs, reward, done
 

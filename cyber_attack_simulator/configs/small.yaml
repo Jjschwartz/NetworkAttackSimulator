@@ -11,15 +11,15 @@ num_services: 3
 service_exploits:
   ssh:
     - 0.8
-    - 1
+    - 3
   ftp:
     - 0.5
-    - 2
+    - 1
   http:
     - 0.8
     - 2
 machine_configurations:
-  (1, 0): [ssh]
+  (1, 0): [http]
   (2, 0): [ssh, ftp]
   (3, 0): [ftp]
   (3, 1): [ftp, http]
@@ -31,13 +31,13 @@ machine_configurations:
 # one for each direction of connection
 # list which services to allow
 firewall:
-  (0, 1): [ssh]
-  (1, 0): [ssh]
+  (0, 1): [http]
+  (1, 0): []
   (1, 2): [ssh]
   (2, 1): [ssh]
-  (1, 3): [ssh, http]
+  (1, 3): []
   (3, 1): [ssh]
-  (2, 3): [ssh, ftp]
+  (2, 3): [http]
   (3, 2): [ftp]
-  (3, 4): [ftp]
+  (3, 4): [ssh]
   (4, 3): [ftp]

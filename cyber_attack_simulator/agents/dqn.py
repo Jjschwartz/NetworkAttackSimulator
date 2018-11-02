@@ -9,6 +9,9 @@ import math
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import RMSprop
+from keras import backend as K
+import tensorflow as tf
+
 
 RMSPROP_LR = 0.00025
 
@@ -22,6 +25,11 @@ class Brain:
         self.hidden_units = hidden_units
 
         self.model = self._create_model()
+
+        config = tf.ConfigProto(intra_op_parallelism_threads=0,
+                                inter_op_parallelism_threads=2)
+        session = tf.Session(config=config)
+        K.set_session(session)
 
     def _create_model(self):
         model = Sequential()
@@ -130,7 +138,8 @@ class DQNAgent(Agent):
 
             self.epsilon = self.epsilon_decay()
 
-            self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
+            # self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
+            self.report_progress(e, num_episodes / num_episodes, episode_timesteps, verbose)
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)

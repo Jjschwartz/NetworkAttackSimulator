@@ -62,9 +62,9 @@ def main():
     num_services = scenario["services"]
     restrictiveness = scenario["restrictiveness"]
     # num_episodes = scenario["episodes"]
-    num_episodes = 3000
+    num_episodes = 100
     # max_steps = scenario["steps"]
-    max_steps = 1000
+    max_steps = 500
     timeout = scenario["timeout"]
 
     print("Generating network configuration")

@@ -1,10 +1,14 @@
 import numpy as np
 from collections import OrderedDict
+from copy import deepcopy
 
-# index of each state variable in state list
+# keys
+COMPROMISED_KEY = "compromised"
+REACHABLE_KEY = "reachable"
+
+# positions
 COMPROMISED = 0
 REACHABLE = 1
-SERVICE_INFO = 2
 
 # values for possible service knowledge states
 UNKNOWN = 0     # service may or may not be running on machine
@@ -31,6 +35,12 @@ class State(object):
         - compromised : whether a given machine is compromised
         - service_state : get the knowledge state for a given service and machine
     """
+    # class variable that maps machine address to vector position
+    machine_indices = {}
+    # class variable that maps service ID to vector position
+    service_indices = {}
+    # class variable
+    m_state_size = 0
 
     def __init__(self, obs):
         """
@@ -38,9 +48,57 @@ class State(object):
 
         Arguments:
             OrderedDict obs : a dictionary with the address of each machine as the
-                key and values being a list of values of state variables
+                key and values a dictionary of machine state
         """
         self._obs = obs
+        self._vector = self._vectorize()
+
+    def _vectorize(self):
+        """
+        Convert observation map into a 1D vector.
+        Vector contains compromised, reachable, srv1, .. , srvN in order of machine index
+
+        Returns:
+            numpy state_vector : state as a 1D numpy array
+        """
+        M = len(self._obs)
+        vector = np.zeros(M * State.m_state_size, dtype=np.int8)
+        for m, m_state in self._obs.items():
+            m_i = self._get_machine_index(m)
+            for k, v in m_state.items():
+                # int(v) since compromised and reachable are bools in map
+                if k == COMPROMISED_KEY:
+                    vector[m_i + COMPROMISED] = int(v)
+                elif k == REACHABLE_KEY:
+                    vector[m_i + REACHABLE] = int(v)
+                else:
+                    srv_i = self._get_service_index(k)
+                    vector[m_i + srv_i] = v
+        return vector
+
+    def _get_machine_index(self, m):
+        """
+        Get the index of a machine in state vector
+
+        Arguments:
+            (int, int) m : the machine address
+
+        Returns:
+            int index : the index of the machine
+        """
+        return State.machine_indices[m] * State.m_state_size
+
+    def _get_service_index(self, srv):
+        """
+        Get the index of a service in state vector
+
+        Arguments:
+            int or str srv : the service ID
+
+        Returns:
+            int index : the index of the service
+        """
+        return State.service_indices[srv] + REACHABLE + 1
 
     def reachable(self, target):
         """
@@ -52,7 +110,7 @@ class State(object):
         Returns:
             bool reachable : True if reachable
         """
-        return self._obs[target][REACHABLE]
+        return self._obs[target][REACHABLE_KEY]
 
     def compromised(self, target):
         """
@@ -64,7 +122,7 @@ class State(object):
         Returns:
             bool compromised : True if compromised
         """
-        return self._obs[target][COMPROMISED]
+        return self._obs[target][COMPROMISED_KEY]
 
     def service_state(self, target, service):
         """
@@ -77,7 +135,7 @@ class State(object):
         Returns
             int service_state : state of service
         """
-        return self._obs[target][SERVICE_INFO + service]
+        return self._obs[target][service]
 
     def update_service(self, target, service, present):
         """
@@ -85,13 +143,17 @@ class State(object):
 
         Arguments:
             (int, int) target : the target machine address
-            int service : the service number
+            int or str service : the service ID
             bool present : whether service is present or absent
         """
+        t_index = self._get_machine_index(target)
+        s_index = self._get_service_index(service)
         if present:
-            self._obs[target][SERVICE_INFO + service] = PRESENT
+            self._obs[target][service] = PRESENT
+            self._vector[t_index + s_index] = PRESENT
         else:
-            self._obs[target][SERVICE_INFO + service] = ABSENT
+            self._obs[target][service] = ABSENT
+            self._vector[t_index + s_index] = ABSENT
 
     def set_compromised(self, target):
         """
@@ -100,7 +162,9 @@ class State(object):
         Arguments:
             (int, int) target : the target machine address
         """
-        self._obs[target][COMPROMISED] = 1
+        self._obs[target][COMPROMISED_KEY] = True
+        t_index = self._get_machine_index(target)
+        self._vector[t_index + COMPROMISED] = int(True)
 
     def set_reachable(self, target):
         """
@@ -109,7 +173,9 @@ class State(object):
         Arguments:
             (int, int) target : the target machine address
         """
-        self._obs[target][REACHABLE] = 1
+        self._obs[target][REACHABLE_KEY] = True
+        t_index = self._get_machine_index(target)
+        self._vector[t_index + REACHABLE] = int(True)
 
     def copy(self):
         """
@@ -120,8 +186,7 @@ class State(object):
         """
         obs_copy = OrderedDict()
         for m, v in self._obs.items():
-            machine_state_copy = np.copy(v)
-            obs_copy[m] = machine_state_copy
+            obs_copy[m] = deepcopy(v)
         return State(obs_copy)
 
     def flatten(self):
@@ -132,7 +197,7 @@ class State(object):
         Returns:
             ndarray flattened : state as a 1D numpy array
         """
-        return np.concatenate(list(self._obs.values()))
+        return self._vector.copy()
 
     def get_state_size(self):
         """
@@ -141,34 +206,23 @@ class State(object):
         Returns:
             int state_size : size of flattened state
         """
-        return self.flatten().shape[0]
+        return self._vector.shape[0]
 
     def __str__(self):
         return str(self._obs)
 
     def __hash__(self):
-        # We can assume address space doesn't change so only need to hash values
-        # Also using an OrderedDict so order is stable
-        hash_list = []
-        for v in self._obs.values():
-            hash_list.append(hash(v.tostring()))
-        return hash(tuple(hash_list))
+        return hash(self._vector.tostring())
 
     def __eq__(self, other):
         if not isinstance(other, State):
             return False
         if len(self._obs) != len(other._obs):
             return False
-        for m, v in self._obs.items():
-            other_v = other._obs.get(m)
-            if other_v is None:
-                return False
-            if not np.array_equal(v, other_v):
-                return False
-        return True
+        return np.array_equal(self._vector, other._vector)
 
     @staticmethod
-    def generate_initial_state(network, num_services):
+    def generate_initial_state(network, exploitable_services):
         """
         Generate the initial state of the environment. Initial state is where no machines have been
         compromised, only DMZ subnets are reachable and no information about services has been
@@ -176,20 +230,30 @@ class State(object):
 
         Arguments:
             Network network : the environment network object
-            int num_services : number of services running in environment
+            dict service_map : map of exploitable service IDs to index
 
         Returns:
             State initial_state : the initial state of the environment
         """
         obs = OrderedDict()
-        for m in network.get_address_space():
-            # one vector for each machine, with compromised and reachable as first two values
-            # and service knowledge state for each service as other values
-            machine_state = np.full(num_services + SERVICE_INFO, UNKNOWN)
-            machine_state[COMPROMISED] = 0
-            machine_state[REACHABLE] = 0
+
+        for srv, i in exploitable_services.items():
+            State.service_indices[srv] = i
+
+        State.m_state_size = len(exploitable_services) + 2
+
+        for i, m in enumerate(network.get_address_space()):
+            # machine state is a mapping from service, or status var to value
+            # also index which is used when vectorizing state
+            State.machine_indices[m] = i
+            machine_state = OrderedDict()
+            machine_state[COMPROMISED_KEY] = False
             if network.subnet_exposed(m[0]):
-                machine_state[REACHABLE] = 1
+                machine_state[REACHABLE_KEY] = True
+            else:
+                machine_state[REACHABLE_KEY] = False
+            for srv in exploitable_services.keys():
+                machine_state[srv] = UNKNOWN
             obs[m] = machine_state
         initial_state = State(obs)
         return initial_state

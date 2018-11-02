@@ -55,12 +55,11 @@ class CyberAttackSimulatorEnv(object):
         self.address_space = self.network.get_address_space()
 
         self.service_map = {}
-        service_exploits = config["service_exploits"]
-
-        for i, service in enumerate(service_exploits.keys()):
+        self.service_exploits = config["service_exploits"]
+        for i, service in enumerate(self.service_exploits.keys()):
             self.service_map[service] = i
-        self.action_space = Action.load_action_space(self.address_space,
-                                                     service_exploits,
+
+        self.action_space = Action.load_action_space(self.address_space, self.service_exploits,
                                                      scan_cost)
 
         self.renderer = Viewer(self.network)
@@ -164,9 +163,9 @@ class CyberAttackSimulatorEnv(object):
             return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
-        service_vector = self._vectorize(services)
+        # service_vector = self._vectorize(services)
         value = 0 if self.current_state.compromised(action.target) else value
-        self._update_state(action, success, service_vector)
+        self._update_state(action, success, services)
         done = self._is_goal()
         reward = value - action.cost
         obs = self.current_state
@@ -257,7 +256,7 @@ class CyberAttackSimulatorEnv(object):
         Returns:
             State initial_state : the initial state of the environment
         """
-        return State.generate_initial_state(self.network, self.num_services)
+        return State.generate_initial_state(self.network, self.service_map)
 
     def _action_traffic_permitted(self, action):
         """
@@ -290,13 +289,13 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             Action action : the action performed
             bool success : whether action was successful
-            list services : service info gained from action
+            dict services : service info gained from action
         """
         target = action.target
         if action.is_scan() or (not action.is_scan() and success):
             # 1. scan or successful exploit, all service info gained for target
-            for s in range(len(services)):
-                self.current_state.update_service(target, s, services[s])
+            for srv, present in services.items():
+                self.current_state.update_service(target, srv, present)
             if not action.is_scan():
                 # successful exploit so machine compromised
                 self.current_state.set_compromised(target)

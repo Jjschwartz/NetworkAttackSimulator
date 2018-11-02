@@ -40,7 +40,7 @@ class Machine(object):
             bool success : True if exploit/scan was successful, False otherwise
             float value : value gained from action. Is the value of the
                 machine if successfuly exploited, otherwise 0
-            list services : the list of services identified by action.
+            dict services : the dict of services identified by action.
         """
         if action.is_scan():
             return True, 0, self._services.copy()
@@ -49,7 +49,7 @@ class Machine(object):
             return True, self._value, self._services.copy()
         else:
             # service absent, exploit fails
-            return False, 0, np.asarray([])
+            return False, 0, {}
 
     def get_value(self):
         """

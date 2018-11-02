@@ -56,28 +56,17 @@ class CyberAttackSimulatorEnv(object):
 
         self.service_map = {}
         service_exploits = config["service_exploits"]
-        if service_exploits:
-            for i, service in enumerate(service_exploits.keys()):
-                self.service_map[service] = i
-            self.action_space = Action.load_action_space(self.address_space,
-                                                         config["service_exploits"],
-                                                         scan_cost)
-        else:
-            self.action_space = Action.generate_action_space(self.address_space,
-                                                             self.num_services,
-                                                             exploit_cost, scan_cost,
-                                                             exploit_probs)
+
+        for i, service in enumerate(service_exploits.keys()):
+            self.service_map[service] = i
+        self.action_space = Action.load_action_space(self.address_space,
+                                                     service_exploits,
+                                                     scan_cost)
 
         self.renderer = Viewer(self.network)
         self.init_state = self._generate_initial_state()
         self.compromised_subnets = None
         self.reset()
-
-    def _get_service_index(self, service):
-        if len(self.service_map) != 0:
-            return self.service_map[service]
-        else:
-            service
 
     @classmethod
     def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs='mixed'):
@@ -134,6 +123,7 @@ class CyberAttackSimulatorEnv(object):
         """
         config = generator.generate_config(num_machines, num_services,
                                            r_sensitive, r_user,
+                                           exploit_cost, exploit_probs,
                                            uniform, alpha_H, alpha_V, lambda_V,
                                            restrictiveness, seed)
         return cls(config, exploit_cost, scan_cost, exploit_probs, seed * 5)
@@ -164,45 +154,23 @@ class CyberAttackSimulatorEnv(object):
             float reward : reward from performing action
             bool done : whether the episode has ended or not
         """
-        # if action.target == (3, 1):
-        #     print(action)
-        #
         if not self.current_state.reachable(action.target):
             return self.current_state, 0 - action.cost, False
         if not self._action_traffic_permitted(action):
             return self.current_state, 0 - action.cost, False
-
-        # if action.target == (3, 1):
-        #     print("reached")
 
         # non-deterministic actions
         if np.random.rand() > action.prob:
             return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
-
-        # if success and action.target == (3, 1):
-        #     print("success")
-        #
-        # if value > 0:
-        #     print(action)
-
+        service_vector = self._vectorize(services)
         value = 0 if self.current_state.compromised(action.target) else value
-        service_vector = self.vectorize(services)
         self._update_state(action, success, service_vector)
         done = self._is_goal()
         reward = value - action.cost
         obs = self.current_state
         return obs, reward, done
-
-    def vectorize(self, services):
-        if len(services) == 0:
-            return services
-        vector = np.zeros(len(services), dtype=int)
-        for s, v in services.items():
-            i = self._get_service_index(s)
-            vector[i] = v
-        return vector
 
     def render(self, mode="ASCI"):
         """
@@ -365,6 +333,30 @@ class CyberAttackSimulatorEnv(object):
                 # at least one sensitive machine not compromised
                 return False
         return True
+
+    def _get_service_index(self, service):
+        """
+        Return the State service info index for a given service
+
+        Arguments:
+            int or str service : the id of the service
+
+        Returns:
+            int index : the index of the service in the state info list
+        """
+        return self.service_map[service]
+
+    def _vectorize(self, services):
+        """
+        Converts a service map into a 1D bool vector
+        """
+        if len(services) == 0:
+            return services
+        vector = np.zeros(len(services), dtype=int)
+        for s, v in services.items():
+            i = self._get_service_index(s)
+            vector[i] = v
+        return vector
 
     def __str__(self):
         output = "Environment: "

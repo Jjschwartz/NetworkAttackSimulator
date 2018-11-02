@@ -23,7 +23,10 @@ class Machine(object):
             float value : value of the machine
         """
         self.address = address
-        self._services = services
+        if type(services) == list:
+            self._services = self._convert_services_list_to_map(services)
+        else:
+            self._services = services
         self._value = value
 
     def perform_action(self, action):
@@ -56,6 +59,12 @@ class Machine(object):
             float value : value of this machine
         """
         return self._value
+
+    def _convert_services_list_to_map(self, services):
+        service_map = {}
+        for srv, val in enumerate(services):
+            service_map[srv] = val
+        return service_map
 
     def __str__(self):
         output = "Machine: {\n"

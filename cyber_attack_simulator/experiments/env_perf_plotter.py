@@ -7,7 +7,6 @@ from mpl_toolkits.mplot3d import Axes3D     # noqa F401
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import pandas as pd
-import numpy as np
 import sys
 
 
@@ -28,7 +27,10 @@ def plot_2D(df, fig, y_var, y_label):
     ax1 = fig.add_subplot(121)
     S_all_values = df.S.unique()
     mid = (len(S_all_values)) // 2
-    S_values = [S_all_values[0], S_all_values[mid // 2], S_all_values[mid + mid // 2], S_all_values[-1]]
+    S_values = [S_all_values[0],
+                S_all_values[mid // 2],
+                S_all_values[mid + mid // 2],
+                S_all_values[-1]]
     for s_val in S_values:
         m_df = df.loc[df.S == s_val]
         avg_df = average_data_over_runs(m_df)
@@ -54,7 +56,10 @@ def plot_2D(df, fig, y_var, y_label):
     ax2 = fig.add_subplot(122)
     M_all_values = df.M.unique()
     mid = (len(M_all_values)) // 2
-    M_values = [M_all_values[0], M_all_values[mid // 2], M_all_values[mid + mid // 2], M_all_values[-1]]
+    M_values = [M_all_values[0],
+                M_all_values[mid // 2],
+                M_all_values[mid + mid // 2],
+                M_all_values[-1]]
     # M_values = [df.M.min(), int(df.M.median()), df.M.max()]
     for m_val in M_values:
         s_df = df.loc[df.M == m_val]

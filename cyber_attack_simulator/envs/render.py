@@ -3,9 +3,9 @@ import tkinter as Tk
 import random
 import matplotlib
 matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg     # noqa E402
+import matplotlib.pyplot as plt         # noqa E402
+import matplotlib.patches as mpatches   # noqa E402
 
 # Agent node in graph
 AGENT = (0, 0)
@@ -43,8 +43,10 @@ class Viewer(object):
         """
         G = self._construct_graph(state)
         colors = []
+        labels = {}
         for n in list(G.nodes):
             colors.append(G.nodes[n]["color"])
+            labels[n] = G.nodes[n]["label"]
 
         if ax is None:
             fig = plt.figure()
@@ -53,6 +55,7 @@ class Viewer(object):
             fig = ax.get_figure()
 
         nx.draw_networkx_nodes(G, self.positions, node_color=colors, ax=ax)
+        nx.draw_networkx_labels(G, self.positions, labels, font_size=8)
         nx.draw_networkx_edges(G, self.positions)
         ax.axis('off')
         ax.set_xlim(left=0.0, right=100.0)
@@ -147,7 +150,7 @@ class Viewer(object):
             for m in subnet:
                 node_color = get_machine_representation(state, sensitive_machines, m, COLORS)
                 node_pos = self.positions[m]
-                G.add_node(m, color=node_color, pos=node_pos)
+                G.add_node(m, color=node_color, pos=node_pos, label=str(m))
             for x in subnet:
                 for y in subnet:
                     if x == y:

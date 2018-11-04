@@ -46,39 +46,42 @@ def plot_results(timesteps, rewards, times, env):
 
 def main():
 
-    if len(sys.argv) != 3:
-        print("Usage: python demo_solving.py agent scenario")
+    if len(sys.argv) != 4:
+        print("Usage: python demo_solving.py agent scenario generate")
         return 1
 
     agent_name = sys.argv[1]
     if not is_valid_agent(agent_name, verbose=True):
         return 1
     scenario_name = sys.argv[2]
-    scenario = get_scenario(scenario_name)
-    if scenario is None:
-        return 1
+    generate = bool(int(sys.argv[3]))
 
-    num_machines = scenario["machines"]
-    num_services = scenario["services"]
-    restrictiveness = scenario["restrictiveness"]
-    # num_episodes = scenario["episodes"]
-    num_episodes = 100
-    # max_steps = scenario["steps"]
-    max_steps = 500
-    timeout = scenario["timeout"]
+    print("Displaying {} scenario".format(scenario_name))
+    if generate:
+        print("Generating network configuration")
+        scenario = get_scenario(scenario_name)
+        if scenario is None:
+            return 1
+        num_machines = scenario["machines"]
+        num_services = scenario["services"]
+        rve = scenario["restrictiveness"]
+        num_episodes = scenario["episodes"]
+        max_steps = scenario["steps"]
+        timeout = scenario["timeout"]
+        print("\tnumber of machines =", num_machines)
+        print("\tnumber of services =", num_services)
+        print("\tfirewall restrictiveness =", rve)
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve)
+        agent_scenario = scenario_name
+    else:
+        print("Loading network configuration")
+        num_episodes = 100
+        max_steps = 500
+        timeout = 180
+        env = CyberAttackSimulatorEnv.from_file(scenario_name)
+        agent_scenario = "small"
 
-    print("Generating network configuration")
-    print("\tnumber of machines =", num_machines)
-    print("\tnumber of services =", num_services)
-    print("\tfirewall restrictiveness =", restrictiveness)
-    env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-                                              restrictiveness=restrictiveness)
-    # env = CyberAttackSimulatorEnv.from_file("configs/small_linear_two.yaml")
-
-    # env.render_network_graph(show=True)
-
-    agent_name = sys.argv[1]
-    agent = get_agent(agent_name, scenario_name, env)
+    agent = get_agent(agent_name, agent_scenario, env)
     if agent is None:
         return 1
 

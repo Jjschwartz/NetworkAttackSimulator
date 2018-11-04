@@ -1,0 +1,46 @@
+# A medium standard (one public subnet) network configuration
+subnets: [1, 1, 3, 3, 3]
+topology: [[ 1, 1, 0, 0, 0, 0],
+           [ 1, 1, 1, 1, 0, 0],
+           [ 0, 1, 1, 1, 0, 0],
+           [ 0, 1, 1, 1, 1, 1],
+           [ 0, 0, 0, 1, 1, 0],
+           [ 0, 0, 0, 1, 0, 1]]
+sensitive_machines: [[2, 0, 10],
+                     [5, 0, 10]]
+num_services: 3
+service_exploits:
+  ssh:
+    - 0.8
+    - 3
+  ftp:
+    - 0.5
+    - 1
+  http:
+    - 0.8
+    - 2
+machine_configurations:
+  (1, 0): [http]
+  (2, 0): [ssh, ftp]
+  (3, 0): [ftp]
+  (3, 1): [ftp, http]
+  (3, 2): [ftp]
+  (4, 0): [ftp]
+  (4, 1): [ftp]
+  (4, 2): [ssh, ftp]
+  (5, 0): [ftp]
+  (5, 1): [ftp]
+  (5, 2): [ssh, ftp]
+firewall:
+  (0, 1): [http]
+  (1, 0): []
+  (1, 2): [ssh]
+  (2, 1): [ssh]
+  (1, 3): []
+  (3, 1): [ssh]
+  (2, 3): [http]
+  (3, 2): [ftp]
+  (3, 4): [ssh]
+  (4, 3): [ftp]
+  (3, 5): [ssh]
+  (5, 3): [ftp]

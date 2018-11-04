@@ -36,10 +36,13 @@ For rendering:
 ## Specifying an environment
 
 The environment is defined by:
-- number of subnets and how many machines on each subnet
+- subnets: list of subnets and how many machines on each subnet
 - Network topology: the connectivity of each subnet (i.e. which subnets are connected to each other, which are connected to the public internet)
-- the number of services available (i.e. how many possible exploits are available)
-- the list of sensitive machines and their value
+- sensitive machines: the list of sensitive machines and their value
+- number of services: the number of services available (i.e. how many possible exploits are available)
+- service exploits: the cost and success probability of each service exploit
+- machine configurations: which services are running on each machine in network
+- firewall: which service traffic is permitted for inter subnet connection on network
 
 There are two options for generating a new environement:
 
@@ -55,6 +58,9 @@ Environment optional parameters (if none supplied, uses default values):
 - reward for exploiting user machine
 - exploit cost
 - scan cost
+- exploit success probabilities
+- machine config distribution and related hyperparameters
+- restrictiveness of the firewalls
 
 The generated network has the following structure:
 - Machines distributed across each subnet following a set rule:
@@ -79,6 +85,11 @@ This will produce a network with 3 subnets:
     3. subnet 2: containing 3 machines, 1 which has sensitive info (r_user) and connected to subnets 1 & 2 (but not public)
 
 The generated environment will follow a predictable network topology with the first subnet being the public subnet accessible from outside and which is connected to the 2nd and 3rd subnets. The 2nd and 3rd subnets are also connected, and any remaining subnets are connected in a tree structure from the 3rd subnet (i.e. think of these as user subnets).
+
+The configurations of each machine are randomly generated, with two options: i) uniform at random (uniform=True), ii) using nested dirichlet process (uniform=False). The behavior of the second option is controlled by a number of hyperparameters (alpha_H, alpha_V, lambda_V), see generator.generate_config method description for more info.
+
+
+The success probability of each exploit can be set in one of the following i) none, ii) "mixed", iii) single float, iv) list of floats. see generator.generate_config method description for more info on the behavior of each option.
 
 #### Option 2: custom configuration
 Generate an environment from a configuration file. The configuration file must be a .yaml file with the following properties:

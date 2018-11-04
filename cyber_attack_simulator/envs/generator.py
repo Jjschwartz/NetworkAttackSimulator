@@ -15,7 +15,7 @@ USER = 3
 
 
 def generate_config(num_machines, num_services,
-                    r_sensitive, r_user,
+                    r_sensitive=10, r_user=10,
                     exploit_cost=1, exploit_probs=1.0,
                     uniform=False, alpha_H=2.0, alpha_V=2.0, lambda_V=1.0,
                     restrictiveness=5, seed=1):

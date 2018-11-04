@@ -1,5 +1,6 @@
 import networkx as nx
 import tkinter as Tk
+import math
 import random
 import matplotlib
 matplotlib.use('TkAgg')
@@ -32,7 +33,7 @@ class Viewer(object):
         self.subnets = self._get_subnets(network)
         self.positions = self._get_machine_positions(network)
 
-    def render_graph(self, state, ax=None, show=False):
+    def render_graph(self, state, ax=None, show=False, width=5, height=6):
         """
         Render graph structure representing network that can be then be visualized
 
@@ -40,6 +41,8 @@ class Viewer(object):
             State state : state of network user wants to view (Typically will be initial state)
             Axes ax : matplotlib axis to plot graph on, or None to plot on new axis
             bool show : whether to display plot, or simply construct plot
+            int width : width of GUI window
+            int height : height of GUI window
         """
         G = self._construct_graph(state)
         colors = []
@@ -49,26 +52,27 @@ class Viewer(object):
             labels[n] = G.nodes[n]["label"]
 
         if ax is None:
-            fig = plt.figure()
+            fig = plt.figure(figsize=(width, height))
             ax = fig.add_subplot(111)
         else:
             fig = ax.get_figure()
 
-        nx.draw_networkx_nodes(G, self.positions, node_color=colors, ax=ax)
-        nx.draw_networkx_labels(G, self.positions, labels, font_size=8)
+        nx.draw_networkx_nodes(G, self.positions, node_size=1000, node_color=colors, ax=ax)
+        nx.draw_networkx_labels(G, self.positions, labels, font_size=10, font_weight="bold")
         nx.draw_networkx_edges(G, self.positions)
         ax.axis('off')
         ax.set_xlim(left=0.0, right=100.0)
+        # ax.set_ylim(bottom=0.0, top=100.0)
 
         legend_entries = EpisodeViewer.legend(compromised=False)
-        ax.legend(handles=legend_entries)
+        ax.legend(handles=legend_entries, fontsize=12, loc=2)
 
         if show:
             fig.tight_layout()
             plt.show()
             plt.close(fig)
 
-    def render_episode(self, episode, width=7, height=7):
+    def render_episode(self, episode, width=7, height=5):
         """
         Display an episode from Cyber Attack Simulator Environment in a seperate window. Where an
         episode is a sequence of (state, action, reward, done) tuples generated from interactions
@@ -185,12 +189,14 @@ class Viewer(object):
         # list of lists where each list contains subnet_id of subnets with same depth
         subnets_by_depth = [[] for i in range(max_depth + 1)]
         for subnet_id, subnet_depth in enumerate(depths):
+            if subnet_id == 0:
+                continue
             subnets_by_depth[subnet_depth].append(subnet_id)
 
         # max value of position in figure
         max_pos = 100
         # for spacing between rows and columns and spread of nodes within subnet
-        margin = 5
+        margin = 10
         row_height = max_pos / (max_depth + 1)
 
         # positions are randomly assigned within regions of display based on subnet number
@@ -209,9 +215,10 @@ class Viewer(object):
             col_min = m_col * col_width
             col_max = (m_col + 1) * col_width
             # randomly sample position of machine within row and column of subnet
-            col_mid = col_max - ((col_max - col_min) / 2)
-            row_pos = random.uniform(row_min + margin, row_max - margin)
-            col_pos = random.uniform(col_mid - margin, col_mid + margin)
+            col_pos, row_pos = self._get_machine_position(m, positions, address_space, row_min,
+                                                          row_max, col_min, col_max, margin)
+            if m == (1, 0):
+                print(row_min, row_max, col_min, col_max, row_pos, col_pos)
             positions[m] = (col_pos, row_pos)
 
         # get position of agent, which is just right of machine first machine in network
@@ -221,6 +228,44 @@ class Viewer(object):
         positions[AGENT] = (agent_col, agent_row)
 
         return positions
+
+    def _get_machine_position(self, m, positions, address_space, row_min, row_max,
+                              col_min, col_max, margin):
+        """
+        Get the position of m within the bounds of (row_min, row_max, col_min, col_max) while
+        trying to make the distance between the positions of any two machines in the same subnet
+        greater than some threshold.
+        """
+        subnet_machines = []
+        for other_m in address_space:
+            if other_m == m:
+                continue
+            if other_m[0] == m[0]:
+                subnet_machines.append(other_m)
+
+        threshold = 8
+        col_margin = (col_max - col_min) / 4
+        col_mid = col_max - ((col_max - col_min) / 2)
+        m_y = random.uniform(row_min + margin, row_max - margin)
+        m_x = random.uniform(col_mid - col_margin, col_mid + col_margin)
+
+        # only try 100 times
+        good = False
+        n = 0
+        while n < 100 and not good:
+            good = True
+            m_x = random.uniform(col_mid - col_margin, col_mid + col_margin)
+            m_y = random.uniform(row_min + margin, row_max - margin)
+            for other_m in subnet_machines:
+                if other_m not in positions:
+                    continue
+                other_x, other_y = positions[other_m]
+                dist = math.hypot(m_x - other_x, m_y - other_y)
+                if dist < threshold:
+                    good = False
+                    break
+            n += 1
+        return m_x, m_y
 
     def _get_subnets(self, network):
         """
@@ -276,7 +321,8 @@ class EpisodeViewer(object):
         # matplotlib figure to house networkX graph
         self.fig = plt.figure(figsize=(width, height))
         self.axes = self.fig.add_subplot(111)
-        plt.tight_layout(pad=2)
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(top=0.8)
         # a tk.DrawingArea
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.draw()
@@ -333,25 +379,42 @@ class EpisodeViewer(object):
         """
         pos = {}
         colors = []
+        labels = {}
         for n in list(G.nodes):
             colors.append(G.nodes[n]["color"])
+            labels[n] = G.nodes[n]["label"]
             pos[n] = G.nodes[n]["pos"]
 
         # clear window and redraw graph
         self.axes.cla()
-        nx.draw_networkx_nodes(G, pos, node_color=colors, ax=self.axes)
+        nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=1500, ax=self.axes)
+        nx.draw_networkx_labels(G, pos, labels, font_size=12, font_weight="bold")
         nx.draw_networkx_edges(G, pos)
         plt.axis('off')
         # generate and plot legend
         legend_entries = self.legend()
-        plt.legend(handles=legend_entries)
+        # plt.legend(handles=legend_entries, fontsize=16)
         # add title
         state, action, reward, done = self.episode[self.timestep]
         if done:
-            title = "t = {0}, Goal reached, total reward = {1}".format(self.timestep, reward)
+            title = "t = {0}\nGoal reached\ntotal reward = {1}".format(self.timestep, reward)
         else:
-            title = "t = {0}, {1}, reward = {2}".format(self.timestep, action, reward)
-        self.axes.set_title(title)
+            title = "t = {0}\n{1}\nReward = {2}".format(self.timestep, action, reward)
+        ax_title = self.axes.set_title(title, fontsize=16, pad=10)
+        ax_title.set_y(1.05)
+
+        xticks = self.axes.get_xticks()
+        yticks = self.axes.get_yticks()
+        # shift half a step to the left
+        xmin = (3*xticks[0] - xticks[1])/2.
+        ymin = (3*yticks[0] - yticks[1])/2.
+        # shaft half a step to the right
+        xmax = (3*xticks[-1] - xticks[-2])/2.
+        ymax = (3*yticks[-1] - yticks[-2])/2.
+
+        self.axes.set_xlim(left=xmin, right=xmax)
+        self.axes.set_ylim(bottom=ymin, top=ymax)
+        self.fig.savefig("t_{}.png".format(self.timestep))
         self.canvas.draw()
 
     @staticmethod

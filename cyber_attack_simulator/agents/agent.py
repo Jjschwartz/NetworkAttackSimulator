@@ -86,7 +86,7 @@ class Agent(object):
             if done:
                 episode.append((new_state, None, reward_sum, done))
                 break
-            state = new_state
+            state = new_state.copy()
         return episode
 
     def evaluate_agent(self, env, runs=1, max_steps=100):

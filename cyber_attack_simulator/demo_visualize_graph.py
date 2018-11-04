@@ -5,29 +5,31 @@ import sys
 
 def main():
 
-    if len(sys.argv) != 2:
-        print("Usage: python demo_visualize_graph.py <scenario>")
+    if len(sys.argv) != 3:
+        print("Usage: python demo_visualize_graph.py <scenario> <generate>")
         return 1
 
     scenario_name = sys.argv[1]
-    scenario = get_scenario(scenario_name)
-    if scenario is None:
-        return 1
-
+    generate = bool(int(sys.argv[2]))
+    print(generate)
     print("Displaying {} scenario".format(scenario_name))
+    if generate:
+        print("Generating network configuration")
+        scenario = get_scenario(scenario_name)
+        if scenario is None:
+            return 1
+        num_machines = scenario["machines"]
+        num_services = scenario["services"]
+        restrictiveness = scenario["restrictiveness"]
 
-    num_machines = scenario["machines"]
-    num_services = scenario["services"]
-    restrictiveness = scenario["restrictiveness"]
-
-    print("Generating network configuration")
-    print("\tnumber of machines =", num_machines)
-    print("\tnumber of services =", num_services)
-    print("\tfirewall restrictiveness =", restrictiveness)
-    print("\tnumber of subnets =", 2 + (num_machines - 2) // 5)
-    # env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
-    #                                           restrictiveness=restrictiveness)
-    env = CyberAttackSimulatorEnv.from_file("configs/small.yaml")
+        print("\tnumber of machines =", num_machines)
+        print("\tnumber of services =", num_services)
+        print("\tfirewall restrictiveness =", restrictiveness)
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services,
+                                                  restrictiveness=restrictiveness)
+    else:
+        print("Loading network configuration")
+        env = CyberAttackSimulatorEnv.from_file(scenario_name)
 
     env.render_network_graph(show=True)
 

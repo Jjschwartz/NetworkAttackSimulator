@@ -14,3 +14,5 @@ cyber_attack_simulator/pomdp/out/
 *.cprof
 
 cyber_attack_simulator/experiments/results/
+
+cyber_attack_simulator/experiments/figures/

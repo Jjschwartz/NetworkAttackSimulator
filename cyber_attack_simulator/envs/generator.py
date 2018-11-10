@@ -361,8 +361,9 @@ def generate_firewall_map(subnets, topology, num_services, machines, restrictive
         subnet = m.address[0]
         if subnet not in subnet_services:
             subnet_services[subnet] = set()
-        for srv in m._services.keys():
-            subnet_services[subnet].add(srv)
+        for name, present in m._services.items():
+            if present:
+                subnet_services[subnet].add(name)
     subnet_services[INTERNET] = set()
 
     service_list = list(range(num_services))

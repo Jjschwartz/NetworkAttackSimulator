@@ -71,8 +71,7 @@ def main():
         print("\tnumber of machines =", num_machines)
         print("\tnumber of services =", num_services)
         print("\tfirewall restrictiveness =", rve)
-        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve,
-                                                  seed=2)
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve)
         agent_scenario = scenario_name
     else:
         print("Loading network configuration")

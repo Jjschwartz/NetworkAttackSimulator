@@ -71,7 +71,8 @@ def main():
         print("\tnumber of machines =", num_machines)
         print("\tnumber of services =", num_services)
         print("\tfirewall restrictiveness =", rve)
-        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve)
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve,
+                                                  seed=2)
         agent_scenario = scenario_name
     else:
         print("Loading network configuration")
@@ -92,10 +93,10 @@ def main():
     ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout,
                                                verbose=True, **train_args)
 
-    gen_episode = agent.generate_episode(env, max_steps)
-    env.render_episode(gen_episode)
-
-    plot_results(ep_tsteps, ep_rews, ep_times, env)
+    # gen_episode = agent.generate_episode(env, max_steps)
+    # env.render_episode(gen_episode)
+    #
+    # plot_results(ep_tsteps, ep_rews, ep_times, env)
 
 
 if __name__ == "__main__":

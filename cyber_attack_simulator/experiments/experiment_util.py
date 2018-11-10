@@ -17,10 +17,10 @@ scenarios["small"] = {"machines": 8,
                       "steps": 200,
                       "timeout": 600}
 scenarios["medium"] = {"machines": 13,
-                       "services": 5,
+                       "services": 4,
                        "restrictiveness": 3,
-                       "episodes": 100,
-                       "steps": 300,
+                       "episodes": 3000,
+                       "steps": 1000,
                        "timeout": 900}
 scenarios["large"] = {"machines": 18,
                       "services": 6,

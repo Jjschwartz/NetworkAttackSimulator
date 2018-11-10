@@ -246,6 +246,7 @@ class DQNAgent(Agent):
             # set target for given s, a, r, ns observation
             t = p[i]
             if ns is None:
+                # terminal state
                 t[a] = r
             else:
                 t[a] = r + self.gamma * np.amax(next_p[i])

@@ -199,6 +199,15 @@ class State(object):
         """
         return self._vector.copy()
 
+    def get_hashable(self):
+        """
+        Return a copy of the state in an efficient hashable form.
+
+        Returns:
+            str hashable : state vector as hashable string
+        """
+        return self._vector.tostring()
+
     def get_state_size(self):
         """
         Return the size of state in terms of the flattened state.

@@ -6,6 +6,8 @@ from cyber_attack_simulator.envs.render import Viewer
 import cyber_attack_simulator.envs.loader as loader
 import cyber_attack_simulator.envs.generator as generator
 
+import time
+
 
 # Default reward when generating a network from paramaters
 R_SENSITIVE = 10
@@ -62,9 +64,9 @@ class CyberAttackSimulatorEnv(object):
         self.action_space = Action.load_action_space(self.address_space, self.service_exploits,
                                                      scan_cost)
 
-        self.renderer = Viewer(self.network)
         self.init_state = self._generate_initial_state()
         self.compromised_subnets = None
+        self.renderer = None
         self.reset()
 
     @classmethod
@@ -163,7 +165,6 @@ class CyberAttackSimulatorEnv(object):
             return self.current_state, 0 - action.cost, False
 
         success, value, services = self.network.perform_action(action)
-        # service_vector = self._vectorize(services)
         value = 0 if self.current_state.compromised(action.target) else value
         self._update_state(action, success, services)
         done = self._is_goal()
@@ -184,6 +185,8 @@ class CyberAttackSimulatorEnv(object):
         Arguments:
             str mode : rendering mode
         """
+        if self.renderer is None:
+            self.renderer = Viewer(self.network)
         if mode == "ASCI":
             self.renderer.render_asci(self.current_state)
         elif mode == "readable":
@@ -201,6 +204,8 @@ class CyberAttackSimulatorEnv(object):
             int width : width of GUI window
             int height : height of GUI window
         """
+        if self.renderer is None:
+            self.renderer = Viewer(self.network)
         self.renderer.render_episode(episode)
 
     def render_network_graph(self, initial_state=True, ax=None, show=False):
@@ -214,6 +219,8 @@ class CyberAttackSimulatorEnv(object):
             bool show : whether to display plot, or simply setup plot and showing plot can be
                         handled elsewhere by user
         """
+        if self.renderer is None:
+            self.renderer = Viewer(self.network)
         state = self.init_state if initial_state else self.current_state
         self.renderer.render_graph(state, ax, show)
 
@@ -345,17 +352,17 @@ class CyberAttackSimulatorEnv(object):
         """
         return self.service_map[service]
 
-    def _vectorize(self, services):
-        """
-        Converts a service map into a 1D bool vector
-        """
-        if len(services) == 0:
-            return services
-        vector = np.zeros(len(services), dtype=int)
-        for s, v in services.items():
-            i = self._get_service_index(s)
-            vector[i] = v
-        return vector
+    # def _vectorize(self, services):
+    #     """
+    #     Converts a service map into a 1D bool vector
+    #     """
+    #     if len(services) == 0:
+    #         return services
+    #     vector = np.zeros(len(services), dtype=int)
+    #     for s, v in services.items():
+    #         i = self._get_service_index(s)
+    #         vector[i] = v
+    #     return vector
 
     def __str__(self):
         output = "Environment: "

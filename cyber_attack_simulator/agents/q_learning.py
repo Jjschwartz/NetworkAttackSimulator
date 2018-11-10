@@ -24,7 +24,8 @@ class QLearningAgent(TDAgent):
         Train the agent for a single episode using Q-learning algorithm
         """
         a_space = env.action_space
-        s = env.reset()
+        s = self._process_state(env.reset())
+        # s = env.reset().copy()
         ep_reward = 0
         ep_timesteps = 0
         for _ in range(max_steps):
@@ -32,13 +33,21 @@ class QLearningAgent(TDAgent):
             # increment state-action pair visit count
             self._n(s, a_space)[a] += 1
             new_s, reward, done = env.step(a_space[a])
+            new_s = self._process_state(new_s)
             self._q_update(s, a, new_s, reward, a_space)
-            s = new_s.copy()
+            s = new_s
+            # s = new_s.copy()
             ep_reward += reward
             ep_timesteps += 1
             if done:
                 break
         return ep_timesteps, ep_reward
+
+    def _process_state(self, s):
+        """
+        Convert a state into the form stored in q_table
+        """
+        return s.get_hashable()
 
     def _q_update(self, s, a, s_new, r, action_space):
         """

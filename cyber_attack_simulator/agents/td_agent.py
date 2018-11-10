@@ -201,7 +201,8 @@ class TDAgent(Agent):
         if state not in self.q_table:
             # copy state since state passed from simulator is not a copy and is modified by sim
             # this is done for performance reasons
-            self.q_table[state.copy()] = np.zeros(len(action_space))
+            # self.q_table[state.copy()] = np.zeros(len(action_space))
+            self.q_table[state] = np.zeros(len(action_space))
         if action is None:
             return self.q_table[state]
         return self.q_table[state][action]
@@ -223,7 +224,8 @@ class TDAgent(Agent):
         if state not in self.n_table:
             # copy state since state passed from simulator is not a copy and is modified by sim
             # this is done for performance reasons
-            self.n_table[state.copy()] = np.zeros(len(action_space))
+            # self.n_table[state.copy()] = np.zeros(len(action_space))
+            self.n_table[state] = np.zeros(len(action_space))
         if action is None:
             return self.n_table[state]
         return self.n_table[state][action]

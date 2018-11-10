@@ -217,8 +217,6 @@ class Viewer(object):
             # randomly sample position of machine within row and column of subnet
             col_pos, row_pos = self._get_machine_position(m, positions, address_space, row_min,
                                                           row_max, col_min, col_max, margin)
-            if m == (1, 0):
-                print(row_min, row_max, col_min, col_max, row_pos, col_pos)
             positions[m] = (col_pos, row_pos)
 
         # get position of agent, which is just right of machine first machine in network

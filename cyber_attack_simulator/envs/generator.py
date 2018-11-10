@@ -92,7 +92,8 @@ def generate_config(num_machines, num_services,
     machines = generate_machines(subnets, num_services, s_machines, uniform,
                                  alpha_H, alpha_V, lambda_V)
     config["machines"] = machines
-    config['firewall'] = generate_firewalls(subnets, num_services, machines, restrictiveness)
+    config['firewall'] = generate_firewall_map(subnets, config["topology"], num_services, machines,
+                                               restrictiveness)
     config["service_exploits"] = generate_service_exploits(num_services, exploit_cost,
                                                            exploit_probs)
     return config
@@ -329,7 +330,7 @@ def get_machine_value(sensitive_machines, address):
     return 0.0
 
 
-def generate_firewalls(subnets, num_services, machines, restrictiveness):
+def generate_firewall_map(subnets, topology, num_services, machines, restrictiveness):
     """
     Generate the firewall rules as a mapping from (src, dest) connection to set of allowed services,
     which defines for each service whether traffic using that service is allowed between pairs of
@@ -342,6 +343,7 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
 
     Arguments:
         list subnets : list of subnet sizes
+        2Dmatrix topology : network topology matrix
         int num_services : number if services running in network
         dict machine : ordered dictionary of machines in network, with address as keys and
                        machine objects as values
@@ -350,103 +352,50 @@ def generate_firewalls(subnets, num_services, machines, restrictiveness):
     Returns:
         dict firewall_dict : firewall map
     """
-    firewall_matrix = generate_firewall_matrix(subnets, num_services, machines, restrictiveness)
-    return firewall_matrix_to_map(firewall_matrix)
-
-
-def generate_firewall_matrix(subnets, num_services, machines, restrictiveness):
-    """
-    Generate the firewall rules as a 3D adjacency matrix, which defines for each service
-    whether traffic using that service is allowed between pairs of subnets.
-
-    Arguments:
-        list subnets : list of subnet sizes
-        int num_services : number if services running in network
-        dict machine : ordered dictionary of machines in network, with address as keys and
-                       machine objects as values
-        int restrictiveness : max number of services allowed to pass through a firewall
-
-    Returns:
-        3D matrix firewalls : 3D adjacency matrix
-    """
     num_subnets = len(subnets)
-    # Plus 1 since we have Internet subnet
-    firewall = np.full((num_subnets, num_subnets, num_services), True, dtype=np.bool_)
-    subnet_services = np.full((num_subnets, num_services), False, dtype=np.bool_)
+    firewall_map = {}
 
     # find services running on each subnet, and set to true
+    subnet_services = {}
     for m in machines.values():
         subnet = m.address[0]
-        m_services = convert_service_map_to_list(m._services)
-        np.logical_or(subnet_services[subnet], m_services, out=subnet_services[subnet])
+        if subnet not in subnet_services:
+            subnet_services[subnet] = set()
+        for srv in m._services.keys():
+            subnet_services[subnet].add(srv)
+    subnet_services[INTERNET] = set()
 
-    # for each valid source and destination pair of subnets
+    service_list = list(range(num_services))
+
     for src in range(num_subnets):
-        for dest in range(num_subnets):
-            if src == dest:
-                # all services allowed
+        for dest in range(len(subnets)):
+            if src == dest or not topology[src][dest]:
+                # no inter subnet connection so no firewall
                 continue
             elif src > SENSITIVE and dest > SENSITIVE:
                 # all services allowed between user subnets
-                continue
-            elif dest == INTERNET or (src == INTERNET and dest > DMZ):
-                # internet only allows traffic to DMZ
-                np.invert(firewall[src][dest], firewall[src][dest])
+                allowed = set(service_list)
+                firewall_map[(src, dest)] = allowed
                 continue
             # else src and dest in different zones => block services based on restrictiveness
-            dest_avail = np.where(subnet_services[dest])[0].tolist()
+            dest_avail = subnet_services[dest].copy()
             if len(dest_avail) < restrictiveness:
                 # restrictiveness not limiting allowed traffic, all services allowed
+                firewall_map[(src, dest)] = dest_avail.copy()
                 continue
-            # block all services, and add only as many as restrictiveness allows
-            np.invert(firewall[src][dest], firewall[src][dest])
             # add at least one service to allowed service
-            dest_allowed = np.random.choice(dest_avail)
-            firewall[src][dest][dest_allowed] = True
+            dest_allowed = np.random.choice(list(dest_avail))
             # for dest subnet choose available services upto restrictiveness limit or all services
             dest_avail.remove(dest_allowed)
             allowed = set()
             allowed.add(dest_allowed)
             while len(allowed) < restrictiveness:
-                dest_allowed = np.random.choice(dest_avail)
+                dest_allowed = np.random.choice(list(dest_avail))
                 if dest_allowed not in allowed:
-                    firewall[src][dest][dest_allowed] = True
                     allowed.add(dest_allowed)
                     dest_avail.remove(dest_allowed)
-    return firewall
-
-
-def convert_service_map_to_list(service_map):
-    srv_list = np.full(len(service_map), False, dtype=np.bool_)
-    for k, v in service_map.items():
-        srv_list[k] = v
-    return srv_list
-
-
-def firewall_matrix_to_map(firewall):
-    """
-    Convert 3D [src][dest][services] firewall matrix into a firewall map which maps connection
-    (src, dest) tuple to allowed services set
-
-    Arguments:
-        3D matrix firewalls : 3D adjacency matrix
-
-    Returns:
-        dict firewall_dict : firewall map
-    """
-    firewall_dict = {}
-
-    for src, row in enumerate(firewall):
-        for dest, col in enumerate(row):
-            if src == dest:
-                continue
-            allowed_set = set()
-            for service, allowed in enumerate(col):
-                if allowed:
-                    allowed_set.add(service)
-            firewall_dict[(src, dest)] = allowed_set
-
-    return firewall_dict
+            firewall_map[(src, dest)] = allowed
+    return firewall_map
 
 
 def generate_service_exploits(num_services, exploit_cost, exploit_probs):

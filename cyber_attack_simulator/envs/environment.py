@@ -6,8 +6,6 @@ from cyber_attack_simulator.envs.render import Viewer
 import cyber_attack_simulator.envs.loader as loader
 import cyber_attack_simulator.envs.generator as generator
 
-import time
-
 
 # Default reward when generating a network from paramaters
 R_SENSITIVE = 10
@@ -339,30 +337,6 @@ class CyberAttackSimulatorEnv(object):
                 # at least one sensitive machine not compromised
                 return False
         return True
-
-    def _get_service_index(self, service):
-        """
-        Return the State service info index for a given service
-
-        Arguments:
-            int or str service : the id of the service
-
-        Returns:
-            int index : the index of the service in the state info list
-        """
-        return self.service_map[service]
-
-    # def _vectorize(self, services):
-    #     """
-    #     Converts a service map into a 1D bool vector
-    #     """
-    #     if len(services) == 0:
-    #         return services
-    #     vector = np.zeros(len(services), dtype=int)
-    #     for s, v in services.items():
-    #         i = self._get_service_index(s)
-    #         vector[i] = v
-    #     return vector
 
     def __str__(self):
         output = "Environment: "

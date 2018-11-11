@@ -8,7 +8,7 @@ scenarios["tiny"] = {"machines": 3,
                      "services": 1,
                      "restrictiveness": 1,
                      "episodes": 1000,
-                     "steps": 100,
+                     "steps": 200,
                      "timeout": 300}
 scenarios["small"] = {"machines": 8,
                       "services": 3,
@@ -17,16 +17,16 @@ scenarios["small"] = {"machines": 8,
                       "steps": 200,
                       "timeout": 600}
 scenarios["medium"] = {"machines": 13,
-                       "services": 4,
+                       "services": 5,
                        "restrictiveness": 3,
-                       "episodes": 3000,
-                       "steps": 1000,
+                       "episodes": 1000,
+                       "steps": 200,
                        "timeout": 900}
 scenarios["large"] = {"machines": 18,
                       "services": 6,
                       "restrictiveness": 3,
-                      "episodes": 29000,
-                      "steps": 1200,
+                      "episodes": 15000,
+                      "steps": 500,
                       "timeout": 1800}
 scenarios["huge"] = {"machines": 37,
                      "services": 10,
@@ -39,22 +39,22 @@ scenarios["huge"] = {"machines": 37,
 # Experiment agents
 agents = OrderedDict()
 agents["td_egreedy"] = {
-    "tiny": {"type": "egreedy", "alpha": 0.05, "gamma": 0.9, "epsilon_decay_lambda": 0.01},
-    "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
-    "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
-    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001},
+    "tiny": {"type": "egreedy", "alpha": 0.05, "gamma": 0.99, "epsilon_decay_lambda": 0.01},
+    "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001}
     }
 agents["td_ucb"] = {
-    "tiny": {"type": "UCB", "alpha": 0.05, "gamma": 0.9, "c": 1.0},
-    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0},
-    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.9, "c": 1.0}
+    "tiny": {"type": "UCB", "alpha": 0.05, "gamma": 0.99, "c": 1.0},
+    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
+    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
+    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
+    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0}
     }
 agents["dqn"] = {
-    "tiny": {"hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01},
-    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.01},
+    "small": {"hidden_units": 64, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
@@ -106,3 +106,16 @@ def get_agent(agent_name, scenario_name, env):
         num_actions = env.get_num_actions()
         return DQNAgent(state_size, num_actions, **agent_params)
     return QLearningAgent(**agent_params)
+
+
+def get_agent_label(agent_name):
+    if not is_valid_agent(agent_name, verbose=True):
+        return None
+
+    if agent_name == "dqn":
+        return "Deep Q-learning"
+    elif agent_name == "td_egreedy":
+        return "Tabular Q-learning e-greedy"
+    elif agent_name == "td_ucb":
+        return "Tabular Q-learning UCB"
+    return None

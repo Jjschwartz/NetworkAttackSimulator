@@ -9,7 +9,7 @@ from matplotlib.ticker import MaxNLocator
 
 def import_data(file_name):
     df = pd.read_csv(file_name)
-    df = df.loc[df.solved is True]
+    df = df.loc[df.solved == True]      # noqa E3712
     return df
 
 

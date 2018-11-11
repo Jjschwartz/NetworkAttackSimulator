@@ -190,8 +190,8 @@ class Network(object):
             int minumum_steps : minimum number of steps to reach all sensitive machines
         """
         num_subnets = len(self.topology)
-        max_value = np.iinfo(np.int32).max
-        distance = np.full((num_subnets, num_subnets), max_value, dtype=np.int32)
+        max_value = np.iinfo(np.int16).max
+        distance = np.full((num_subnets, num_subnets), max_value, dtype=np.int16)
 
         # set distances for each edge to 1
         for s1 in range(num_subnets):
@@ -200,12 +200,15 @@ class Network(object):
                     distance[s1][s2] = 0
                 elif self.topology[s1][s2] == 1:
                     distance[s1][s2] = 1
-
         # find all pair minimum shortest path distance
         for k in range(num_subnets):
             for i in range(num_subnets):
                 for j in range(num_subnets):
-                    if distance[i][j] > distance[i][k] + distance[k][j]:
+                    if distance[i][k] == max_value or distance[k][j] == max_value:
+                        dis = max_value
+                    else:
+                        dis = distance[i][k] + distance[k][j]
+                    if distance[i][j] > dis:
                         distance[i][j] = distance[i][k] + distance[k][j]
 
         # get list of all subnets we need to visit

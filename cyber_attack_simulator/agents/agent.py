@@ -78,7 +78,8 @@ class Agent(object):
         reward_sum = 0
         steps = 0
         for t in range(max_steps):
-            action = self._choose_greedy_action(state, action_space)
+            s_processed = self._process_state(state)
+            action = self._choose_greedy_action(s_processed, action_space)
             new_state, reward, done = env.step(action_space[action])
             episode.append((state.copy(), action_space[action], reward, False))
             reward_sum += reward
@@ -88,6 +89,10 @@ class Agent(object):
                 break
             state = new_state.copy()
         return episode
+
+    def _process_state(self, s):
+        """ Convert state into format that can be handled by agent"""
+        raise NotImplementedError
 
     def evaluate_agent(self, env, runs=1, max_steps=100):
         """
@@ -139,4 +144,4 @@ class Agent(object):
                     print(message.format(episode_num, interval, episodes[0]))
 
     def __str__(self):
-        raise NotImplemented
+        raise NotImplementedError

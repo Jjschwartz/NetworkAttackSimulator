@@ -46,8 +46,8 @@ def plot_results(timesteps, rewards, times, env):
 
 def main():
 
-    if len(sys.argv) != 4:
-        print("Usage: python demo_solving.py agent scenario generate")
+    if len(sys.argv) != 4 and len(sys.argv) != 5:
+        print("Usage: python demo_solving.py agent scenario generate [seed]")
         return 1
 
     agent_name = sys.argv[1]
@@ -55,6 +55,10 @@ def main():
         return 1
     scenario_name = sys.argv[2]
     generate = bool(int(sys.argv[3]))
+    if len(sys.argv) == 5:
+        seed = int(sys.argv[4])
+    else:
+        seed = 1
 
     print("Displaying {} scenario".format(scenario_name))
     if generate:
@@ -71,7 +75,8 @@ def main():
         print("\tnumber of machines =", num_machines)
         print("\tnumber of services =", num_services)
         print("\tfirewall restrictiveness =", rve)
-        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve)
+        env = CyberAttackSimulatorEnv.from_params(num_machines, num_services, restrictiveness=rve,
+                                                  seed=seed)
         agent_scenario = scenario_name
     else:
         print("Loading network configuration")

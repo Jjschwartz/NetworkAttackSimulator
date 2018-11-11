@@ -177,7 +177,7 @@ class TDAgent(Agent):
             # if any state-action pair has not been visited, choose action
             return np.argwhere(n_state_action == 0).flatten()[0]
         log_state_visits = np.log(np.sum(n_state_action))
-        bonuses = c * np.sqrt(2 * (log_state_visits / n_state_action))
+        bonuses = c * np.sqrt(log_state_visits / n_state_action)
 
         q_values = self._q(state, action_space)
         adj_q_values = q_values + bonuses
@@ -201,7 +201,6 @@ class TDAgent(Agent):
         if state not in self.q_table:
             # copy state since state passed from simulator is not a copy and is modified by sim
             # this is done for performance reasons
-            # self.q_table[state.copy()] = np.zeros(len(action_space))
             self.q_table[state] = np.zeros(len(action_space))
         if action is None:
             return self.q_table[state]
@@ -224,7 +223,6 @@ class TDAgent(Agent):
         if state not in self.n_table:
             # copy state since state passed from simulator is not a copy and is modified by sim
             # this is done for performance reasons
-            # self.n_table[state.copy()] = np.zeros(len(action_space))
             self.n_table[state] = np.zeros(len(action_space))
         if action is None:
             return self.n_table[state]

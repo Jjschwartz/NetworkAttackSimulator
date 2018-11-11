@@ -13,20 +13,20 @@ import numpy as np
 
 # Experiment agents
 agents = OrderedDict()
-# agents["td_egreedy"] = {
-#     "type": "egreedy", "alpha": 0.05, "gamma": 0.9, "epsilon_decay_lambda": 0.01
-#     }
-# agents["td_ucb"] = {
-#     "type": "UCB", "alpha": 0.05, "gamma": 0.9, "c": 1.0
-#     }
+agents["td_egreedy"] = {
+    "type": "egreedy", "alpha": 0.05, "gamma": 0.9, "epsilon_decay_lambda": 0.01
+    }
+agents["td_ucb"] = {
+    "type": "UCB", "alpha": 0.05, "gamma": 0.9, "c": 1.0
+    }
 agents["dqn"] = {
     "hidden_units": 256, "gamma": 0.5, "epsilon_decay_lambda": 0.01
     }
 
 # Experiment parameters
-RUNS = 5
-MACHINE_MIN = 27
-MACHINE_MAX = 29
+RUNS = 1
+MACHINE_MIN = 11
+MACHINE_MAX = 21
 MACHINE_INTERVAL = 2
 MAX_EPISODES = 10000
 EPISODE_INTERVALS = 100

@@ -8,12 +8,13 @@ import time
 import math
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import RMSprop
+# from keras.optimizers import RMSprop
+from keras.optimizers import Adam
 from keras import backend as K
 import tensorflow as tf
 
 
-RMSPROP_LR = 0.00025
+MODEL_LR = 0.00025
 
 
 class Brain:
@@ -26,8 +27,8 @@ class Brain:
 
         self.model = self._create_model()
 
-        config = tf.ConfigProto(intra_op_parallelism_threads=0,
-                                inter_op_parallelism_threads=2)
+        config = tf.ConfigProto(intra_op_parallelism_threads=4,
+                                inter_op_parallelism_threads=4)
         session = tf.Session(config=config)
         K.set_session(session)
 
@@ -35,7 +36,7 @@ class Brain:
         model = Sequential()
         model.add(Dense(self.hidden_units, activation='relu', input_dim=self.state_size))
         model.add(Dense(self.num_actions, activation='linear'))
-        opt = RMSprop(lr=RMSPROP_LR)
+        opt = Adam(lr=MODEL_LR)
         model.compile(loss='mse', optimizer=opt)
         return model
 
@@ -112,6 +113,13 @@ class DQNAgent(Agent):
         self.brain = Brain(state_size, num_actions, hidden_units)
         self.memory = Memory(memory_capacity)
 
+        self.total_replay_time = 0
+        self.total_replay_count = 0
+        self.total_brain_predict_time = 0
+        self.total_brain_predict_count = 0
+        self.total_brain_train_time = 0
+        self.total_brain_train_count = 0
+
     def train(self, env, num_episodes=100, max_steps=100, timeout=None, verbose=False, **kwargs):
 
         if "visualize_policy" in kwargs:
@@ -128,6 +136,10 @@ class DQNAgent(Agent):
 
         training_start_time = time.time()
 
+        total_episode_tsteps = 0
+
+        reporting_window = min(num_episodes / 10, 10)
+
         for e in range(num_episodes):
             start_time = time.time()
             timesteps, reward = self._run_episode(env, max_steps)
@@ -138,8 +150,15 @@ class DQNAgent(Agent):
 
             self.epsilon = self.epsilon_decay()
 
-            # self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
-            self.report_progress(e, num_episodes / num_episodes, episode_timesteps, verbose)
+            self.report_progress(e, reporting_window, episode_timesteps, verbose)
+
+            total_episode_tsteps += timesteps
+            if e > 0 and e % reporting_window == 0:
+                print("Average replay time = {}".format(self.total_replay_time / self.total_replay_count))
+                print("Average predict time = {}".format(self.total_brain_predict_time / self.total_brain_predict_count))
+                print("Average train time = {}".format(self.total_brain_train_time / self.total_brain_train_count))
+                print("Average episode time = {}".format((time.time() - training_start_time) / e))
+                print("Average episode timesteps = {}".format((total_episode_tsteps) / e))
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)
@@ -169,7 +188,7 @@ class DQNAgent(Agent):
         Train the agent for a single episode using Q-learning algorithm
         """
         a_space = env.action_space
-        s = self.process_state(env.reset())
+        s = self._process_state(env.reset())
         ep_reward = 0
         ep_timesteps = 0
 
@@ -177,14 +196,17 @@ class DQNAgent(Agent):
             # interact with environment
             a = self.act(s)
             ns, r, done = env.step(a_space[a])
-            ns = self.process_state(ns)
+            ns = self._process_state(ns)
 
             if done:
                 ns = None
 
             # train agent
             self.observe((s, a, r, ns))
+            replay_start = time.time()
             self.replay()
+            self.total_replay_time += (time.time() - replay_start)
+            self.total_replay_count += 1
 
             s = ns
             ep_reward += r
@@ -197,7 +219,7 @@ class DQNAgent(Agent):
 
         return ep_timesteps, ep_reward
 
-    def process_state(self, s):
+    def _process_state(self, s):
         """ Convert state into format that can be handled by NN"""
         return s.flatten()
 
@@ -209,7 +231,7 @@ class DQNAgent(Agent):
             return np.argmax(self.brain.predictOne(s))
 
     def _choose_greedy_action(self, state, action_space):
-        return np.argmax(self.brain.predictOne(self.process_state(state)))
+        return np.argmax(self.brain.predictOne(self._process_state(state)))
 
     def observe(self, sample):
         """ Add an observation to replay memory and also adjust epsilon """
@@ -233,8 +255,14 @@ class DQNAgent(Agent):
         states = np.array([o[0] for o in batch])
         next_states = np.array([(no_state if o[3] is None else o[3]) for o in batch])
 
+        predict_start = time.time()
         p = self.brain.predict(states)
+        self.total_brain_predict_time += (time.time() - predict_start)
+        self.total_brain_predict_count += 1
+        predict_start = time.time()
         next_p = self.brain.predict(next_states)
+        self.total_brain_predict_time += (time.time() - predict_start)
+        self.total_brain_predict_count += 1
 
         x = np.zeros((batch_len, self.state_size))
         y = np.zeros((batch_len, self.num_actions))
@@ -254,7 +282,10 @@ class DQNAgent(Agent):
             x[i] = s
             y[i] = t
 
+        train_start = time.time()
         self.brain.train(x, y, self.batch_size)
+        self.total_brain_train_time += (time.time() - train_start)
+        self.total_brain_train_count += 1
 
     def print_message(self, message, verbose):
         if verbose:

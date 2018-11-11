@@ -19,7 +19,8 @@ import sys
 # Environment constants used for all experiments
 UNIFORM = True
 EXPLOIT_PROB = 1.0
-RVE = 3
+# allow all services
+RVE = 2000
 
 
 def get_random_action(action_space):
@@ -40,13 +41,15 @@ def run_experiment(M, S, actions_per_run, run):
     env = load_env(M, S, run)
     load_time = time.time() - load_time_start
     action_space = np.array(env.action_space)
-    actions = np.random.choice(action_space, size=actions_per_run)
+    # actions = np.random.choice(action_space, size=actions_per_run)
+    actions = action_space
     s = env.reset()
     reset_time = 0
 
     start_time = time.time()
     for t in range(actions_per_run):
-        a = actions[t]
+        # a = actions[t]
+        a = actions[t % len(actions)]
         s, _, done = env.step(a)
         if done:
             reset_start_time = time.time()
@@ -57,6 +60,14 @@ def run_experiment(M, S, actions_per_run, run):
 
     a_per_sec = actions_per_run / ((time.time() - start_time) - reset_time)
     t_per_a = ((time.time() - start_time) - reset_time) / actions_per_run
+
+    print("Not reachable count {} {:.4f}".format(env.not_reachable_count,
+          env.not_reachable_count / actions_per_run))
+    print("Failure count {} {:.4f}".format(env.failure_count,
+          env.failure_count / actions_per_run))
+    print("perform time {:.4f}".format(env.perform_time))
+    print("update time {:.4f}".format(env.update_time))
+
     return a_per_sec, t_per_a, load_time
 
 
@@ -86,7 +97,7 @@ def main():
     print("\tservices min={} max={} interval={}".format(minS, maxS, intS))
     print("\tactions per run={} runs={}".format(actions_per_run, runs))
 
-    if len(sys.argv) == 8 and sys.argv[7] == "1":
+    if len(sys.argv) == 11 and sys.argv[10] == "1":
         print("Appending to", sys.argv[1])
         result_file = open(sys.argv[1], 'a+', buffering=1)
     else:
@@ -96,7 +107,11 @@ def main():
         write_result("M", "S", "run", "a_per_sec", "t_per_a", "load_time", result_file)
 
     for M in range(minM, maxM + 1, intM):
+        if M != minM:
+            M -= (M % intM)
         for S in range(minS, maxS + 1, intS):
+            if S != minS:
+                S -= (S % intS)
             print("\nRunning experiment with M={} S={}".format(M, S))
             run_results_actions = np.empty(runs, dtype=float)
             run_results_time = np.empty(runs, dtype=float)

@@ -69,6 +69,7 @@ class TDAgent(Agent):
         steps = 0
 
         training_start_time = time.time()
+        reporting_window = min(num_episodes / 10, 100)
 
         for e in range(num_episodes):
             start_time = time.time()
@@ -84,7 +85,7 @@ class TDAgent(Agent):
                 self.param = self._epsilon_decay(steps)
 
             # reports progress every 1/10th of total episdes run
-            self.report_progress(e, num_episodes / 10, episode_timesteps, verbose)
+            self.report_progress(e, reporting_window, episode_timesteps, verbose)
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)

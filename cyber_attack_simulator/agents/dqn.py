@@ -8,49 +8,59 @@ import time
 import math
 from keras.models import Sequential
 from keras.layers import Dense
-# from keras.optimizers import RMSprop
-from keras.optimizers import Adam
+from keras.optimizers import RMSprop
 from keras import backend as K
 import tensorflow as tf
 
 
-MODEL_LR = 0.00025
+def huber_loss(y_true, y_pred, loss_delta=1.0):
+    err = y_true - y_pred
+
+    cond = K.abs(err) < loss_delta
+    L2 = 0.5 * K.square(err)
+    L1 = loss_delta * (K.abs(err) - 0.5 * loss_delta)
+    loss = tf.where(cond, L2, L1)
+    output = K.mean(loss)
+    return output
 
 
 class Brain:
     """ Fully connected single-layer neural network"""
 
-    def __init__(self, state_size, num_actions, hidden_units=64):
+    def __init__(self, state_size, num_actions, hidden_units, learning_rate):
         self.state_size = state_size
         self.num_actions = num_actions
         self.hidden_units = hidden_units
+        self.learning_rate = learning_rate
 
         self.model = self._create_model()
-
-        config = tf.ConfigProto(intra_op_parallelism_threads=4,
-                                inter_op_parallelism_threads=4)
-        session = tf.Session(config=config)
-        K.set_session(session)
+        self.target_model = self._create_model()
 
     def _create_model(self):
         model = Sequential()
         model.add(Dense(self.hidden_units, activation='relu', input_dim=self.state_size))
         model.add(Dense(self.num_actions, activation='linear'))
-        opt = Adam(lr=MODEL_LR)
-        model.compile(loss='mse', optimizer=opt)
+        opt = RMSprop(lr=self.learning_rate)
+        model.compile(loss=huber_loss, optimizer=opt)
         return model
 
     def train(self, x, y, batch_size=64, epoch=1, verbose=0):
         self.model.fit(x, y, batch_size=batch_size, epochs=epoch, verbose=verbose)
 
-    def predict(self, s):
+    def predict(self, s, target=False):
+        if target:
+            return self.target_model.predict(s)
         return self.model.predict(s)
 
-    def predictOne(self, s):
-        return self.predict(s.reshape(1, self.state_size)).flatten()
+    def predictOne(self, s, target=False):
+        return self.predict(s.reshape(1, self.state_size), target=target).flatten()
+
+    def update_target_model(self):
+        self.target_model.set_weights(self.model.get_weights())
 
     def reset(self):
         self.model = self._create_model()
+        self.target_model = self._create_model()
 
 
 class Memory:
@@ -81,9 +91,11 @@ class DQNAgent(Agent):
                  gamma=0.99,
                  min_epsilon=0.02,
                  max_epsilon=1.0,
-                 epsilon_decay_lambda=0.001,
+                 epsilon_decay_lambda=0.0001,
+                 learning_rate=0.00025,
                  memory_capacity=10000,
-                 batch_size=64):
+                 batch_size=64,
+                 update_target_freq=1000):
         """
         Initialize a new Deep Q-network agent
 
@@ -95,30 +107,25 @@ class DQNAgent(Agent):
             float min_epsilon : minimum exploration probability
             float max_epsilon : maximum exploration probability
             float epsilon_decay_lambda : lambda for exponential epsilon decay
+            float learning_rate : RMSprop learning rate
             int memory_capacity : capacity of replay buffer
             int batch_size : Q-network training batch size
+            int update_target_freq : target model update frequency in terms of number of steps
         """
         self.state_size = state_size
         self.num_actions = num_actions
         self.gamma = gamma
-
         self.min_epsilon = min_epsilon
         self.max_epsilon = max_epsilon
         self.epsilon_decay_lambda = epsilon_decay_lambda
         self.epsilon = max_epsilon
-        self.steps = 0
-
         self.batch_size = batch_size
+        self.update_target_freq = update_target_freq
 
-        self.brain = Brain(state_size, num_actions, hidden_units)
+        self.brain = Brain(state_size, num_actions, hidden_units, learning_rate)
         self.memory = Memory(memory_capacity)
 
-        self.total_replay_time = 0
-        self.total_replay_count = 0
-        self.total_brain_predict_time = 0
-        self.total_brain_predict_count = 0
-        self.total_brain_train_time = 0
-        self.total_brain_train_count = 0
+        self.steps = 0
 
     def train(self, env, num_episodes=100, max_steps=100, timeout=None, verbose=False, **kwargs):
 
@@ -135,8 +142,7 @@ class DQNAgent(Agent):
         episode_times = []
 
         training_start_time = time.time()
-
-        total_episode_tsteps = 0
+        steps_since_update = 0
 
         reporting_window = min(num_episodes / 10, 10)
 
@@ -149,16 +155,13 @@ class DQNAgent(Agent):
             episode_times.append(ep_time)
 
             self.epsilon = self.epsilon_decay()
+            steps_since_update += timesteps
+
+            if steps_since_update > self.update_target_freq:
+                self.brain.update_target_model()
+                steps_since_update = 0
 
             self.report_progress(e, reporting_window, episode_timesteps, verbose)
-
-            total_episode_tsteps += timesteps
-            if e > 0 and e % reporting_window == 0:
-                print("Average replay time = {}".format(self.total_replay_time / self.total_replay_count))
-                print("Average predict time = {}".format(self.total_brain_predict_time / self.total_brain_predict_count))
-                print("Average train time = {}".format(self.total_brain_train_time / self.total_brain_train_count))
-                print("Average episode time = {}".format((time.time() - training_start_time) / e))
-                print("Average episode timesteps = {}".format((total_episode_tsteps) / e))
 
             if e > 0 and visualize_policy != 0 and e % visualize_policy == 0:
                 gen_episode = self.generate_episode(env, max_steps)
@@ -203,10 +206,7 @@ class DQNAgent(Agent):
 
             # train agent
             self.observe((s, a, r, ns))
-            replay_start = time.time()
             self.replay()
-            self.total_replay_time += (time.time() - replay_start)
-            self.total_replay_count += 1
 
             s = ns
             ep_reward += r
@@ -255,14 +255,8 @@ class DQNAgent(Agent):
         states = np.array([o[0] for o in batch])
         next_states = np.array([(no_state if o[3] is None else o[3]) for o in batch])
 
-        predict_start = time.time()
         p = self.brain.predict(states)
-        self.total_brain_predict_time += (time.time() - predict_start)
-        self.total_brain_predict_count += 1
-        predict_start = time.time()
-        next_p = self.brain.predict(next_states)
-        self.total_brain_predict_time += (time.time() - predict_start)
-        self.total_brain_predict_count += 1
+        next_p = self.brain.predict(next_states, target=True)
 
         x = np.zeros((batch_len, self.state_size))
         y = np.zeros((batch_len, self.num_actions))
@@ -282,10 +276,7 @@ class DQNAgent(Agent):
             x[i] = s
             y[i] = t
 
-        train_start = time.time()
         self.brain.train(x, y, self.batch_size)
-        self.total_brain_train_time += (time.time() - train_start)
-        self.total_brain_train_count += 1
 
     def print_message(self, message, verbose):
         if verbose:

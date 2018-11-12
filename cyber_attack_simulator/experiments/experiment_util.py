@@ -8,56 +8,56 @@ scenarios["tiny"] = {"machines": 3,
                      "services": 1,
                      "restrictiveness": 1,
                      "episodes": 1000,
-                     "steps": 200,
-                     "timeout": 300}
+                     "steps": 500,
+                     "timeout": 600}
 scenarios["small"] = {"machines": 8,
                       "services": 3,
                       "restrictiveness": 2,
                       "episodes": 1000,
-                      "steps": 200,
+                      "steps": 500,
                       "timeout": 600}
 scenarios["medium"] = {"machines": 13,
                        "services": 5,
                        "restrictiveness": 3,
                        "episodes": 1000,
-                       "steps": 200,
-                       "timeout": 900}
+                       "steps": 500,
+                       "timeout": 600}
 scenarios["large"] = {"machines": 18,
                       "services": 6,
                       "restrictiveness": 3,
-                      "episodes": 15000,
+                      "episodes": 1000,
                       "steps": 500,
-                      "timeout": 1800}
+                      "timeout": 600}
 scenarios["huge"] = {"machines": 37,
                      "services": 10,
                      "restrictiveness": 3,
-                     "episodes": 110000,
-                     "steps": 2400,
-                     "timeout": 3600}
+                     "episodes": 1000,
+                     "steps": 500,
+                     "timeout": 600}
 
 
 # Experiment agents
 agents = OrderedDict()
 agents["td_egreedy"] = {
-    "tiny": {"type": "egreedy", "alpha": 0.05, "gamma": 0.99, "epsilon_decay_lambda": 0.01},
+    "tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.9, "epsilon_decay_lambda": 0.001}
+    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001}
     }
 agents["td_ucb"] = {
-    "tiny": {"type": "UCB", "alpha": 0.05, "gamma": 0.99, "c": 1.0},
-    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
-    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
-    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0},
-    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 1.0}
+    "tiny": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
+    "small": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
+    "medium": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
+    "large": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
+    "huge": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5}
     }
 agents["dqn"] = {
-    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.01},
-    "small": {"hidden_units": 64, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
+    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
     "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
+    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001}
      }
 
 

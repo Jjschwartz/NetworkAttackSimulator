@@ -17,14 +17,16 @@ VERBOSE = True
 # Experiment scenarios and agents to run
 # scenarios_list = ["tiny"]
 # scenarios_list = ["small"]
-scenarios_list = ["medium"]
-# agent_list = ["td_egreedy", "td_ucb", "dqn"]
-# agent_list = ["td_egreedy", "td_ucb"]
-agent_list = ["dqn"]
+# scenarios_list = ["medium"]
+# scenarios_list = ["large"]
+scenarios_list = ["huge"]
+agent_list = ["td_egreedy", "td_ucb", "dqn"]
+# agent_list = ["td_ucb"]
+# agent_list = ["dqn"]
 
 
 # Experiment constants
-RUNS = 1      # number of training runs to do
+RUNS = 10      # number of training runs to do
 EVAL_WINDOW = 100      # number of episodes to evaluate policy over
 
 # Environment constants

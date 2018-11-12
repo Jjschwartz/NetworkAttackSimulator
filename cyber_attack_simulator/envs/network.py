@@ -228,6 +228,18 @@ class Network(object):
 
         return shortest
 
+    def get_total_sensitive_machine_value(self):
+        """
+        Get the sum of the values of each sensitive machine
+
+        Returns:
+            float total_value : total value of each sensitive machine on network
+        """
+        value = 0
+        for m in self.sensitive_machines:
+            value += m[2]
+        return value
+
     def _get_sensitive_addresses(self):
         """
         Get addresses of machines which contain sensitive machines, to store

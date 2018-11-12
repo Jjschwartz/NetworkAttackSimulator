@@ -238,8 +238,8 @@ class TDAgent(Agent):
         # step = (self.max_epsilon - self.min_epsilon) / num_episodes
         # return self.max_epsilon - (step * e)
 
-    def _choose_greedy_action(self, state, action_space):
-        return self._choose_action(state, action_space)
+    def _choose_greedy_action(self, state, action_space, epsilon=0.05):
+        return self._choose_action_egreedy(state, action_space, epsilon)
 
     def __str__(self):
         return ("{0}: alpha={1}, gamma={2}, c={3}".format(

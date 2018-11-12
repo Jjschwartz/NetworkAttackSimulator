@@ -144,7 +144,7 @@ class DQNAgent(Agent):
         training_start_time = time.time()
         steps_since_update = 0
 
-        reporting_window = min(num_episodes / 10, 10)
+        reporting_window = min(num_episodes / 10, 100)
 
         for e in range(num_episodes):
             start_time = time.time()
@@ -230,7 +230,9 @@ class DQNAgent(Agent):
         else:
             return np.argmax(self.brain.predictOne(s))
 
-    def _choose_greedy_action(self, state, action_space):
+    def _choose_greedy_action(self, state, action_space, epsilon=0.05):
+        if random.random() < epsilon:
+            return random.randint(0, self.num_actions-1)
         return np.argmax(self.brain.predictOne(self._process_state(state)))
 
     def observe(self, sample):

@@ -31,6 +31,7 @@ def main():
         print("Loading network configuration")
         env = CyberAttackSimulatorEnv.from_file(scenario_name)
 
+    print("Max score:", env.get_best_possible_score())
     env.render_network_graph(show=True)
 
 

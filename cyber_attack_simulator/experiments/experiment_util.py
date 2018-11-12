@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from cyber_attack_simulator.agents.q_learning import QLearningAgent
+from cyber_attack_simulator.agents.random import RandomAgent
 
 
 # experiment scenarios
@@ -9,31 +10,36 @@ scenarios["tiny"] = {"machines": 3,
                      "restrictiveness": 1,
                      "episodes": 1000,
                      "steps": 500,
-                     "timeout": 600}
+                     "timeout": 600,
+                     "max_score": 17}
 scenarios["small"] = {"machines": 8,
                       "services": 3,
                       "restrictiveness": 2,
                       "episodes": 1000,
                       "steps": 500,
-                      "timeout": 600}
+                      "timeout": 600,
+                      "max_score": 16}
 scenarios["medium"] = {"machines": 13,
                        "services": 5,
                        "restrictiveness": 3,
                        "episodes": 1000,
                        "steps": 500,
-                       "timeout": 600}
+                       "timeout": 600,
+                       "max_score": 16}
 scenarios["large"] = {"machines": 18,
                       "services": 6,
                       "restrictiveness": 3,
                       "episodes": 1000,
                       "steps": 500,
-                      "timeout": 600}
-scenarios["huge"] = {"machines": 37,
+                      "timeout": 600,
+                      "max_score": 15}
+scenarios["huge"] = {"machines": 38,
                      "services": 10,
                      "restrictiveness": 3,
                      "episodes": 1000,
                      "steps": 500,
-                     "timeout": 600}
+                     "timeout": 600,
+                     "max_score": 14}
 
 
 # Experiment agents
@@ -59,6 +65,7 @@ agents["dqn"] = {
     "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
     "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001}
      }
+agents["random"] = {}
 
 
 def is_valid_scenario(scenario_name, verbose=False):
@@ -76,6 +83,12 @@ def get_scenarios():
 def get_scenario(scenario_name):
     if is_valid_scenario(scenario_name, verbose=True):
         return scenarios[scenario_name]
+    return None
+
+
+def get_scenario_max(scenario_name):
+    if is_valid_scenario(scenario_name, verbose=True):
+        return scenarios[scenario_name]["max_score"]
     return None
 
 
@@ -98,6 +111,9 @@ def get_agent(agent_name, scenario_name, env):
     if not is_valid_scenario(scenario_name, verbose=True):
         return None
 
+    if agent_name == "random":
+        return RandomAgent()
+
     agent_params = agents[agent_name][scenario_name]
     if agent_name == "dqn":
         # only import when necessary
@@ -118,4 +134,6 @@ def get_agent_label(agent_name):
         return "Tabular Q-learning e-greedy"
     elif agent_name == "td_ucb":
         return "Tabular Q-learning UCB"
+    elif agent_name == "random":
+        return "Random"
     return None

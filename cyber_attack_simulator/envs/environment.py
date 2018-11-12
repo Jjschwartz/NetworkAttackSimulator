@@ -252,6 +252,22 @@ class CyberAttackSimulatorEnv(object):
         """
         return self.network.get_minimal_steps()
 
+    def get_best_possible_score(self):
+        """
+        Get the best score possible for this environment, assuming action cost of 1 and each
+        sensitive machine is exploitable from any other connected subnet.
+
+        The theoretical best score is where the agent only exploits a single machine in each subnet
+        that is required to reach sensitive machines along the shortest bath in network graph, and
+        exploits the two sensitive machines (i.e. the minial steps)
+
+        Returns:
+            float max_score : theoretical max score
+        """
+        max_reward = self.network.get_total_sensitive_machine_value()
+        max_reward -= self.network.get_minimal_steps()
+        return max_reward
+
     def _generate_initial_state(self):
         """
         Generate the initial state of the environment. Initial state is where no machines have been

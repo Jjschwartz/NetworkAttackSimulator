@@ -89,12 +89,12 @@ class DQNAgent(Agent):
 
     def __init__(self, state_size, num_actions, hidden_units=256,
                  gamma=0.99,
-                 min_epsilon=0.02,
+                 min_epsilon=0.05,
                  max_epsilon=1.0,
                  epsilon_decay_lambda=0.0001,
                  learning_rate=0.00025,
                  memory_capacity=10000,
-                 batch_size=64,
+                 batch_size=32,
                  update_target_freq=1000):
         """
         Initialize a new Deep Q-network agent

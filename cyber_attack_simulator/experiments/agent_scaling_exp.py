@@ -17,19 +17,19 @@ agent_list.append("dqn")
 # agent_list.append("random")
 
 # Experiment parameters
-RUNS = 3
-MACHINE_MIN = 16
-MACHINE_MAX = 16
-MACHINE_INTERVAL = 2
-SERVICE_MIN = 1
-SERVICE_MAX = 51
-SERVICE_INTERVAL = 5
-MAX_EPISODES = 10000
+RUNS = 5
+MACHINE_MIN = 3
+MACHINE_MAX = 43
+MACHINE_INTERVAL = 5
+SERVICE_MIN = 5
+SERVICE_MAX = 5
+SERVICE_INTERVAL = 1
+MAX_EPISODES = 1000000
 EPISODE_INTERVALS = 100
 MAX_STEPS = 500
 EVAL_RUNS = 100
 OPTIMALITY_PROPORTION = 7.0
-OPTIMAL_SOLVE_PROPORTION = 0.9  # proportion of trials to solve to be considered solved
+OPTIMAL_SOLVE_PROPORTION = 1.0  # proportion of trials to solve to be considered solved
 TIMEOUT = 120
 VERBOSE = False
 
@@ -111,7 +111,7 @@ def environment_solved(agent, env):
     else:
         mean_reward = total_reward / solved_runs
 
-    return solved_runs / EVAL_RUNS > OPTIMAL_SOLVE_PROPORTION, mean_reward
+    return solved_runs / EVAL_RUNS >= OPTIMAL_SOLVE_PROPORTION, mean_reward
 
 
 def get_episode_reward(episode):

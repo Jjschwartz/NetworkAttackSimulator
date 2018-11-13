@@ -390,7 +390,7 @@ class EpisodeViewer(object):
         nx.draw_networkx_edges(G, pos)
         plt.axis('off')
         # generate and plot legend
-        legend_entries = self.legend()
+        # legend_entries = self.legend()
         # plt.legend(handles=legend_entries, fontsize=16)
         # add title
         state, action, reward, done = self.episode[self.timestep]
@@ -412,7 +412,7 @@ class EpisodeViewer(object):
 
         self.axes.set_xlim(left=xmin, right=xmax)
         self.axes.set_ylim(bottom=ymin, top=ymax)
-        self.fig.savefig("t_{}.png".format(self.timestep))
+        # self.fig.savefig("t_{}.png".format(self.timestep))
         self.canvas.draw()
 
     @staticmethod

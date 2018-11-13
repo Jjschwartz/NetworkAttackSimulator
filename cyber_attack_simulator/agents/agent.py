@@ -122,7 +122,7 @@ class Agent(object):
             if done:
                 break
             state = new_state
-        return steps, reward_sum
+        return steps, reward_sum, done
 
     def report_progress(self, episode_num, interval, episodes, verbose):
         """

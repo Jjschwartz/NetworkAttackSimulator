@@ -84,7 +84,7 @@ def main():
         max_steps = 500
         timeout = 180
         env = CyberAttackSimulatorEnv.from_file(scenario_name)
-        agent_scenario = "small"
+        agent_scenario = "default"
 
     agent = get_agent(agent_name, agent_scenario, env)
     if agent is None:
@@ -97,8 +97,8 @@ def main():
     ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout,
                                                verbose=True, **train_args)
 
-    # gen_episode = agent.generate_episode(env, max_steps)
-    # env.render_episode(gen_episode)
+    gen_episode = agent.generate_episode(env, max_steps)
+    env.render_episode(gen_episode)
     #
     # plot_results(ep_tsteps, ep_rews, ep_times, env)
 

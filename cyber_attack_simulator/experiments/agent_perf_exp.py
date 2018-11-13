@@ -7,6 +7,7 @@ Gets results for multiple agents and scenarios
     - time vs episode
 """
 import sys
+from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv as Cyber
 from cyber_attack_simulator.experiments.experiment_util import get_scenario
 from cyber_attack_simulator.experiments.experiment_util import get_scenario_env
 from cyber_attack_simulator.experiments.experiment_util import get_agent
@@ -22,16 +23,32 @@ agent_list.append("dqn")
 agent_list.append("random")
 
 # Experiment constants
-RUNS = 10      # number of training runs to do
+RUNS = 1      # number of training runs to do
 EVAL_WINDOW = 100      # number of episodes to evaluate policy over
-EVAL_RUNS = 10      # number of evaluation runs
+EVAL_RUNS = 10    # number of evaluation runs
 EVAL_EPSILON = 0.05     # epsilon for evaluation e-greedy policy
 
 # Environment constants
+RVE = 3
 UNIFORM = False
-EXPLOIT_PROB = "mixed"
+EXPLOIT_PROB = 0.7
 R_SENS = R_USR = 10
 COST_EXP = COST_SCAN = 1
+
+# Experiment parameters
+SCALING_RUNS = 7
+MACHINE_MIN = 3
+MACHINE_MAX = 43
+MACHINE_INTERVAL = 5
+SERVICE_MIN = 5
+SERVICE_MAX = 5
+SERVICE_INTERVAL = 1
+MAX_EPISODES = 1000000
+MAX_STEPS = 500
+EVAL_RUNS = 10
+TIMEOUT = 120
+VERBOSE = False
+START_SEED = 3
 
 
 def is_path_found(ep_tsteps, max_steps):
@@ -74,19 +91,48 @@ def run_experiment(scenario, agent_name, result_file, eval_file):
         run_evaluation(agent, env, scenario, agent_name, max_steps, t, eval_file)
 
 
+def run_scaling_experiment(agent_name, eval_file):
+
+    print("\nRunning scaling analysis for agent: \n\t {0}".format(str(agent_name)))
+
+    for m in range(MACHINE_MIN, MACHINE_MAX + 1, MACHINE_INTERVAL):
+        for s in range(SERVICE_MIN, SERVICE_MAX + 1, SERVICE_INTERVAL):
+            print("\n>> Machines={0} Services={1}".format(m, s))
+            for t in range(SCALING_RUNS):
+                print("\tRun {0} of {1} seed={2}".format(t+1, SCALING_RUNS, t+START_SEED))
+                env = Cyber.from_params(m, s,
+                                        r_sensitive=R_SENS,  r_user=R_USR,
+                                        exploit_cost=COST_EXP, scan_cost=COST_SCAN,
+                                        restrictiveness=RVE, exploit_probs=EXPLOIT_PROB,
+                                        seed=t+START_SEED)
+                agent = get_agent(agent_name, "default", env)
+                if agent_name != "random":
+                    ep_tsteps, ep_rews, ep_times = agent.train(env, MAX_EPISODES, MAX_STEPS,
+                                                               TIMEOUT, VERBOSE)
+                    path_found = is_path_found(ep_tsteps, MAX_STEPS)
+                    exp_reward = get_expected_rewards(ep_rews)
+                    training_time = sum(ep_times)
+                    print("\tTraining run {} - path_found={} - exp_reward={} - train_time={:.2f}"
+                          .format(t, path_found, exp_reward, training_time))
+
+                run_evaluation(agent, env, (m, s), agent_name, MAX_STEPS, t, eval_file)
+
+
 def run_evaluation(agent, env, scenario, agent_name, max_steps, run, eval_file):
     """
     Evaluate a trained agent
     """
     tsteps_sum = 0
     reward_sum = 0
+    solved_sum = 0
     for erun in range(EVAL_RUNS):
-        tsteps, reward = agent.evaluate_agent(env, max_steps, EVAL_EPSILON)
-        write_results_eval(eval_file, scenario, agent_name, run, erun, tsteps, reward)
+        tsteps, reward, solved = agent.evaluate_agent(env, max_steps, EVAL_EPSILON)
+        write_results_eval(eval_file, scenario, agent_name, run, erun, tsteps, reward, solved)
         tsteps_sum += tsteps
         reward_sum += reward
-    print("\t\tEvaluation results - mean timesteps={} - mean reward={}"
-          .format(tsteps_sum / EVAL_RUNS, reward_sum / EVAL_RUNS))
+        solved_sum += int(solved)
+    print("\t\tEvaluation results - mean timesteps={:.2f} - mean reward={:.2f} - solved={:.2f}"
+          .format(tsteps_sum / EVAL_RUNS, reward_sum / EVAL_RUNS, solved_sum / EVAL_RUNS))
 
 
 def write_results_eps(result_file, scenario, agent, run, timesteps, rewards, times):
@@ -97,11 +143,11 @@ def write_results_eps(result_file, scenario, agent, run, timesteps, rewards, tim
                           timesteps[e], rewards[e], times[e]))
 
 
-def write_results_eval(eval_file, scenario, agent, run, evalrun, timesteps, reward):
+def write_results_eval(eval_file, scenario, agent, run, evalrun, timesteps, reward, solved):
     """ Write results to file """
-    # scenario,agent,run,evalrun,timesteps,rewards
-    eval_file.write("{0},{1},{2},{3},{4},{5}\n".format(scenario, agent, run, evalrun, timesteps,
-                    reward))
+    # scenario,agent,run,evalrun,timesteps,rewards, solved
+    eval_file.write("{0},{1},{2},{3},{4},{5},{6}\n".format(scenario, agent, run, evalrun, timesteps,
+                    reward, solved))
 
 
 def main():
@@ -126,10 +172,13 @@ def main():
         eval_file = open(eval_file_name, "w")
         # write header line
         result_file.write("scenario,agent,run,episode,timesteps,rewards,time\n")
-        eval_file.write("scenario,agent,run,evalrun,timesteps,reward\n")
+        eval_file.write("scenario,agent,run,evalrun,timesteps,reward,solved\n")
 
     for agent_name in agent_list:
-        run_experiment(scenario, agent_name, result_file, eval_file)
+        if scenario == "scaling":
+            run_scaling_experiment(agent_name, eval_file)
+        else:
+            run_experiment(scenario, agent_name, result_file, eval_file)
 
     result_file.close()
 

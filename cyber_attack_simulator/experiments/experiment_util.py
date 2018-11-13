@@ -54,21 +54,21 @@ scenarios["huge"] = {"machines": 38,
                      "max_score": 14,
                      "generate": True}
 scenarios["multi"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/multi_entry.yaml", # noqa
-                      "episodes": 100000,
+                      "episodes": 1000000,
                       "steps": 500,
-                      "timeout": 300,
+                      "timeout": 120,
                       "max_score": 17,
                       "generate": False}
 scenarios["single"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/single_subnet.yaml",  # noqa
-                       "episodes": 100000,
+                       "episodes": 1000000,
                        "steps": 500,
-                       "timeout": 300,
+                       "timeout": 120,
                        "max_score": 17,
                        "generate": False}
 scenarios["standard"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/medium.yaml",   # noqa
-                         "episodes": 100000,
+                         "episodes": 1000000,
                          "steps": 500,
-                         "timeout": 300,
+                         "timeout": 120,
                          "max_score": 17,
                          "generate": False}
 
@@ -76,12 +76,12 @@ scenarios["standard"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAtt
 # Experiment agents
 agents = OrderedDict()
 agents["td_egreedy"] = {
-    "tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "default": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
+    "tiny": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "small": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "medium": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "large": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "huge": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "default": {"type": "egreedy", "alpha": 0.1, "gamma": 0.99, "epsilon_decay_lambda": 0.0001}
     }
 agents["td_ucb"] = {
     "tiny": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
@@ -92,12 +92,12 @@ agents["td_ucb"] = {
     "default": {"type": "UCB", "alpha": 0.1, "gamma": 0.99, "c": 0.5},
     }
 agents["dqn"] = {
-    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001},
-    "default": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.001}
+    "tiny": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "small": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "medium": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "large": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "huge": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001},
+    "default": {"hidden_units": 256, "gamma": 0.99, "epsilon_decay_lambda": 0.0001}
      }
 agents["random"] = {}
 
@@ -133,7 +133,7 @@ def get_scenario_env(scenario_name, seed=1):
                                 exploit_cost=COST_EXP, scan_cost=COST_SCAN,
                                 restrictiveness=rve, exploit_probs=EXPLOIT_PROB, seed=seed)
     else:
-        env = Cyber.from_params(scenario_params["file"], scan_cost=COST_SCAN)
+        env = Cyber.from_file(scenario_params["file"], scan_cost=COST_SCAN, seed=seed)
     return env, scenario_params
 
 
@@ -166,7 +166,7 @@ def get_agent(agent_name, scenario_name, env):
         return RandomAgent()
 
     if scenario_name not in agents[agent_name].keys():
-        scenario_name == "default"
+        scenario_name = "default"
 
     agent_params = agents[agent_name][scenario_name]
     if agent_name == "dqn":

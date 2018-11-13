@@ -61,19 +61,20 @@ class CyberAttackSimulatorEnv(object):
         self.reset()
 
     @classmethod
-    def from_file(cls, path, scan_cost=SCAN_COST):
+    def from_file(cls, path, scan_cost=SCAN_COST, seed=1):
         """
         Construct a new Cyber Attack Simulator Environment from a config file.
 
         Arguments:
             str path : path to the config file
             float scan_cost : cost of performing a scan action
+            int seed : seed for environment
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.load_config(path)
-        return cls(config, scan_cost)
+        return cls(config, scan_cost, seed)
 
     @classmethod
     def from_params(cls, num_machines, num_services,
@@ -116,7 +117,7 @@ class CyberAttackSimulatorEnv(object):
                                            exploit_cost, exploit_probs,
                                            uniform, alpha_H, alpha_V, lambda_V,
                                            restrictiveness, seed)
-        return cls(config, exploit_cost, scan_cost, exploit_probs, seed)
+        return cls(config, scan_cost, seed)
 
     def reset(self):
         """

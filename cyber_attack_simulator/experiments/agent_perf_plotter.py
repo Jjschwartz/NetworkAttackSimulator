@@ -11,7 +11,7 @@ from cyber_attack_simulator.experiments.experiment_util import get_agent_label
 from cyber_attack_simulator.experiments.experiment_util import get_scenario_max
 
 # smoothing window
-WINDOW = 10
+WINDOW = 100
 
 
 def import_data(file_name):
@@ -42,12 +42,15 @@ def smooth_reward(rewards, I):
     return avg_rewards
 
 
-def plot_average_reward_per_episode(ax, scenario_df, max_reward, show_legend):
+def plot_average_reward_per_episode(ax, scenario_df, max_reward):
+
+    print("plot_average_reward_per_episode")
 
     # ax.set_title("Average reward per episode")
     agents = scenario_df.agent.unique()
     max_episodes = 0
     for agent in agents:
+        print("\t", agent)
         agent_df = scenario_df.loc[scenario_df["agent"] == agent]
         avg_df = average_data_over_runs(agent_df)
         rewards = avg_df["rewards"]
@@ -64,9 +67,35 @@ def plot_average_reward_per_episode(ax, scenario_df, max_reward, show_legend):
     ax.plot(episodes, max_rewards, label="Theoretical Max", linestyle="--")
 
     ax.set_xlabel("Training Episode")
+    ax.set_xscale("log")
     ax.set_ylabel("Mean episode reward")
-    # if show_legend:
-    #     ax.legend(loc=4)
+
+
+def plot_average_reward_vs_time(ax, scenario_df, max_reward):
+
+    print("plot_average_reward_vs_time")
+
+    agents = scenario_df.agent.unique()
+    max_time = 0
+    for agent in agents:
+        print("\t", agent)
+        agent_df = scenario_df.loc[scenario_df["agent"] == agent]
+        avg_df = average_data_over_runs(agent_df)
+        rewards = avg_df["rewards"]
+        avg_rewards = smooth_reward(rewards, WINDOW)
+        err = agent_df.groupby(["scenario", "agent", "episode"]).sem().reset_index()["rewards"]
+        times = np.cumsum(avg_df["time"])
+        if times.max() > max_time:
+            max_time = times.max()
+        ax.plot(times, avg_rewards, label=get_agent_label(agent))
+        ax.fill_between(times, avg_rewards-err, avg_rewards+err, alpha=0.4)
+
+    max_times = np.linspace(0, max_time, 0.1)
+    max_rewards = np.full(len(max_times), max_reward)
+    ax.plot(max_times, max_rewards, label="Theoretical Max", linestyle="--")
+
+    ax.set_xlabel("Training time (seconds)")
+    ax.set_ylabel("Mean episode reward")
 
 
 def main():
@@ -87,25 +116,53 @@ def main():
     cols = 1 if plot_count == 1 else 2
     title_vals = ["a)", "b)", "c)", "d)", "e)", "f)"]
 
+    print("Start plotting aerage reward per episode")
     for i, scenario in enumerate(scenarios):
+        print(">>Scenario = ", scenario)
         if i == 0:
             ax = fig.add_subplot(rows, cols, i + 1)
         else:
             ax = fig.add_subplot(rows, cols, i + 1)
         # ax = axes[i, 0]
         ax.set_title((title_vals[i]), loc='left')
-        show_legend = True if i == 0 else False
         scenario_df = get_scenario_df(results_df, scenario)
         scenario_max = get_scenario_max(scenario)
-        plot_average_reward_per_episode(ax, scenario_df, scenario_max, show_legend)
+        plot_average_reward_per_episode(ax, scenario_df, scenario_max)
 
     handles, labels = ax.get_legend_handles_labels()
     ax_end = fig.add_subplot(rows, cols, plot_count)
     ax_end.legend(handles, labels, loc="upper center")
     ax_end.axis('off')
     # fig.legend(handles, labels, loc='lower right')
-
     fig.tight_layout()
+
+    fig2 = plt.figure(2, figsize=(8, 8))
+    # +1 for legend
+    plot_count = len(scenarios) + 1
+    rows = (plot_count + 1) // 2
+    cols = 1 if plot_count == 1 else 2
+    title_vals = ["a)", "b)", "c)", "d)", "e)", "f)"]
+
+    print("Start plotting aerage reward vs time")
+    for i, scenario in enumerate(scenarios):
+        print(">>Scenario = ", scenario)
+        if i == 0:
+            ax = fig2.add_subplot(rows, cols, i + 1)
+        else:
+            ax = fig2.add_subplot(rows, cols, i + 1)
+        # ax = axes[i, 0]
+        ax.set_title((title_vals[i]), loc='left')
+        scenario_df = get_scenario_df(results_df, scenario)
+        scenario_max = get_scenario_max(scenario)
+        plot_average_reward_vs_time(ax, scenario_df, scenario_max)
+
+    handles, labels = ax.get_legend_handles_labels()
+    ax_end = fig2.add_subplot(rows, cols, plot_count)
+    ax_end.legend(handles, labels, loc="upper center")
+    ax_end.axis('off')
+    # fig.legend(handles, labels, loc='lower right')
+    fig2.tight_layout()
+
     plt.show()
 
 

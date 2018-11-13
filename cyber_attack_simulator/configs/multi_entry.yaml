@@ -1,0 +1,76 @@
+# A WAN which has multiple 3 remote sites (subnets) connected to the main site
+# sensitive machines are located on a server on server subnet on main site and on
+# a machine in user subnet in main site
+# main site has 3 subnets (1 server, 1 DMZ, 1 user)
+# subnet 1 = main site DMZ (exposed, but not vulnerable) - contains 2 webservers
+# subnet 2 = main site server (not exposed) - contains 2 data servers
+# subnet 3 = main site user (not exposed) - contains 6 user machines
+# subnet 4 = remote site 1 (exposed) - contains 2 user machines
+# subnet 5 = remote site 2 (exposed) - contains 2 user machines
+# subnet 6 = remote site 3 (exposed) - contains 2 user machines
+# each remote site is connected to main site server subnet
+subnets: [2, 2, 6, 2, 2, 2]
+topology: [[ 1, 1, 0, 0, 1, 1, 1], # 0 - internet
+           [ 1, 1, 1, 1, 0, 0, 0], # 1 - MS-DMZ
+           [ 0, 1, 1, 1, 1, 1, 1], # 2 - MS-Server
+           [ 0, 1, 1, 1, 0, 0, 0], # 3 - MS-User
+           [ 1, 0, 1, 0, 1, 0, 0], # 4 - RS-1
+           [ 1, 0, 1, 0, 0, 1, 0], # 5 - RS-2
+           [ 1, 0, 1, 0, 0, 0, 1]] # 6 - RS-3
+sensitive_machines: [[2, 1, 10],
+                     [3, 4, 10]]
+num_services: 5
+service_exploits:
+  ssh:
+    - 0.7
+    - 1
+  ftp:
+    - 0.7
+    - 1
+  http:
+    - 0.7
+    - 1
+  samba:
+    - 0.7
+    - 1
+  smtp:
+    - 0.7
+    - 1
+machine_configurations:
+  (1, 0): [ssh]
+  (1, 1): [ssh]
+  (2, 0): [smtp]
+  (2, 1): [smtp]
+  (3, 0): [ssh]
+  (3, 1): [ssh, http]
+  (3, 2): [ssh]
+  (3, 3): [ssh]
+  (3, 4): [ssh]
+  (3, 5): [ssh]
+  (4, 0): [ftp]
+  (4, 1): [ftp]
+  (5, 0): [ftp]
+  (5, 1): [ftp]
+  (6, 0): [ssh]
+  (6, 1): [ssh, samba]
+firewall:
+  (0, 1): []
+  (1, 0): []
+  (0, 4): []
+  (4, 0): []
+  (0, 5): []
+  (5, 0): []
+  (0, 6): [samba]
+  (6, 0): []
+  (1, 2): []
+  (2, 1): [ssh]
+  (1, 3): []
+  (3, 1): [ssh]
+  (2, 3): [http]
+  (3, 2): [smtp]
+  (2, 4): [ftp]
+  (4, 2): [smtp]
+  (2, 5): [ftp]
+  (5, 2): [smtp]
+  (2, 6): [ftp, ssh]
+  (6, 2): [smtp]

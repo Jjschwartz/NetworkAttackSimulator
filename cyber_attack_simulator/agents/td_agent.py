@@ -16,8 +16,8 @@ class TDAgent(Agent):
     types = ["UCB", "egreedy"]
     algorithm = "TD"
 
-    def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0, min_epsilon=0.01,
-                 epsilon_decay_lambda=0.001, c=1.0):
+    def __init__(self, type="UCB", alpha=0.1, gamma=0.99, max_epsilon=1.0, min_epsilon=0.02,
+                 epsilon_decay_lambda=0.001, c=0.5):
         """
         Initialize a new TD agent
 

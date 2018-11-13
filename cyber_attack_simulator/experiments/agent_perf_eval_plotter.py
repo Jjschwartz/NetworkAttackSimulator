@@ -10,6 +10,7 @@ over each run of the given scenario
 """
 import sys
 import pandas as pd
+from cyber_attack_simulator.experiments.experiment_util import get_scenario
 
 
 def import_data(file_name):
@@ -22,11 +23,27 @@ def average_data(df):
     avg_eval_df = df.groupby(["scenario", "agent", "run"]).mean().reset_index()
     run_df = avg_eval_df.groupby(["scenario", "agent"])
     run_err = run_df.sem().reset_index()
-    print(run_df["reward"].sem())
-    print(run_df["timesteps"].sem())
-    print(run_df["reward"].max().reset_index())
     run_avg = run_df.mean().reset_index()
     return run_avg, run_err
+
+
+def get_solved_proportions(df):
+
+    agents = df.agent.unique()
+    scenario = df.scenario.unique()[0]
+    runs = df.run.unique()
+    max_steps = get_scenario(scenario)["steps"]
+
+    print("Scenario={} max steps={}".format(scenario, max_steps))
+    for agent in agents:
+        solved = 0
+        agent_df = df[df["agent"] == agent]
+        for run in runs:
+            run_df = agent_df[agent_df["run"] == run]
+            solved_runs = run_df[run_df["timesteps"] < 50]
+            if solved_runs.shape[0] > 0:
+                solved += 1
+        print("Agent={} solved={} proportion={}".format(agent, solved, solved / len(runs)))
 
 
 def main():
@@ -39,6 +56,8 @@ def main():
     avg_df, err_df = average_data(results_df)
     print("\nAverages:\n", avg_df)
     print("\nStd errors:\n", err_df)
+
+    get_solved_proportions(results_df)
 
 
 if __name__ == "__main__":

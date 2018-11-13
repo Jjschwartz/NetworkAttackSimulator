@@ -7,8 +7,8 @@ Gets results for multiple agents and scenarios
     - time vs episode
 """
 import sys
-from cyber_attack_simulator.envs.environment import CyberAttackSimulatorEnv as Cyber
 from cyber_attack_simulator.experiments.experiment_util import get_scenario
+from cyber_attack_simulator.experiments.experiment_util import get_scenario_env
 from cyber_attack_simulator.experiments.experiment_util import get_agent
 
 # To control progress message printing for individual episodes within runs
@@ -52,21 +52,14 @@ def get_expected_rewards(ep_rewards):
 def run_experiment(scenario, agent_name, result_file, eval_file):
 
     scenario_params = get_scenario(scenario)
-    M = scenario_params["machines"]
-    S = scenario_params["services"]
-    rve = scenario_params["restrictiveness"]
     num_episodes = scenario_params["episodes"]
     max_steps = scenario_params["steps"]
     timeout = scenario_params["timeout"]
 
-    print("\nRunning experiment: Scenario={}, agent={}, M={}, S={}, R={}"
-          .format(scenario, agent_name, M, S, rve))
+    print("\nRunning experiment: Scenario={}, agent={}".format(scenario, agent_name))
 
     for t in range(RUNS):
-        env = Cyber.from_params(M, S,
-                                r_sensitive=R_SENS,  r_user=R_USR,
-                                exploit_cost=COST_EXP, scan_cost=COST_SCAN,
-                                restrictiveness=rve, exploit_probs=EXPLOIT_PROB, seed=t)
+        env, _ = get_scenario_env(scenario, t)
         agent = get_agent(agent_name, scenario, env)
         if agent_name != "random":
             ep_tsteps, ep_rews, ep_times = agent.train(env, num_episodes, max_steps, timeout,

@@ -30,23 +30,16 @@ class CyberAttackSimulatorEnv(object):
     action_space = None
     current_state = None
 
-    def __init__(self, config, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST,
-                 exploit_probs='mixed', seed=1):
+    def __init__(self, config, scan_cost=SCAN_COST, seed=1):
         """
         Construct a new environment and network
 
-        For deterministic exploits set exploit_probs=1.0
-        For randomly generated probabilities set exploit_probs=None
-
         Arguments:
             dict config : network configuration
-            float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            mixed exploit_probs :  success probability of exploits (see action class for details)
             int seed : random seed
         """
         self.config = config
-        self.exploit_probs = exploit_probs
         self.seed = seed
         np.random.seed(seed)
 
@@ -68,21 +61,19 @@ class CyberAttackSimulatorEnv(object):
         self.reset()
 
     @classmethod
-    def from_file(cls, path, exploit_cost=EXPLOIT_COST, scan_cost=SCAN_COST, exploit_probs='mixed'):
+    def from_file(cls, path, scan_cost=SCAN_COST):
         """
         Construct a new Cyber Attack Simulator Environment from a config file.
 
         Arguments:
             str path : path to the config file
-            float exploit_cost : cost of performing an exploit action
             float scan_cost : cost of performing a scan action
-            mixed exploit_probs :  success probability of exploits (see action class for details)
 
         Returns:
             CyberAttackSimulatorEnv env : a new environment object
         """
         config = loader.load_config(path)
-        return cls(config, exploit_cost, scan_cost, exploit_probs)
+        return cls(config, scan_cost)
 
     @classmethod
     def from_params(cls, num_machines, num_services,
@@ -125,7 +116,7 @@ class CyberAttackSimulatorEnv(object):
                                            exploit_cost, exploit_probs,
                                            uniform, alpha_H, alpha_V, lambda_V,
                                            restrictiveness, seed)
-        return cls(config, exploit_cost, scan_cost, exploit_probs, seed * 5)
+        return cls(config, exploit_cost, scan_cost, exploit_probs, seed)
 
     def reset(self):
         """
@@ -358,7 +349,6 @@ class CyberAttackSimulatorEnv(object):
         output = "Environment: "
         output += "Subnets = {}, ".format(self.network.subnets)
         output += "Services = {}, ".format(self.num_services)
-        output += "Exploit Probs = {}".format(self.exploit_probs)
         return output
 
     def outfile_name(self):
@@ -370,9 +360,4 @@ class CyberAttackSimulatorEnv(object):
         """
         output = "{}_".format(self.network.subnets)
         output += "{}_".format(self.num_services)
-        if self.exploit_probs is None or type(self.exploit_probs) is list:
-            deterministic = "stoch"
-        else:
-            deterministic = "det" if self.exploit_probs == 1.0 else False
-        output += "{}".format(deterministic)
         return output

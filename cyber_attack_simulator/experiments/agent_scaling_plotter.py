@@ -31,15 +31,14 @@ def plot_solve_proportion(ax, df, var, label):
         err = err_agent_df["solved"]
         solved = mean_agent_df["solved"]
         machines = mean_agent_df[var]
-        label = get_agent_label(agent)
-        ax.plot(machines, solved, label=label)
+        agent_label = get_agent_label(agent)
+        ax.plot(machines, solved, label=agent_label)
         ax.fill_between(machines, solved-err, solved+err, alpha=0.3)
 
     ax.set_xlabel(label)
     ax.set_ylabel("Mean solved proportion")
     # ax.set_ylim(top=int(df.mean_reward.max())+2)
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.legend()
 
 
 def plot_solve_reward(ax, df, var, label):
@@ -52,15 +51,15 @@ def plot_solve_reward(ax, df, var, label):
         err = err_agent_df["reward"]
         reward = mean_agent_df["reward"]
         machines = mean_agent_df[var]
-        label = get_agent_label(agent)
-        ax.plot(machines, reward, label=label)
+        agent_label = get_agent_label(agent)
+        ax.plot(machines, reward, label=agent_label)
         ax.fill_between(machines, reward-err, reward+err, alpha=0.3)
 
     ax.set_xlabel(label)
     ax.set_ylabel("Mean reward")
     # ax.set_ylim(top=int(df.mean_reward.max())+2)
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.legend()
+    # ax.legend()
 
 
 def main():
@@ -80,14 +79,18 @@ def main():
         var = "S"
         label = "Exploitable Services"
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(6, 4))
     ax1 = fig.add_subplot(121)
     plot_solve_proportion(ax1, results_df, var, label)
 
     ax2 = fig.add_subplot(122)
     plot_solve_reward(ax2, results_df, var, label)
 
-    fig.tight_layout()
+    handles, labels = ax1.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center')
+
+    fig.subplots_adjust(left=0.1, bottom=0.37, right=0.97, top=0.96, wspace=0.4, hspace=0.2)
+    # fig.tight_layout()
     plt.show()
 
 

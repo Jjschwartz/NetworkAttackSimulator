@@ -39,28 +39,10 @@ def max_data_over_eval_runs(df):
     return run_max, eval_err
 
 
-def get_solved_proportions(df):
-
-    agents = df.agent.unique()
-    scenario = df.scenario.unique()[0]
-    runs = df.run.unique()
-    max_steps = get_scenario(scenario)["steps"]
-
-    print("Scenario={} max steps={}".format(scenario, max_steps))
-    for agent in agents:
-        solved = 0
-        agent_df = df[df["agent"] == agent]
-        for run in runs:
-            run_df = agent_df[agent_df["run"] == run]
-            solved_runs = run_df[run_df["timesteps"] < 50]
-            if solved_runs.shape[0] > 0:
-                solved += 1
-        print("Agent={} solved={} proportion={}".format(agent, solved, solved / len(runs)))
-
-
 def plot_solve_proportions(ax, df):
 
     scenarios = df.scenario.unique()
+    print(scenarios)
     agents = df.agent.unique()
 
     # the width of the bars
@@ -71,20 +53,21 @@ def plot_solve_proportions(ax, df):
     labels = []
 
     for i, agent in enumerate(agents):
-        print(agent)
+        print("\n\nAgent:", agent)
         agent_df = df.loc[df["agent"] == agent]
         mean_agent_df, err_agent_df = average_data(agent_df)
-        err = err_agent_df["solved"]
         solved = mean_agent_df["solved"]
-        rect = ax.bar(ind + (i * width), solved, width, yerr=err)
+        print("\nsolved:")
+        print(solved)
+        sc = mean_agent_df["scenario"]
+        rect = ax.bar(ind + (i * width), solved, width, alpha=0.8)
         label = get_agent_label(agent)
         rects.append(rect)
         labels.append(label)
 
-    ax.set_ylabel("Mean solved proportion")
-    ax.set_xlabel("Scenario")
+    ax.set_ylabel("Solved proportion")
     ax.set_xticks(ind + (len(scenarios) * width) / 2)
-    ax.set_xticklabels(scenarios)
+    ax.set_xticklabels(sc)
     # ax.legend(rects, labels)
 
 
@@ -101,7 +84,7 @@ def plot_mean_rewards(ax, df):
     labels = []
 
     for i, agent in enumerate(agents):
-        print(agent)
+        print("\n\nAgent:", agent)
         agent_df = df.loc[df["agent"] == agent]
         # mean_agent_df, err_agent_df = average_data(agent_df)
         # err = err_agent_df["reward"]
@@ -110,16 +93,20 @@ def plot_mean_rewards(ax, df):
         max_agent_df, err_agent_df = max_data_over_eval_runs(agent_df)
         err = err_agent_df["reward"]
         reward = max_agent_df["reward"]
-        rect = ax.bar(ind + (i * width), reward, width, yerr=err)
+        print("\nMax Reward:")
+        print(reward)
+        print("\nError:")
+        print(err)
+        sc = max_agent_df["scenario"]
+        rect = ax.bar(ind + (i * width), reward, width, yerr=err, alpha=0.8)
         label = get_agent_label(agent)
         rects.append(rect)
         labels.append(label)
 
     ax.set_ylabel("Max reward")
-    ax.set_xlabel("Scenario")
     ax.set_xticks(ind + (len(scenarios) * width) / 2)
-    ax.set_xticklabels(scenarios)
-    # ax.legend(rects, labels)
+    ax.set_xticklabels(sc)
+    return rects, labels
 
 
 def main():
@@ -134,13 +121,14 @@ def main():
     # print("\nStd errors:\n", err_df)
 
     # get_solved_proportions(results_df)
-    fig = plt.figure()
+    fig = plt.figure(figsize=(6, 3.5))
     ax1 = fig.add_subplot(121)
     plot_solve_proportions(ax1, results_df)
 
     ax2 = fig.add_subplot(122)
-    plot_mean_rewards(ax2, results_df)
+    handles, labels = plot_mean_rewards(ax2, results_df)
 
+    fig.legend(handles, labels, loc='lower center')
     fig.tight_layout()
     plt.show()
 

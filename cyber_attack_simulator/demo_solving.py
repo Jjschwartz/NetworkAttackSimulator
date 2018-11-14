@@ -80,10 +80,15 @@ def main():
         agent_scenario = scenario_name
     else:
         print("Loading network configuration")
-        num_episodes = 100
+        num_episodes = 200
         max_steps = 500
-        timeout = 180
-        env = CyberAttackSimulatorEnv.from_file(scenario_name)
+        timeout = 120
+        # env = CyberAttackSimulatorEnv.from_file(scenario_name)
+        env = CyberAttackSimulatorEnv.from_params(51, 6,
+                                                  r_sensitive=10, r_user=10,
+                                                  exploit_cost=1, scan_cost=1,
+                                                  restrictiveness=3, exploit_probs=0.7,
+                                                  seed=2)
         agent_scenario = "default"
 
     agent = get_agent(agent_name, agent_scenario, env)
@@ -99,8 +104,7 @@ def main():
 
     gen_episode = agent.generate_episode(env, max_steps)
     env.render_episode(gen_episode)
-    #
-    # plot_results(ep_tsteps, ep_rews, ep_times, env)
+    plot_results(ep_tsteps, ep_rews, ep_times, env)
 
 
 if __name__ == "__main__":

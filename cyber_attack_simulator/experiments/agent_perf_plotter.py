@@ -57,6 +57,7 @@ def plot_average_reward_per_episode(ax, scenario_df, max_reward):
         avg_rewards = smooth_reward(rewards, WINDOW)
         err = agent_df.groupby(["scenario", "agent", "episode"]).sem().reset_index()["rewards"]
         episodes = list(range(0, len(rewards)))
+        print("episodes:", len(episodes))
         if len(episodes) > max_episodes:
             max_episodes = len(episodes)
         ax.plot(episodes, avg_rewards, label=get_agent_label(agent))
@@ -124,7 +125,7 @@ def main():
         else:
             ax = fig.add_subplot(rows, cols, i + 1)
         # ax = axes[i, 0]
-        ax.set_title((title_vals[i]), loc='left')
+        ax.set_title((title_vals[i] + " " + scenario), loc='left')
         scenario_df = get_scenario_df(results_df, scenario)
         scenario_max = get_scenario_max(scenario)
         plot_average_reward_per_episode(ax, scenario_df, scenario_max)
@@ -143,7 +144,7 @@ def main():
     cols = 1 if plot_count == 1 else 2
     title_vals = ["a)", "b)", "c)", "d)", "e)", "f)"]
 
-    print("Start plotting aerage reward vs time")
+    print("Start plotting average reward vs time")
     for i, scenario in enumerate(scenarios):
         print(">>Scenario = ", scenario)
         if i == 0:
@@ -151,7 +152,7 @@ def main():
         else:
             ax = fig2.add_subplot(rows, cols, i + 1)
         # ax = axes[i, 0]
-        ax.set_title((title_vals[i]), loc='left')
+        ax.set_title((title_vals[i] + " " + scenario), loc='left')
         scenario_df = get_scenario_df(results_df, scenario)
         scenario_max = get_scenario_max(scenario)
         plot_average_reward_vs_time(ax, scenario_df, scenario_max)

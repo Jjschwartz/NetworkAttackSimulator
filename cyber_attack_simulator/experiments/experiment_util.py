@@ -53,19 +53,19 @@ scenarios["huge"] = {"machines": 38,
                      "timeout": 300,
                      "max_score": 14,
                      "generate": True}
-scenarios["multi"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/multi_entry.yaml", # noqa
+scenarios["multi"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/multi_site.yaml", # noqa
                       "episodes": 1000000,
                       "steps": 500,
                       "timeout": 120,
                       "max_score": 17,
                       "generate": False}
-scenarios["single"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/single_subnet.yaml",  # noqa
+scenarios["single"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/single_site.yaml",  # noqa
                        "episodes": 1000000,
                        "steps": 500,
                        "timeout": 120,
                        "max_score": 17,
                        "generate": False}
-scenarios["standard"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/medium.yaml",   # noqa
+scenarios["standard"] = {"file": "/home/jonathon/Documents/Uni/COMP6801/CyberAttackSimulator/cyber_attack_simulator/configs/standard.yaml",   # noqa
                          "episodes": 1000000,
                          "steps": 500,
                          "timeout": 120,
@@ -174,6 +174,8 @@ def get_agent(agent_name, scenario_name, env):
         from cyber_attack_simulator.agents.dqn import DQNAgent
         state_size = env.get_state_size()
         num_actions = env.get_num_actions()
+        print("State size=", state_size)
+        print("Num actions=", num_actions)
         return DQNAgent(state_size, num_actions, **agent_params)
     return QLearningAgent(**agent_params)
 

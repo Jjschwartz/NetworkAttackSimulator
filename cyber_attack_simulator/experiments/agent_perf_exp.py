@@ -17,10 +17,10 @@ VERBOSE = False
 
 # Experiment agents to run
 agent_list = []
-agent_list.append("td_egreedy")
-agent_list.append("td_ucb")
+# agent_list.append("td_egreedy")
+# agent_list.append("td_ucb")
 agent_list.append("dqn")
-agent_list.append("random")
+# agent_list.append("random")
 
 # Experiment constants
 RUNS = 1      # number of training runs to do
@@ -36,13 +36,13 @@ R_SENS = R_USR = 10
 COST_EXP = COST_SCAN = 1
 
 # Experiment parameters
-SCALING_RUNS = 7
-MACHINE_MIN = 3
-MACHINE_MAX = 43
-MACHINE_INTERVAL = 5
-SERVICE_MIN = 5
-SERVICE_MAX = 5
-SERVICE_INTERVAL = 1
+SCALING_RUNS = 3
+MACHINE_MIN = 18
+MACHINE_MAX = 18
+MACHINE_INTERVAL = 1
+SERVICE_MIN = 1
+SERVICE_MAX = 51
+SERVICE_INTERVAL = 5
 MAX_EPISODES = 1000000
 MAX_STEPS = 500
 EVAL_RUNS = 10
@@ -98,24 +98,28 @@ def run_scaling_experiment(agent_name, eval_file):
     for m in range(MACHINE_MIN, MACHINE_MAX + 1, MACHINE_INTERVAL):
         for s in range(SERVICE_MIN, SERVICE_MAX + 1, SERVICE_INTERVAL):
             print("\n>> Machines={0} Services={1}".format(m, s))
-            for t in range(SCALING_RUNS):
-                print("\tRun {0} of {1} seed={2}".format(t+1, SCALING_RUNS, t+START_SEED))
+            for t in range(START_SEED, START_SEED + SCALING_RUNS):
+                print("\tRun {0} of {1} seed={2}".format(t+1, SCALING_RUNS+START_SEED, t))
                 env = Cyber.from_params(m, s,
                                         r_sensitive=R_SENS,  r_user=R_USR,
                                         exploit_cost=COST_EXP, scan_cost=COST_SCAN,
                                         restrictiveness=RVE, exploit_probs=EXPLOIT_PROB,
-                                        seed=t+START_SEED)
+                                        seed=t)
+                print("Agent name")
                 agent = get_agent(agent_name, "default", env)
-                if agent_name != "random":
-                    ep_tsteps, ep_rews, ep_times = agent.train(env, MAX_EPISODES, MAX_STEPS,
-                                                               TIMEOUT, VERBOSE)
-                    path_found = is_path_found(ep_tsteps, MAX_STEPS)
-                    exp_reward = get_expected_rewards(ep_rews)
-                    training_time = sum(ep_times)
-                    print("\tTraining run {} - path_found={} - exp_reward={} - train_time={:.2f}"
-                          .format(t, path_found, exp_reward, training_time))
 
-                run_evaluation(agent, env, (m, s), agent_name, MAX_STEPS, t, eval_file)
+
+
+                # if agent_name != "random":
+                #     ep_tsteps, ep_rews, ep_times = agent.train(env, MAX_EPISODES, MAX_STEPS,
+                #                                                TIMEOUT, VERBOSE)
+                #     path_found = is_path_found(ep_tsteps, MAX_STEPS)
+                #     exp_reward = get_expected_rewards(ep_rews)
+                #     training_time = sum(ep_times)
+                #     print("\tTraining run {} - path_found={} - exp_reward={} - train_time={:.2f}"
+                #           .format(t, path_found, exp_reward, training_time))
+                #
+                # run_evaluation(agent, env, (m, s), agent_name, MAX_STEPS, t, eval_file)
 
 
 def run_evaluation(agent, env, scenario, agent_name, max_steps, run, eval_file):

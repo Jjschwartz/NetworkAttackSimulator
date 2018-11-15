@@ -1,5 +1,7 @@
 """
-A Deep Q-learning agent implementation for the CyberAttackSimulator
+A Deep Q-learning agent implementation for the NetworkAttackSimulator
+
+Uses Experience Replay and a seperate Target Network along with the main DQN.
 """
 from network_attack_simulator.agents.agent import Agent
 import random

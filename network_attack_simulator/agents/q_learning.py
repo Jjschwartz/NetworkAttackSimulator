@@ -1,13 +1,13 @@
 import numpy as np
-from network_attack_simulator.agents.td_agent import TDAgent
+from network_attack_simulator.agents.tabular import TabularAgent
 
 
-class QLearningAgent(TDAgent):
+class QLearningAgent(TabularAgent):
     """
-    An Agent for the Cyber Attack Simulator environment that uses the
+    A Tabular Agent for the Network Attack Simulator environment that uses the
     Q-learning method to find an optimal policy.
 
-    Implements the TD abstract class
+    Implements the TabularAgent abstract class
     """
 
     def __init__(self, type="UCB", alpha=0.1, gamma=0.9, max_epsilon=1.0,

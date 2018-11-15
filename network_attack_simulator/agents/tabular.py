@@ -4,10 +4,10 @@ import math
 from network_attack_simulator.agents.agent import Agent
 
 
-class TDAgent(Agent):
+class TabularAgent(Agent):
     """
-    A Temporal Difference Agent abstract class for the Cyber Attack Simulator environment that uses
-    a TD method to find an optimal policy
+    A Tabular Agent abstract class for the Network Attack Simulator that uses Tabular Reinforcement
+    Learning methods to find an optimal policy
 
     Supported action-selection methods:
         - Upper-confidence bounds - UCB
@@ -19,7 +19,7 @@ class TDAgent(Agent):
     def __init__(self, type="UCB", alpha=0.1, gamma=0.99, max_epsilon=1.0, min_epsilon=0.05,
                  epsilon_decay_lambda=0.0001, c=0.5):
         """
-        Initialize a new TD agent
+        Initialize a new Tabular agent
 
         Arguments:
             str type : type of Sarsa agent

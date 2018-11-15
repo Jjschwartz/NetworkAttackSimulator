@@ -5,6 +5,6 @@ A simulated computer network complete with vulnerabilities, scans and exploits d
 ## Installation
 
 ```
-cd NetowkAttackSimulator
+cd NetworkAttackSimulator
 pip install -e .
 ```

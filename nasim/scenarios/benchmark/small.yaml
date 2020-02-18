@@ -5,10 +5,11 @@ topology: [[ 1, 1, 0, 0, 0],
            [ 0, 1, 1, 1, 0],
            [ 0, 1, 1, 1, 1],
            [ 0, 0, 0, 1, 1]]
-sensitive_machines: [[2, 0, 10],
-                     [4, 0, 10]]
+sensitive_hosts:
+  (2, 0): 10
+  (4, 0): 10
 num_services: 3
-service_exploits:
+exploits:
   ssh:
     - 0.8
     - 3
@@ -18,7 +19,8 @@ service_exploits:
   http:
     - 0.8
     - 2
-machine_configurations:
+scan_cost: 1
+host_configurations:
   (1, 0): [http]
   (2, 0): [ssh, ftp]
   (3, 0): [ftp]

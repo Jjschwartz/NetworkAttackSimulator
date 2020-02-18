@@ -1,13 +1,13 @@
 # A WAN which has multiple 3 remote sites (subnets) connected to the main site
-# sensitive machines are located on a server on server subnet on main site and on
-# a machine in user subnet in main site
+# sensitive hosts are located on a server on server subnet on main site and on
+# a host in user subnet in main site
 # main site has 3 subnets (1 server, 1 DMZ, 1 user)
 # subnet 1 = main site DMZ (exposed, but not vulnerable) - contains 2 webservers
 # subnet 2 = main site server (not exposed) - contains 2 data servers
-# subnet 3 = main site user (not exposed) - contains 6 user machines
-# subnet 4 = remote site 1 (exposed) - contains 2 user machines
-# subnet 5 = remote site 2 (exposed) - contains 2 user machines
-# subnet 6 = remote site 3 (exposed) - contains 2 user machines
+# subnet 3 = main site user (not exposed) - contains 6 user hosts
+# subnet 4 = remote site 1 (exposed) - contains 2 user hosts
+# subnet 5 = remote site 2 (exposed) - contains 2 user hosts
+# subnet 6 = remote site 3 (exposed) - contains 2 user hosts
 # each remote site is connected to main site server subnet
 subnets: [2, 2, 6, 2, 2, 2]
 topology: [[ 1, 1, 0, 0, 1, 1, 1], # 0 - internet
@@ -17,26 +17,38 @@ topology: [[ 1, 1, 0, 0, 1, 1, 1], # 0 - internet
            [ 1, 0, 1, 0, 1, 0, 0], # 4 - RS-1
            [ 1, 0, 1, 0, 0, 1, 0], # 5 - RS-2
            [ 1, 0, 1, 0, 0, 0, 1]] # 6 - RS-3
-sensitive_machines: [[2, 1, 10],
-                     [3, 4, 10]]
-num_services: 5
-service_exploits:
-  ssh:
-    - 0.7
-    - 1
-  ftp:
-    - 0.7
-    - 1
-  http:
-    - 0.7
-    - 1
-  samba:
-    - 0.7
-    - 1
-  smtp:
-    - 0.7
-    - 1
-machine_configurations:
+sensitive_hosts:
+  (2, 1): 10
+  (3, 4): 10
+services:
+  - ssh
+  - ftp
+  - http
+  - samba
+  - smtp
+exploits:
+  e_ssh:
+    target: ssh
+    prob: 0.7
+    cost: 1
+  e_ftp:
+    target: ftp
+    prob: 0.7
+    cost: 1
+  e_http:
+    target: http
+    prob: 0.7
+    cost: 1
+  e_samba:
+    target: samba
+    prob: 0.7
+    cost: 1
+  e_smtp:
+    target: smtp
+    prob: 0.7
+    cost: 1
+scan_cost: 1
+host_configurations:
   (1, 0): [ssh]
   (1, 1): [ssh]
   (2, 0): [smtp]

@@ -7,10 +7,4 @@ network_attack_simulator/figures/
 
 network_attack_simulator/results/
 
-network_attack_simulator/prof/
-
-network_attack_simulator/pomdp/out/
-
 *.cprof
-
-network_attack_simulator/experiments/figures/

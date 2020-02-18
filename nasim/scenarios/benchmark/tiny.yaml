@@ -4,14 +4,16 @@ topology: [[ 1, 1, 0, 0],
            [ 1, 1, 1, 1],
            [ 0, 1, 1, 1],
            [ 0, 1, 1, 1]]
-sensitive_machines: [[2, 0, 10],
-                     [3, 0, 10]]
+sensitive_hosts:
+  (2, 0): 10
+  (3, 0): 10
 num_services: 1
-service_exploits:
+exploits:
   ssh:
     - 0.8
     - 1
-machine_configurations:
+scan_cost: 1
+host_configurations:
   (1, 0): [ssh]
   (2, 0): [ssh]
   (3, 0): [ssh]

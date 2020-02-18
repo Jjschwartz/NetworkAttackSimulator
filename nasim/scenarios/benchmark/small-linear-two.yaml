@@ -1,10 +1,10 @@
 # A network with
 # - 3 service exploits
-# - 8 machines organized into 6 subnets
+# - 8 hosts organized into 6 subnets
 # - subnets organized in a linear network
 # - sensitive documents located in two middle subnets
 # - end subnets are both connected to internet
-# - two middle subnets are not connected
+# - two middle subnets are not connected to each other
 subnets: [1, 1, 2, 1, 2, 1]
 topology: [[ 1, 1, 0, 0, 0, 0, 1],  # 0 connected to 1 and 6
            [ 1, 1, 1, 0, 0, 0, 0],  # 1 connected to 0 and 2
@@ -13,10 +13,11 @@ topology: [[ 1, 1, 0, 0, 0, 0, 1],  # 0 connected to 1 and 6
            [ 0, 0, 0, 1, 1, 1, 0],  # 4 connected to 3 and 5
            [ 0, 0, 0, 0, 1, 1, 1],  # 5 connected to 4 and 6
            [ 1, 0, 0, 0, 0, 1, 1]]  # 6 connected to 5 and 0
-sensitive_machines: [[3, 0, 10],
-                     [4, 0, 10]]
+sensitive_hosts:
+  (3, 0): 10
+  (4, 0): 10
 num_services: 3
-service_exploits:
+exploits:
   ssh:
     - 0.8
     - 3
@@ -26,7 +27,8 @@ service_exploits:
   http:
     - 0.8
     - 2
-machine_configurations:
+scan_cost: 1
+host_configurations:
   (1, 0): [http]
   (2, 0): [ssh, ftp]
   (3, 0): [ftp]

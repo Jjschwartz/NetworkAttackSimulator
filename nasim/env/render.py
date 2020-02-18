@@ -108,18 +108,17 @@ class Viewer:
         state : State
             state of network user wants to view (Typically will be initial state)
         """
-        output = ""
+        output = []
         for m in self.network.address_space:
-            output += "Machine = " + str(m) + " =>\n"
-            output += "\tServices:\n"
-            for s in range(self.network.num_services):
+            output.append(f"Host = {m} =>")
+            output.append("\tServices:")
+            for s in self.network.scenario.services:
                 service_state = state.service_state(m, s)
-                output += "\t\t{0} = {1}".format(s, str(service_state))
-                output += "\n"
-            output += "\treachable: {0}\n".format(state.reachable(m))
-            output += "\tcompromised: {0}\n".format(state.compromised(m))
-            output += "\tsensitive: {0}\n".format(self.network.is_sensitive_host(m))
-        print(output)
+                output.append(f"\t\t{s} = {service_state}")
+            output.append(f"\treachable: {state.reachable(m)}")
+            output.append(f"\tcompromised: {state.compromised(m)}")
+            output.append(f"\tsensitive: {self.network.is_sensitive_host(m)}")
+        print("\n".join(output))
 
     def render_asci(self, state):
         """Render state in ASCI format to stdout

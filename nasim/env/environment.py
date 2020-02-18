@@ -4,7 +4,7 @@ from nasim.env.state import State
 from nasim.env.action import Action
 from nasim.env.render import Viewer
 from nasim.env.network import Network
-from nasim.scenarios import Scenario, INTERNET
+from nasim.scenarios import ScenarioLoader, ScenarioGenerator, INTERNET
 
 
 class NASimEnv:
@@ -32,11 +32,6 @@ class NASimEnv:
 
         self.network = Network(scenario)
         self.address_space = scenario.address_space
-
-        self.service_map = {}
-        for i, service in enumerate(self.scenario.exploits.keys()):
-            self.service_map[service] = i
-
         self.action_space = Action.load_action_space(self.scenario)
 
         self.init_state = self._generate_initial_state()
@@ -58,7 +53,8 @@ class NASimEnv:
         NASimEnv
             a new environment object
         """
-        scenario = Scenario.load_from_file(path)
+        loader = ScenarioLoader()
+        scenario = loader.load(path)
         return cls(scenario)
 
     @classmethod
@@ -79,7 +75,8 @@ class NASimEnv:
         NASimEnv
             a new environment object
         """
-        scenario = Scenario.generate(num_hosts, num_services, **params)
+        generator = ScenarioGenerator()
+        scenario = generator.generate(num_hosts, num_services, **params)
         return cls(scenario)
 
     def reset(self):
@@ -250,7 +247,7 @@ class NASimEnv:
         initial_state : State
             the initial state of the environment
         """
-        return State.generate_initial_state(self.network, self.service_map)
+        return State.generate_initial_state(self.network, self.scenario.services)
 
     def _action_traffic_permitted(self, action):
         """Checks whether an action is permitted in terms of firewall traffic and the target service,

@@ -4,6 +4,7 @@ files.
 from nasim.env.host import Host
 import nasim.scenarios.utils as u
 import nasim.utils.futils as futils
+from nasim.scenarios import Scenario
 
 
 # dictionary of valid key names and value types for config file
@@ -67,7 +68,7 @@ class ScenarioLoader:
         scenario_dict[u.SCAN_COST] = self.scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
-        return scenario_dict
+        return Scenario(scenario_dict)
 
     def _check_scenario_sections_valid(self):
         """Checks if a scenario dictionary contains all required section is valid. """

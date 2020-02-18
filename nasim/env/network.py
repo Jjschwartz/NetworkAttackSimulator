@@ -8,8 +8,7 @@ INTERNET = 0
 
 
 class Network:
-    """
-    A simulated network of hosts belonging to different subnetworks.
+    """A simulated network of hosts belonging to different subnetworks.
 
     Properties:
     - subnets - list of subnet sizes

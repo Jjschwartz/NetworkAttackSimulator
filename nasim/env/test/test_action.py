@@ -1,5 +1,5 @@
 import unittest
-from network_attack_simulator.envs.action import Action
+from nasim.env.action import Action
 
 
 class ActionTestCase(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from network_attack_simulator.envs.environment import NetworkAttackSimulator
+from nasim.env.environment import NASimEnv
 
 
 class StateTestCase(unittest.TestCase):
@@ -13,7 +13,7 @@ class StateTestCase(unittest.TestCase):
 
     """ Helper method """
     def get_env(self, nM, nS):
-        env = NetworkAttackSimulator.from_params(nM, nS)
+        env = NASimEnv.from_params(nM, nS)
         return env
 
     def test_state_copy(self):

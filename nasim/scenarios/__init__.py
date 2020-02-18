@@ -1,3 +1,4 @@
+from .utils import INTERNET
 from .scenario import Scenario
-
-INTERNET = 0
+from .loader import ScenarioLoader
+from .generator import ScenarioGenerator

@@ -5,10 +5,10 @@ import numpy as np
 
 from nasim.env.host import Host
 import nasim.scenarios.utils as u
+from nasim.scenarios import Scenario
 
 # Constants for generating network
 USER_SUBNET_SIZE = 5
-INTERNET = 0
 DMZ = 1
 SENSITIVE = 2
 USER = 3
@@ -110,7 +110,7 @@ class ScenarioGenerator:
         assert 0 < alpha_H and 0 < alpha_V and 0 < lambda_V
         assert 0 < restrictiveness
 
-        if seed:
+        if seed is not None:
             np.random.seed(seed)
 
         self._generate_subnets(num_hosts)
@@ -136,7 +136,7 @@ class ScenarioGenerator:
         scenario_dict[u.SCAN_COST] = self.scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
-        return scenario_dict
+        return Scenario(scenario_dict)
 
     def _generate_subnets(self, num_hosts):
         # Internet (0), DMZ (1) and sensitive (2) subnets both contain 1 host
@@ -156,13 +156,14 @@ class ScenarioGenerator:
         # to internet
         for row in range(USER + 1):
             for col in range(USER + 1):
-                if row == INTERNET and col > DMZ:
+                if row == u.INTERNET and col > DMZ:
                     continue
-                if row > DMZ and col == INTERNET:
+                if row > DMZ and col == u.INTERNET:
                     continue
                 topology[row][col] = 1
         if num_subnets == USER + 1:
-            return topology
+            self.topology = topology
+            return
         # all other subnets are part of user binary tree
         for row in range(USER, num_subnets):
             # subnet connected to itself
@@ -200,10 +201,11 @@ class ScenarioGenerator:
         num_configs = len(host_config_set)
 
         for subnet, size in enumerate(self.subnets):
-            if subnet == INTERNET:
+            if subnet == u.INTERNET:
                 continue
             for h in range(size):
                 cfg = host_config_set[np.random.choice(num_configs)]
+                cfg = self._convert_to_service_map(cfg)
                 address = (subnet, h)
                 value = self._get_host_value(address)
                 host = Host(address, cfg, value)
@@ -264,11 +266,12 @@ class ScenarioGenerator:
         prev_vuls = []
         host_num = 0
         for subnet, size in enumerate(self.subnets):
-            if subnet == INTERNET:
+            if subnet == u.INTERNET:
                 continue
             for m in range(size):
-                cfg = self._get_host_config(host_num, alpha_H, prev_configs, alpha_V,
-                                            prev_vuls, lambda_V)
+                cfg = self._get_host_config(host_num, alpha_H, prev_configs,
+                                            alpha_V, prev_vuls, lambda_V)
+                cfg = self._convert_to_service_map(cfg)
                 host_num += 1
                 address = (subnet, m)
                 value = self._get_host_value(address)
@@ -311,6 +314,13 @@ class ScenarioGenerator:
             prev_vuls.append(x)
         return new_config
 
+    def _convert_to_service_map(self, config):
+        """Converts list of bools to a map from service name -> bool """
+        service_map = {}
+        for srv, val in zip(self.services, config):
+            service_map[srv] = val
+        return service_map
+
     def _get_host_value(self, address):
         return float(self.sensitive_hosts.get(address, 0.0))
 
@@ -343,10 +353,10 @@ class ScenarioGenerator:
             subnet = h.address[0]
             if subnet not in subnet_services:
                 subnet_services[subnet] = set()
-            for name, present in h._services.items():
+            for name, present in h.services.items():
                 if present:
                     subnet_services[subnet].add(name)
-        subnet_services[INTERNET] = set()
+        subnet_services[u.INTERNET] = set()
 
         service_list = list(range(len(self.services)))
 

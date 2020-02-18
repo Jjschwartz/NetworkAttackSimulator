@@ -3,6 +3,9 @@ import os.path as osp
 
 SCENARIO_DIR = osp.dirname(osp.abspath(__file__))
 
+# default subnet address for internet
+INTERNET = 0
+
 # scenario property keys
 SUBNETS = "subnets"
 TOPOLOGY = "topology"

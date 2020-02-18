@@ -34,8 +34,8 @@ class Action:
         raise NotImplementedError
 
     def __str__(self):
-        return (f"{self.__class__.__name}: target={self.target}, "
-                f"cost={self.cost:.4f}, prob={self.prob:.4f}")
+        return (f"{self.__class__.__name__}: target={self.target}, "
+                f"cost={self.cost:.2f}, prob={self.prob:.2f}")
 
     def __hash__(self):
         return hash(self.__str__())
@@ -96,7 +96,7 @@ class Exploit(Action):
         return False
 
     def __str__(self):
-        return super().__str__() + f"service={self.service}"
+        return super().__str__() + f", service={self.service}"
 
     def __eq__(self, other):
         if not super().__eq__(other):

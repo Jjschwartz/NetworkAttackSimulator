@@ -1,12 +1,10 @@
 import unittest
 import numpy as np
-from network_attack_simulator.envs.network import Network
-from network_attack_simulator.envs.network import min_subnet_depth
-from network_attack_simulator.envs.loader import generate_config
-from network_attack_simulator.envs.action import Action
-from network_attack_simulator.envs.loader import INTERNET
-from network_attack_simulator.envs.loader import DMZ
-from network_attack_simulator.envs.loader import USER
+
+from nasim.env.action import Exploit, ServiceScan
+from nasim.env.network import Network, min_subnet_depth
+from nasim.scenarios.generator import ScenarioGenerator, DMZ, USER
+from nasim.scenarios import Scenario, INTERNET
 
 A_COST = 10
 
@@ -18,19 +16,27 @@ class NetworkTestCase(unittest.TestCase):
         self.r_user = 1000
         self.M = 3
         self.S = 3
-        self.config = generate_config(self.M, self.S, self.r_sensitive, self.r_user)
-        self.network = Network(self.config)
+        self.network = self.get_network(self.M, self.S)
 
     def find_exploit(self, network, address, valid):
-        services = network.machines[address]._services
-        for i in range(len(services)):
-            if services[i] == valid:
-                return i
+        services = network.hosts[address].services
+        for srv, v in services.items():
+            if v == valid:
+                return srv
 
-    def get_network(self, nM, nS):
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user)
-        network = Network(config)
+    def get_network(self, nM, nS, **params):
+        generator = ScenarioGenerator()
+        scenario_dict = generator.generate(nM,
+                                           nS,
+                                           r_sensitive=self.r_sensitive,
+                                           r_user=self.r_user,
+                                           **params)
+        scenario = Scenario(scenario_dict)
+        network = Network(scenario)
         return network
+
+    def get_exploit(self, addr, srv):
+        return Exploit(addr, A_COST, srv)
 
     def test_generate_network_small(self):
         M = 3
@@ -41,34 +47,34 @@ class NetworkTestCase(unittest.TestCase):
         for s in range(USER + 1):
             self.assertEqual(subnets[s], 1)
             if s > INTERNET:
-                self.assertTrue(network.machines[(s, 0)].address, (s, 0))
+                self.assertTrue(network.hosts[(s, 0)].address, (s, 0))
 
     def test_generate_network_consistency(self):
         M = [3, 6]
         S = [3, 6]
         results1 = []
-        machines1 = []
+        hosts1 = []
         for m in M:
             for s in S:
-                network = self.get_network(m, s)
+                network = self.get_network(m, s, **{"seed": 0})
                 results1.append(network.subnets)
-                machines1.append(network.machines)
+                hosts1.append(network.hosts)
         results2 = []
-        machines2 = []
+        hosts2 = []
         for m in M:
             for s in S:
-                network = self.get_network(m, s)
+                network = self.get_network(m, s, **{"seed": 0})
                 results2.append(network.subnets)
-                machines2.append(network.machines)
+                hosts2.append(network.hosts)
         self.assertEqual(results1, results2)
-        self.assertEqual(machines1, machines2)
+        self.assertEqual(hosts1, hosts2)
 
     def test_successful_exploit(self):
         rewards = [0, self.r_sensitive, self.r_user]
         for i in range(DMZ, USER + 1):
             subnet = i
-            e = self.find_exploit(self.network, (subnet, 0), True)
-            exploit = Action((subnet, 0), A_COST, "exploit", e)
+            srv = self.find_exploit(self.network, (subnet, 0), True)
+            exploit = self.get_exploit((subnet, 0), srv)
             outcome, reward, services = self.network.perform_action(exploit)
             self.assertTrue(outcome)
             self.assertEqual(reward, rewards[i - 1])
@@ -78,11 +84,11 @@ class NetworkTestCase(unittest.TestCase):
         exp_services = np.asarray([])
         for i in range(DMZ, USER + 1):
             subnet = i
-            e = self.find_exploit(self.network, (subnet, 0), False)
-            if (e is None):
-                # machine vulnerable to all exploits
+            srv = self.find_exploit(self.network, (subnet, 0), False)
+            if (srv is None):
+                # host vulnerable to all exploits
                 continue
-            exploit = Action((subnet, 0), A_COST, "exploit", e)
+            exploit = self.get_exploit((subnet, 0), srv)
             outcome, reward, services = self.network.perform_action(exploit)
             self.assertFalse(outcome)
             self.assertEqual(reward, rewards[i - 1])
@@ -92,8 +98,8 @@ class NetworkTestCase(unittest.TestCase):
         rewards = [0, 0, 0]
         for i in range(DMZ, USER + 1):
             subnet = i
-            exp_services = self.network.machines[(subnet, 0)]._services
-            scan = Action((subnet, 0), A_COST, "scan", None)
+            exp_services = self.network.hosts[(subnet, 0)].services
+            scan = ServiceScan((subnet, 0), A_COST)
             outcome, reward, services = self.network.perform_action(scan)
             self.assertTrue(outcome)
             self.assertEqual(reward, rewards[i - 1])
@@ -101,16 +107,16 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_invalid_action(self):
         # invalid subnet
-        exploit = Action((USER + 1, 0), A_COST, "scan", None)
+        scan = ServiceScan((USER + 1, 0), A_COST)
         with self.assertRaises(AssertionError):
-            self.network.perform_action(exploit)
-        # invalid machine ID
-        exploit = Action((DMZ, 2), A_COST, "scan", None)
+            self.network.perform_action(scan)
+        # invalid host ID
+        scan = ServiceScan((DMZ, 2), A_COST)
         with self.assertRaises(AssertionError):
-            self.network.perform_action(exploit)
+            self.network.perform_action(scan)
         # invalid service
-        exploit = Action((DMZ, 0), A_COST, "exploit", self.S + 1)
-        with self.assertRaises(AssertionError):
+        exploit = self.get_exploit((DMZ, 0), self.S + 1)
+        with self.assertRaises(KeyError):
             self.network.perform_action(exploit)
 
     def test_topology(self):
@@ -118,7 +124,7 @@ class NetworkTestCase(unittest.TestCase):
         s = 1
         network = self.get_network(m, s)
         # test public explosure of DMZ subnet
-        self.assertTrue(network.subnet_exposed(DMZ))
+        self.assertTrue(network.subnet_public(DMZ))
         # test full connectivity of first 3 subnets
         for i in range(DMZ, USER + 1):
             for j in range(DMZ, USER + 1):
@@ -173,73 +179,61 @@ class NetworkTestCase(unittest.TestCase):
 
         # test generating network with uniform dist of configs
         print("Test Uniform dist of configurations")
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         num_configs, max_same = self.num_similiar_configs(network)
-        print("\tUniform: num_configs={0}, max_same_configs={1}".format(num_configs, max_same))
+        print(f"\tUniform: num_configs={num_configs}, max_same_configs={max_same}")
         max_vulns, avg_vulns = self.num_exploits_avail(nS, nM, network)
-        print("\tUniform: max_vulns={0}, avg_vulns={1}".format(max_vulns, avg_vulns))
+        print(f"\tUniform: max_vulns={max_vulns}, avg_vulns={avg_vulns}")
 
         # for each compare number of similar configs for range of alpha_H
         print("Test alpha_H")
         for h in alpha_H:
-            config = generate_config(nM, nS, self.r_sensitive, self.r_user, alpha_H=h)
-            network = Network(config)
+            network = self.get_network(nM, nS, **{"alpha_H": h})
             num_configs, max_same = self.num_similiar_configs(network)
-            print("\talpha_H={0}, num_configs={1}, max_same_configs={2}"
-                  .format(h, num_configs, max_same))
+            print(f"\talpha_H={h}, num_configs={num_configs}, max_same_configs={max_same}")
 
         # for each compare number of similar configs and services for range of alpha_V
         print("Test alpha_V")
         for v in alpha_V:
-            config = generate_config(nM, nS, self.r_sensitive, self.r_user, alpha_V=v)
-            network = Network(config)
+            network = self.get_network(nM, nS, **{"alpha_V": v})
             num_configs, max_same = self.num_similiar_configs(network)
-            print("\talpha_V={0}, num_configs={1}, max_same_configs={2}"
-                  .format(v, num_configs, max_same))
+            print(f"\talpha_V={v}, num_configs={num_configs}, max_same_configs={max_same}")
 
-        # for each compare number of services per machine for range of lambda_V
+        # for each compare number of services per host for range of lambda_V
         print("Test lambda_V")
         for l in lambda_V:
-            config = generate_config(nM, nS, self.r_sensitive, self.r_user, lambda_V=l)
-            network = Network(config)
+            network = self.get_network(nM, nS, **{"lambda_V": l})
             max_vulns, avg_vulns = self.num_exploits_avail(nS, nM, network)
-            print("\tlambda_V={0}, max_vulns={1}, avg_vulns={2}".format(l, max_vulns, avg_vulns))
+            print(f"\tlambda_V={l}, max_vulns={max_vulns}, avg_vulns={avg_vulns}")
 
     def test_minimum_steps(self):
         nS = 1
-
         nM = 3
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         actual = network.get_minimal_steps()
         expected = 3
         self.assertEqual(actual, expected)
 
         nM = 8
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         actual = network.get_minimal_steps()
         expected = 4
         self.assertEqual(actual, expected)
 
         nM = 13
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         actual = network.get_minimal_steps()
         expected = 4
         self.assertEqual(actual, expected)
 
         nM = 18
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         actual = network.get_minimal_steps()
         expected = 5
         self.assertEqual(actual, expected)
 
         nM = 38
-        config = generate_config(nM, nS, self.r_sensitive, self.r_user, uniform=True)
-        network = Network(config)
+        network = self.get_network(nM, nS, **{"uniform": True})
         actual = network.get_minimal_steps()
         expected = 6
         self.assertEqual(actual, expected)
@@ -247,8 +241,8 @@ class NetworkTestCase(unittest.TestCase):
     def num_similiar_configs(self, network):
         seen_configs = []
         seen_configs_count = []
-        for m in network.machines:
-            cfg = network.machines[m]._services
+        for m in network.hosts:
+            cfg = network.hosts[m].services
             if cfg in seen_configs:
                 i = seen_configs.index(cfg)
                 seen_configs_count[i] += 1
@@ -259,10 +253,10 @@ class NetworkTestCase(unittest.TestCase):
 
     def num_exploits_avail(self, nS, nM, network):
         vulns = np.zeros(nS)
-        for m in network.machines:
-            cfg = network.machines[m]._services
-            for i in range(nS):
-                if cfg[i]:
+        for m in network.hosts:
+            cfg = network.hosts[m].services
+            for i, v in enumerate(cfg.values()):
+                if v:
                     vulns[i] += 1
         return np.max(vulns), np.average(vulns)
 

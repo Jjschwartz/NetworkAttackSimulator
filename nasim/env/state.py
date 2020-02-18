@@ -1,6 +1,6 @@
 import numpy as np
-from collections import OrderedDict
 from copy import deepcopy
+from collections import OrderedDict
 
 # keys
 COMPROMISED_KEY = "compromised"
@@ -251,13 +251,13 @@ class State(object):
 
         State.m_state_size = len(exploitable_services) + 2
 
-        for i, m in enumerate(network.get_address_space()):
+        for i, m in enumerate(network.address_space):
             # machine state is a mapping from service, or status var to value
             # also index which is used when vectorizing state
             State.machine_indices[m] = i
             machine_state = OrderedDict()
             machine_state[COMPROMISED_KEY] = False
-            if network.subnet_exposed(m[0]):
+            if network.subnet_public(m[0]):
                 machine_state[REACHABLE_KEY] = True
             else:
                 machine_state[REACHABLE_KEY] = False

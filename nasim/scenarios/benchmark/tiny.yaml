@@ -7,11 +7,13 @@ topology: [[ 1, 1, 0, 0],
 sensitive_hosts:
   (2, 0): 10
   (3, 0): 10
-num_services: 1
+services:
+  - ssh
 exploits:
-  ssh:
-    - 0.8
-    - 1
+  e_ssh:
+    service: ssh
+    prob: 0.8
+    cost: 1
 scan_cost: 1
 host_configurations:
   (1, 0): [ssh]

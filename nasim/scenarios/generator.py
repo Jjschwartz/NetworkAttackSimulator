@@ -3,7 +3,7 @@ hosts and services in network using standard formula.
 """
 import numpy as np
 
-from nasim.envs.host import Host
+from nasim.env.host import Host
 import nasim.scenarios.utils as u
 
 # Constants for generating network
@@ -54,6 +54,7 @@ class ScenarioGenerator:
                  r_user=10,
                  exploit_cost=1,
                  exploit_probs=1.0,
+                 scan_cost=1,
                  uniform=False,
                  alpha_H=2.0,
                  alpha_V=2.0,
@@ -76,6 +77,8 @@ class ScenarioGenerator:
             cost for an exploit (default=1)
         exploit_probs : mixed, optional
             success probability of exploits (default=1.0)
+        scan_cost : (int, float), optional
+            cost for a scan (default=1)
         uniform : bool, optional
             whether to use uniform distribution or correlatted of host configs (default=False)
         alpha_H : float, optional
@@ -120,6 +123,7 @@ class ScenarioGenerator:
             self._generate_correlated_hosts(alpha_H, alpha_V, lambda_V)
         self._generate_firewall(restrictiveness)
         self._generate_exploits(exploit_cost, exploit_probs)
+        self.scan_cost = scan_cost
         return self._construct_scenario()
 
     def _construct_scenario(self):
@@ -129,6 +133,7 @@ class ScenarioGenerator:
         scenario_dict[u.SERVICES] = self.services
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
+        scenario_dict[u.SCAN_COST] = self.scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         return scenario_dict
@@ -382,7 +387,7 @@ class ScenarioGenerator:
         for srv in range(len(self.services)):
             e_name = f"e_{srv}"
             exploits[e_name] = {
-                u.EXPLOIT_TARGET: srv,
+                u.EXPLOIT_SERVICE: srv,
                 u.EXPLOIT_PROB: exploit_probs[srv],
                 u.EXPLOIT_COST: exploit_cost}
         self.exploits = exploits

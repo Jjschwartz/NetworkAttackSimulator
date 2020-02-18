@@ -1,7 +1,7 @@
 """This module contains functionality for loading network scenarios from yaml
 files.
 """
-from nasim.envs.host import Host
+from nasim.env.host import Host
 import nasim.scenarios.utils as u
 import nasim.utils.futils as futils
 
@@ -18,7 +18,7 @@ VALID_CONFIG_KEYS = {u.SUBNETS: list,
 
 
 # required keys for exploits
-EXPLOIT_KEYS = {u.EXPLOIT_TARGET: str,
+EXPLOIT_KEYS = {u.EXPLOIT_SERVICE: str,
                 u.EXPLOIT_PROB: float,
                 u.EXPLOIT_COST: (int, float)}
 
@@ -43,7 +43,7 @@ class ScenarioLoader:
         Exception
             If file unable to load or scenario file is invalid.
         """
-        self.yaml_dict = futils.load_yaml_file(file_path)
+        self.yaml_dict = futils.load_yaml(file_path)
         self._check_scenario_sections_valid()
 
         self._parse_subnets()
@@ -51,6 +51,7 @@ class ScenarioLoader:
         self._parse_services()
         self._parse_sensitive_hosts()
         self._parse_exploits()
+        self._parse_scan_cost()
         self._parse_host_configs()
         self._parse_firewall()
         self._parse_hosts()
@@ -63,6 +64,7 @@ class ScenarioLoader:
         scenario_dict[u.SERVICES] = self.services
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
+        scenario_dict[u.SCAN_COST] = self.scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         return scenario_dict
@@ -89,7 +91,7 @@ class ScenarioLoader:
         # insert internet subnet
         subnets.insert(0, 1)
         self.subnets = subnets
-        self.num_hosts = sum(subnets)
+        self.num_hosts = sum(subnets)-1
 
     def _validate_subnets(self, subnets):
         # check subnets is valid list of positive ints
@@ -101,20 +103,20 @@ class ScenarioLoader:
 
     def _parse_topology(self):
         topology = self.yaml_dict[u.TOPOLOGY]
-        self._validate_topology()
+        self._validate_topology(topology)
         self.topology = topology
 
     def _validate_topology(self, topology):
         # check topology is valid adjacency matrix
-        if len(topology) != len(self.subnets) + 1:
+        if len(topology) != len(self.subnets):
             raise ValueError("Number of rows in topology adjacency matrix must equal number "
-                             f" of subnets: {len(topology)} != {len(self.subnets) + 1}")
+                             f" of subnets: {len(topology)} != {len(self.subnets)}")
         for row in topology:
             if type(row) is not list:
                 raise ValueError("topology must be 2D adjacency matrix (i.e. list of lists)")
-            if len(row) != len(self.subnets) + 1:
+            if len(row) != len(self.subnets):
                 raise ValueError("Number of colomns in topology adjacency matrix must equal number "
-                                 f" of subnets: {len(topology)} != {len(self.subnets) + 1}")
+                                 f" of subnets: {len(topology)} != {len(self.subnets)}")
             for col in row:
                 if type(col) is not int or (col != 1 and col != 0):
                     raise ValueError("Subnet_connections adjaceny matrix must "
@@ -188,7 +190,7 @@ class ScenarioLoader:
 
     def _parse_exploits(self):
         exploits = self.yaml_dict[u.EXPLOITS]
-        self._validate_exploits()
+        self._validate_exploits(exploits)
         self.exploits = exploits
 
     def _validate_exploits(self, exploits):
@@ -203,13 +205,22 @@ class ScenarioLoader:
                 raise ValueError(f"{e_name}. Exploit missing key: '{k}'")
             if not isinstance(e[k], t):
                 raise ValueError(f"{e_name}. Exploit '{k}' incorrect type. Expected {t}")
-        if e[u.EXPLOIT_TARGET] not in self.services:
-            raise ValueError(f"{e_name}. Exploit target service invalid: '{e[u.EXPLOIT_TARGET]}'")
+        if e[u.EXPLOIT_SERVICE] not in self.services:
+            raise ValueError(f"{e_name}. Exploit target service invalid: '{e[u.EXPLOIT_SERVICE]}'")
         if e[u.EXPLOIT_PROB] < 0 or 1 < e[u.EXPLOIT_PROB]:
             raise ValueError(f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
                              "a valid probability")
         if e[u.EXPLOIT_COST] < 0:
             raise ValueError(f"{e_name}. Exploit cost must be > 0.")
+
+    def _parse_scan_cost(self):
+        scan_cost = self.yaml_dict[u.SCAN_COST]
+        self._validate_scan_cost(scan_cost)
+        self.scan_cost = scan_cost
+
+    def _validate_scan_cost(self, scan_cost):
+        if scan_cost < 0:
+            raise ValueError("Scan Cost must be >= 0.")
 
     def _parse_host_configs(self):
         host_configs = self.yaml_dict[u.HOST_CONFIGS]
@@ -226,14 +237,13 @@ class ScenarioLoader:
         for cfg in host_configs.values():
             if not self._is_valid_host_config(cfg):
                 raise ValueError("Host configurations must be at list, contain at least one "
-                                 "service exploit, contain only valid exploits and contain "
-                                 f"no duplicates: {cfg} is invalid")
+                                 f"exploitable service and contain no duplicates: {cfg} is invalid")
 
     def _has_all_host_addresses(self, addresses):
         """Check that list of (subnet_ID, host_ID) tuples contains all addresses on network based
         on subnets list
         """
-        for s_id, s_size in enumerate(self.subnets):
+        for s_id, s_size in enumerate(self.subnets[1:]):
             for m in range(s_size):
                 # +1 to s_id since first subnet is 1
                 if str((s_id + 1, m)) not in addresses:
@@ -242,12 +252,12 @@ class ScenarioLoader:
 
     def _is_valid_host_config(self, cfg):
         """Check if a host config is valid or not given the list of exploits available
-        N.B. each host config must contain at least one of the services
+        N.B. each host config must contain at least one service
         """
         if type(cfg) != list or len(cfg) == 0:
             return False
         for service in cfg:
-            if service not in self.exploits:
+            if service not in self.services:
                 return False
         for i, x in enumerate(cfg):
             for j, y in enumerate(cfg):
@@ -270,7 +280,7 @@ class ScenarioLoader:
                              "network topology matrix")
         for f in firewall.values():
             if not self._is_valid_firewall_setting(f):
-                raise ValueError("Firewall setting must be a list, contain only service exploits "
+                raise ValueError("Firewall setting must be a list, contain only valid services "
                                  " and contain no duplicates: {f} is not valid")
 
     def _contains_all_required_firewalls(self, firewall):
@@ -286,7 +296,7 @@ class ScenarioLoader:
         if type(f) != list:
             return False
         for service in f:
-            if service not in self.exploits:
+            if service not in self.services:
                 return False
         for i, x in enumerate(f):
             for j, y in enumerate(f):
@@ -314,4 +324,4 @@ class ScenarioLoader:
         return cfg
 
     def _get_host_value(self, address):
-        return float(self.sensitive_machines.get(address, 0.0))
+        return float(self.sensitive_hosts.get(address, 0.0))

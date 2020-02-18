@@ -1,4 +1,4 @@
-import nasim.scenarios.util as u
+import nasim.scenarios.utils as u
 from nasim.scenarios.loader import ScenarioLoader
 from nasim.scenarios.generator import ScenarioGenerator
 
@@ -39,6 +39,14 @@ class Scenario:
     @property
     def hosts(self):
         return self.scenario_dict[u.HOSTS]
+
+    @property
+    def address_space(self):
+        return list(self.hosts.keys())
+
+    @property
+    def scan_cost(self):
+        return self.scenario_dict[u.SCAN_COST]
 
     @classmethod
     def load_from_file(cls, path):

@@ -1,9 +1,9 @@
 import numpy as np
 
-from nasim.envs.state import State
-from nasim.envs.action import Action
-from nasim.envs.render import Viewer
-from nasim.envs.network import Network
+from nasim.env.state import State
+from nasim.env.action import Action
+from nasim.env.render import Viewer
+from nasim.env.network import Network
 from nasim.scenarios import Scenario, INTERNET
 
 
@@ -31,13 +31,13 @@ class NASimEnv:
         self.scenario = scenario
 
         self.network = Network(scenario)
-        self.address_space = self.network.get_address_space()
+        self.address_space = scenario.address_space
 
         self.service_map = {}
         for i, service in enumerate(self.scenario.exploits.keys()):
             self.service_map[service] = i
 
-        self.action_space = Action.load_action_space(self.network, self.scenario)
+        self.action_space = Action.load_action_space(self.scenario)
 
         self.init_state = self._generate_initial_state()
         self.compromised_subnets = None

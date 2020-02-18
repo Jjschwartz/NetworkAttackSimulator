@@ -51,14 +51,13 @@ class Action:
                 and math.isclose(self.prob, other.prob))
 
     @staticmethod
-    def load_action_space(address_space, exploits, scan_cost):
+    def load_action_space(scenario):
         """Load the action space for the environment from exploits list
 
         Arguments
         ---------
-        list address_space : list of addresses for each machine in network
-        dict service_exploits : map from service name to (prob, cost) tuple
-        float scan_cost : cost of performing a scan action
+        scenario : Scenario
+            scenario description object
 
         Returns
         -------
@@ -66,13 +65,11 @@ class Action:
             list of actions
         """
         action_space = []
-        for address in address_space:
-            scan = Action(address, scan_cost, "scan")
+        for address in scenario.address_space:
+            scan = ServiceScan(address, scenario.scan_cost)
             action_space.append(scan)
-            for service, val in service_exploits.items():
-                prob = val[0]
-                cost = val[1]
-                exploit = Action(address, cost, "exploit", service, prob)
+            for e_name, e_def in scenario.exploits.items():
+                exploit = Exploit(address, **e_def)
                 action_space.append(exploit)
         return action_space
 

@@ -28,23 +28,23 @@ services:
   - smtp
 exploits:
   e_ssh:
-    target: ssh
+    service: ssh
     prob: 0.7
     cost: 1
   e_ftp:
-    target: ftp
+    service: ftp
     prob: 0.7
     cost: 1
   e_http:
-    target: http
+    service: http
     prob: 0.7
     cost: 1
   e_samba:
-    target: samba
+    service: samba
     prob: 0.7
     cost: 1
   e_smtp:
-    target: smtp
+    service: smtp
     prob: 0.7
     cost: 1
 scan_cost: 1

@@ -9,23 +9,33 @@ topology: [[ 1, 1, 0, 0, 0, 0],
 sensitive_hosts:
   (2, 0): 10
   (5, 0): 10
-num_services: 5
+services:
+  - ssh
+  - ftp
+  - http
+  - samba
+  - smtp
 exploits:
-  ftp:
-    - 0.7
-    - 1
-  ssh:
-    - 0.7
-    - 1
-  http:
-    - 0.7
-    - 1
-  samba:
-    - 0.7
-    - 1
-  smtp:
-    - 0.7
-    - 1
+  e_ssh:
+    service: ssh
+    prob: 0.7
+    cost: 1
+  e_ftp:
+    service: ftp
+    prob: 0.7
+    cost: 1
+  e_http:
+    service: http
+    prob: 0.7
+    cost: 1
+  e_samba:
+    service: samba
+    prob: 0.7
+    cost: 1
+  e_smtp:
+    service: smtp
+    prob: 0.7
+    cost: 1
 scan_cost: 1
 host_configurations:
   (1, 0): [http]

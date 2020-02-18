@@ -1,7 +1,9 @@
-import networkx as nx
-import tkinter as Tk
 import math
 import random
+import networkx as nx
+import tkinter as Tk
+
+# import order important here
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg     # noqa E402
@@ -11,38 +13,46 @@ import matplotlib.patches as mpatches   # noqa E402
 # Agent node in graph
 AGENT = (0, 0)
 
-# Colors and symbols for describing state of machine
+# Colors and symbols for describing state of host
 COLORS = ['yellow', 'orange', 'magenta', 'green', 'blue', 'red', 'black']
 SYMBOLS = ['C', 'R', 'S', 'c', 'r', 'o', 'A']
 
 
-class Viewer(object):
-    """
-    A class for visualizing the network state form Cyber Attack Simulator Environment
-    """
+class Viewer:
+    """A class for visualizing the network state from NASimEnv"""
 
     def __init__(self, network):
         """
-        Initialize the Viewer, generating the network Graph given network topology and state
+        Initialize the Viewer, generating the network Graph given network topology
+        and state
 
-        Arguments:
-            Network network : Network object describing network of environment
-            State state : state of network user wants to view (Typically will be initial state)
+        Arguments
+        ---------
+        network : Network
+            network of environment
+        state : State
+            state of network user wants to view (Typically will be initial state)
         """
         self.network = network
         self.subnets = self._get_subnets(network)
-        self.positions = self._get_machine_positions(network)
+        self.positions = self._get_host_positions(network)
 
     def render_graph(self, state, ax=None, show=False, width=5, height=6):
-        """
-        Render graph structure representing network that can be then be visualized
+        """Render graph structure representing network that can be then be
+        visualized
 
-        Arguments:
-            State state : state of network user wants to view (Typically will be initial state)
-            Axes ax : matplotlib axis to plot graph on, or None to plot on new axis
-            bool show : whether to display plot, or simply construct plot
-            int width : width of GUI window
-            int height : height of GUI window
+        Arguments
+        ---------
+        state : State
+            state of network user wants to view (Typically will be initial state)
+        ax : Axes
+            matplotlib axis to plot graph on, or None to plot on new axis
+        show : bool
+            whether to display plot, or simply construct plot
+        width : int
+            width of GUI window
+        height : int
+            height of GUI window
         """
         G = self._construct_graph(state)
         colors = []
@@ -73,29 +83,33 @@ class Viewer(object):
             plt.close(fig)
 
     def render_episode(self, episode, width=7, height=5):
-        """
-        Display an episode from Cyber Attack Simulator Environment in a seperate window. Where an
-        episode is a sequence of (state, action, reward, done) tuples generated from interactions
-        with environment.
+        """Display an episode from Cyber Attack Simulator Environment in a seperate
+        window. Where an episode is a sequence of (state, action, reward, done)
+        tuples generated from interactions with environment.
 
-        Arguments:
-            list episode : list of (State, Action, reward, done) tuples
-            int width : width of GUI window
-            int height : height of GUI window
+        Arguments
+        ---------
+        episode : list
+            list of (State, Action, reward, done) tuples
+        width : int
+            width of GUI window
+        height : int
+            height of GUI window
         """
         init_ep_state = episode[0][0]
         G = self._construct_graph(init_ep_state)
-        EpisodeViewer(episode, G, self.network.get_sensitive_machines(), width, height)
+        EpisodeViewer(episode, G, self.network.sensitive_hosts, width, height)
 
     def render_readable(self, state):
-        """
-        Print a readable version of state to stdout
+        """Print a readable version of state to stdout
 
-        Arguments:
-            State state : state of network user wants to view (Typically will be initial state)
+        Arguments
+        ---------
+        state : State
+            state of network user wants to view (Typically will be initial state)
         """
         output = ""
-        for m in self.network.get_address_space():
+        for m in self.network.address_space:
             output += "Machine = " + str(m) + " =>\n"
             output += "\tServices:\n"
             for s in range(self.network.num_services):
@@ -104,20 +118,21 @@ class Viewer(object):
                 output += "\n"
             output += "\treachable: {0}\n".format(state.reachable(m))
             output += "\tcompromised: {0}\n".format(state.compromised(m))
-            output += "\tsensitive: {0}\n".format(self.network.is_sensitive_machine(m))
+            output += "\tsensitive: {0}\n".format(self.network.is_sensitive_host(m))
         print(output)
 
     def render_asci(self, state):
-        """
-        Render state in ASCI format to stdout
+        """Render state in ASCI format to stdout
 
-        Arguments:
-            State state : state of network user wants to view (Typically will be initial state)
+        Arguments
+        ---------
+        state : State
+            state of network user wants to view (Typically will be initial state)
         """
-        sensitive_machines = self.network.get_sensitive_machines()
+        sensitive_hosts = self.network.sensitive_hosts
         subnets = [[] for x in range(len(self.subnets))]
-        for m in self.network.get_address_space():
-            subnets[m[0]].append(get_machine_representation(state, sensitive_machines, m, SYMBOLS))
+        for m in self.network.address_space:
+            subnets[m[0]].append(get_host_representation(state, sensitive_hosts, m, SYMBOLS))
 
         max_row_size = max([len(x) for x in subnets])
         min_row_size = min([len(x) for x in subnets])
@@ -137,22 +152,25 @@ class Viewer(object):
         print(output)
 
     def _construct_graph(self, state):
-        """
-        Create a network graph from the current state
+        """Create a network graph from the current state
 
-        Arguments:
-            State state : current state of network
+        Arguments
+        ---------
+        state : State
+            current state of network
 
-        Returns:
-            Graph G : NetworkX Graph representing state of network
+        Returns
+        -------
+        G : Graph
+            NetworkX Graph representing state of network
         """
         G = nx.Graph()
-        sensitive_machines = self.network.get_sensitive_machines()
+        sensitive_hosts = self.network.sensitive_hosts
 
         # Create a fully connected graph for each subnet
         for subnet in self.subnets:
             for m in subnet:
-                node_color = get_machine_representation(state, sensitive_machines, m, COLORS)
+                node_color = get_host_representation(state, sensitive_hosts, m, COLORS)
                 node_pos = self.positions[m]
                 G.add_node(m, color=node_color, pos=node_pos, label=str(m))
             for x in subnet:
@@ -161,11 +179,11 @@ class Viewer(object):
                         continue
                     G.add_edge(x, y)
 
-        # Retrieve first machine in each subnet
+        # Retrieve first host in each subnet
         subnet_prime_nodes = []
         for subnet in self.subnets:
             subnet_prime_nodes.append(subnet[0])
-        # Connect connected subnets by creating edge between first machine from each subnet
+        # Connect connected subnets by creating edge between first host from each subnet
         for x in subnet_prime_nodes:
             for y in subnet_prime_nodes:
                 if x == y:
@@ -175,15 +193,16 @@ class Viewer(object):
 
         return G
 
-    def _get_machine_positions(self, network):
-        """
-        Get list of positions for each machine in episode
+    def _get_host_positions(self, network):
+        """Get list of positions for each host in episode
 
-        Arguments:
-            Network network : network object describing network configuration of environment
-                              episode was generated from
+        Arguments
+        ---------
+        network : Network
+            network object describing network configuration of environment
+            episode was generated from
         """
-        address_space = network.get_address_space()
+        address_space = network.address_space
         depths = network.get_subnet_depths()
         max_depth = max(depths)
         # list of lists where each list contains subnet_id of subnets with same depth
@@ -210,16 +229,16 @@ class Viewer(object):
             # col width is dependent on number of subnets at same depth
             num_cols = len(subnets_by_depth[m_depth])
             col_width = max_pos / num_cols
-            # col of machine dependent on subnet_id relative to other subnets of same depth
+            # col of host dependent on subnet_id relative to other subnets of same depth
             m_col = subnets_by_depth[m_depth].index(m_subnet)
             col_min = m_col * col_width
             col_max = (m_col + 1) * col_width
-            # randomly sample position of machine within row and column of subnet
-            col_pos, row_pos = self._get_machine_position(m, positions, address_space, row_min,
-                                                          row_max, col_min, col_max, margin)
+            # randomly sample position of host within row and column of subnet
+            col_pos, row_pos = self._get_host_position(m, positions, address_space, row_min,
+                                                       row_max, col_min, col_max, margin)
             positions[m] = (col_pos, row_pos)
 
-        # get position of agent, which is just right of machine first machine in network
+        # get position of agent, which is just right of host first host in network
         first_m_pos = positions[address_space[0]]
         agent_row = first_m_pos[1]
         agent_col = min(first_m_pos[0] + margin * 4, max_pos - margin)
@@ -227,19 +246,18 @@ class Viewer(object):
 
         return positions
 
-    def _get_machine_position(self, m, positions, address_space, row_min, row_max,
-                              col_min, col_max, margin):
+    def _get_host_position(self, m, positions, address_space, row_min, row_max,
+                           col_min, col_max, margin):
+        """Get the position of m within the bounds of (row_min, row_max, col_min, col_max)
+        while trying to make the distance between the positions of any two hosts in the
+        same subnet greater than some threshold.
         """
-        Get the position of m within the bounds of (row_min, row_max, col_min, col_max) while
-        trying to make the distance between the positions of any two machines in the same subnet
-        greater than some threshold.
-        """
-        subnet_machines = []
+        subnet_hosts = []
         for other_m in address_space:
             if other_m == m:
                 continue
             if other_m[0] == m[0]:
-                subnet_machines.append(other_m)
+                subnet_hosts.append(other_m)
 
         threshold = 8
         col_margin = (col_max - col_min) / 4
@@ -254,7 +272,7 @@ class Viewer(object):
             good = True
             m_x = random.uniform(col_mid - col_margin, col_mid + col_margin)
             m_y = random.uniform(row_min + margin, row_max - margin)
-            for other_m in subnet_machines:
+            for other_m in subnet_hosts:
                 if other_m not in positions:
                     continue
                 other_x, other_y = positions[other_m]
@@ -266,34 +284,33 @@ class Viewer(object):
         return m_x, m_y
 
     def _get_subnets(self, network):
-        """
-        Get list of machines organized into subnets
+        """Get list of hosts organized into subnets
 
-        Arguments:
-            int num_subnets : number of subnets on network
-            list[(int, int)] address_space : list of machine addresses on network
+        Arguments
+        ---------
+        network : Network
+            the environment network
 
-        Returns:
-            list[list[(int, int)]] : list of lists of addresses with each list containing machines
-                                     on same subnet
+        Returns
+        -------
+        list[list[(int, int)]]
+            addresses with each list containing hosts on same subnet
         """
         subnets = [[] for i in range(network.get_number_of_subnets())]
-        for m in network.get_address_space():
+        for m in network.address_space:
             subnets[m[0]].append(m)
-        # add internet machine
+        # add internet host
         subnets[0].append(AGENT)
         return subnets
 
 
-class EpisodeViewer(object):
-    """
-    Displays sequence of observations from Cyber Attack Simulator Environment in a seperate window
-    """
+class EpisodeViewer:
+    """Displays sequence of observations from NASimEnv in a seperate window"""
 
-    def __init__(self, episode, G, sensitive_machines, width=7, height=7):
+    def __init__(self, episode, G, sensitive_hosts, width=7, height=7):
         self.episode = episode
         self.G = G
-        self.sensitive_machines = sensitive_machines
+        self.sensitive_hosts = sensitive_hosts
         # used for moving between timesteps in episode
         self.timestep = 0
         self._setup_GUI(width, height)
@@ -303,8 +320,7 @@ class EpisodeViewer(object):
         Tk.mainloop()
 
     def _setup_GUI(self, width, height):
-        """
-        Setup all the elements for the GUI for displaying the network graphs.
+        """Setup all the elements for the GUI for displaying the network graphs.
 
         Initializes object variables:k
             Tk root : the root window for GUI
@@ -336,9 +352,6 @@ class EpisodeViewer(object):
         self.root.destroy()
 
     def _next_graph(self):
-        """
-        Display next timestep in episode
-        """
         if self.timestep < len(self.episode):
             t_state = self.episode[self.timestep][0]
             self.G = self._update_graph(self.G, t_state)
@@ -346,35 +359,20 @@ class EpisodeViewer(object):
             self.timestep += 1
 
     def _previous_graph(self):
-        """
-        Display previous timestep in episode
-        """
         if self.timestep > 1:
             self.timestep -= 2
             self._next_graph()
 
     def _update_graph(self, G, state):
-        """
-        Update the graph G for a given state
-
-        Arguments:
-            State state : a state object
-
-        Returns:
-            Graph G : Updated NetworkX Graph representing state of network
-        """
-        # update colour of each machine in network as necessary
+        # update colour of each host in network as necessary
         for m in list(G.nodes):
             if m == AGENT:
                 continue
-            node_color = get_machine_representation(state, self.sensitive_machines, m, COLORS)
+            node_color = get_host_representation(state, self.sensitive_hosts, m, COLORS)
             G.nodes[m]["color"] = node_color
         return G
 
     def _draw_graph(self, G):
-        """
-        Draw the graph to the canvas
-        """
         pos = {}
         colors = []
         labels = {}
@@ -433,25 +431,31 @@ class EpisodeViewer(object):
         return legend_entries
 
 
-def get_machine_representation(state, sensitive_machines, m, representation):
-    """
-    Get the representation of a machine based on current state
+def get_host_representation(state, sensitive_hosts, m, representation):
+    """Get the representation of a host based on current state
 
-    Arguments:
-        State state : current state
-        list sensitive_machines : list of addresses of sensitive machines on network
-        (int, int) m : machine address
-        list representation : list of different representations (e.g. color or symbol)
+    Arguments
+    ---------
+    state : State
+        current state
+    sensitive_hosts : list
+        list of addresses of sensitive hosts on network
+    m : (int, int)
+        host address
+    representation : list
+        list of different representations (e.g. color or symbol)
 
-    Returns:
-        str color : machine color
+    Returns
+    -------
+    str
+        host color
     """
     # agent not in state so return straight away
     if m == AGENT:
         return representation[6]
     compromised = state.compromised(m)
     reachable = state.reachable(m)
-    sensitive = m in sensitive_machines
+    sensitive = m in sensitive_hosts
     if sensitive:
         if compromised:
             output = representation[0]

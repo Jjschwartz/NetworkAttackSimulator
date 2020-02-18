@@ -1,146 +1,147 @@
+import numpy as np
 from collections import deque
 from itertools import permutations
-import numpy as np
 
 
 # column in topology adjacency matrix that represents connection between subnet and public
 INTERNET = 0
 
 
-class Network(object):
+class Network:
     """
-    A simulated network of machines belonging to different subnetworks.
+    A simulated network of hosts belonging to different subnetworks.
 
     Properties:
     - subnets - list of subnet sizes
     - topology - adjacency matrix defining connectivity between subnets and
         public
-    - services - number of possible services running on each machine
-    - sensitive_machines - list of addresses of machines that contain senstive
+    - services - number of possible services running on each host
+    - sensitive_hosts - list of addresses of hosts that contain senstive
         info and also the value (reward) of accessing info
-    - machines - ordered dictionary of machines in network, with address as keys and machine
+    - hosts - ordered dictionary of hosts in network, with address as keys and host
         objects as values
     - firewall - a 3D matrix defining which services are allowed between source and destination
         subnets
     """
 
-    def __init__(self, config):
+    def __init__(self, scenario):
         """
-        Construct a new network based on provided configuration.
-
-        Configuration must be valid and contain items:
-            - subnets
-            - topology
-            - services
-            - sensitive_machines
-            - machines
-            - firewall
-
-        Arguments:
-            dict config : network configuration
+        Arguments
+        ---------
+        scenario : Scenario
+            scenario definition
         """
-        self.subnets = config["subnets"]
-        self.topology = config["topology"]
-        self.num_services = config["num_services"]
-        self.sensitive_machines = config["sensitive_machines"]
-        self.machines = config["machines"]
-        self.firewall = config["firewall"]
+        self.scenario = scenario
+        self.subnets = scenario.subnets
+        self.topology = scenario.topology
+        self.sensitive_hosts = scenario.sensitive_hosts
+        self.hosts = scenario.hosts
+        self.firewall = scenario.firewall
+        self.address_space = scenario.address_space
         self.sensitive_addresses = self._get_sensitive_addresses()
 
     def perform_action(self, action):
-        """
-        Perform the given Action against the network.
+        """Perform the given Action against the network.
 
-        Arguments:
-            Action exploit : the exploit Action
+        Arguments
+        ---------
+        action : Action
+            the action to perform
 
-        Returns:
-            bool success : True if action was successful, False otherwise
-                (i.e. False if exploit failed)
-            float value : value gained from action (0 if unsuccessful or scan),
-                otherwise value of machine
-            list services : the list of services identified by action. This is
-                the services if exploit was successful or scan, otherwise an
-                empty list
+        Returns
+        -------
+        success : bool
+            True if action was successful, False otherwise (i.e. False if exploit failed)
+        value : float
+            value gained from action (0 if unsuccessful or scan), otherwise value of host
+        services : list
+            the list of services identified by action. This is the services if exploit
+            was successful or scan, otherwise an empty list
         """
-        # check if valid target machine
+        # check if valid target host
         tgt_subnet, tgt_id = action.target
         assert 0 < tgt_subnet and tgt_subnet < len(self.subnets)
         assert tgt_id <= self.subnets[tgt_subnet]
 
-        # action is valid, so perform against machine
-        t_machine = self.machines[action.target]
-        return t_machine.perform_action(action)
+        # action is valid, so perform against host
+        t_host = self.hosts[action.target]
+        return t_host.perform_action(action)
 
-    def get_address_space(self):
-        """
-        Get a list of all machine addresses in network
+    def get_sensitive_hosts(self):
+        """Get addresses of hosts which contain sensitive information (rewards)
 
-        Returns:
-            list address_space : a list of all machine addresses
-        """
-        return list(self.machines.keys())
-
-    def get_sensitive_machines(self):
-        """
-        Get addresses of machines which contain sensitive information (rewards)
-
-        Returns:
-            list sensitive_addresses : a list of addresses of sensitive
-                machines in network
+        Returns
+        -------
+        sensitive_addresses : list
+            a list of addresses of sensitive hosts in network
         """
         return self.sensitive_addresses
 
-    def is_sensitive_machine(self, m):
+    def is_sensitive_host(self, host_address):
+        """Returns whether a given host is sensitive or not
+
+        Arguments
+        ---------
+        host_address : (int, int)
+            host address
+
+        Returns
+        -------
+        bool
+            True if host is sensitive, False otherwise
         """
-        Returns whether a given machine is sensitive or not
+        return host_address in self.sensitive_addresses
 
-        Arguments:
-            (int, int) m : machine address
+    def get_host_value(self, host_address):
+        """Returns the value of a host
 
-        Returns:
-            bool is_sensitive : True if machine is sensitive, False otherwise
+        Arguments
+        ---------
+        host_address : (int, int)
+            host address
+
+        Returns
+        -------
+        float
+            the value of host with given address
         """
-        return m in self.sensitive_addresses
-
-    def get_machine_value(self, m):
-        """
-        Returns the value of a machine
-
-        Arguments:
-            (int, int) m : machine address
-
-        Returns:
-            float value : the value of machine with address m
-        """
-        return self.machines[m].get_value()
+        return self.hosts[host_address].get_value()
 
     def subnets_connected(self, subnet_1, subnet_2):
-        """
-        Checks whether two subnets are directly connected. A subnet is also
+        """Checks whether two subnets are directly connected. A subnet is also
         connected to itself.
 
-        Arguments:
-            int subnet_1 : the id of first subnet
-            int subnet_2 : the id of second subnet
+        Arguments
+        ---------
+        subnet_1 : int
+            the id of first subnet
+        subnet_2 : int
+            the id of second subnet
 
-        Returns:
-            bool connected : True if subnets are directly connected
+        Returns
+        -------
+        bool
+            True if subnets are directly connected
         """
         return self.topology[subnet_1][subnet_2] == 1
 
     def traffic_permitted(self, src, dest, service):
-        """
-        Checks whether traffic using a given service is permitted by the firewall from source
-        subnet to destination subnet.
+        """Checks whether traffic using a given service is permitted by the firewall
+        from source subnet to destination subnet.
 
-        Arguments:
-            int src : id of source subnet
-            int dest : id of destination subnet
-            int service : service id
+        Arguments
+        ---------
+        src : int
+            id of source subnet
+        dest : int
+            id of destination subnet
+        service : int
+            service id
 
-        Returns:
-            bool permitted : True if traffic is permitted, False otherwise
+        Returns
+        -------
+        bool
+            True if traffic is permitted, False otherwise
         """
         if src == dest:
             # in same subnet so permitted
@@ -149,45 +150,52 @@ class Network(object):
             return False
         return service in self.firewall[(src, dest)]
 
-    def subnet_exposed(self, subnet):
-        """
-        Returns whether a subnet is exposed to the public or not, i.e. is in
+    def subnet_public(self, subnet):
+        """Returns whether a subnet is exposed to the public or not, i.e. is in
         publicly acces DMZ and so always reachable by attacker.
 
-        Arguments:
-            int subnet : the id of subnet
+        Arguments
+        ---------
+        subnet : int
+            the id of subnet
 
-        Returns:
-            bool exposed : True if subnet is publicly exposed
+        Returns
+        -------
+        bool
+            True if subnet is publicly exposed
         """
         return self.topology[subnet][INTERNET] == 1
 
     def get_number_of_subnets(self):
-        """
-        Returns the number of subnets on network, including the internet subnet
+        """Returns the number of subnets on network, including the internet subnet
 
-        Returns:
-            int num_subnets : number of subnets on network
+        Returns
+        -------
+        int
+            number of subnets on network
         """
         return len(self.subnets)
 
     def get_subnet_depths(self):
-        """
-        Get the minumum depth of each subnet in the network graph in terms of steps from an exposed
-        subnet to each subnet
+        """Get the minumum depth of each subnet in the network graph in terms of
+        steps from an exposed subnet to each subnet
 
-        Returns:
-            list depths : a list of depth of each subnet ordered by subnet index in topology
+        Returns
+        -------
+        depths : list
+            a list of depth of each subnet ordered by subnet index in topology
         """
         return min_subnet_depth(self.topology)
 
     def get_minimal_steps(self):
-        """
-        Get the minimum total number of steps required to reach all sensitive machines in the
-        network starting from outside the network (i.e. can only reach exposed subnets).
+        """Get the minimum total number of steps required to reach all sensitive
+        hosts in the network starting from outside the network (i.e. can only
+        reach exposed subnets).
 
-        Returns:
-            int minumum_steps : minimum number of steps to reach all sensitive machines
+        Returns
+        -------
+        int
+            minimum number of steps to reach all sensitive hosts
         """
         num_subnets = len(self.topology)
         max_value = np.iinfo(np.int16).max
@@ -213,7 +221,7 @@ class Network(object):
 
         # get list of all subnets we need to visit
         subnets_to_visit = [INTERNET]
-        for subnet, machine in self.sensitive_addresses:
+        for subnet, host in self.sensitive_addresses:
             if subnet not in subnets_to_visit:
                 subnets_to_visit.append(subnet)
 
@@ -228,26 +236,26 @@ class Network(object):
 
         return shortest
 
-    def get_total_sensitive_machine_value(self):
-        """
-        Get the sum of the values of each sensitive machine
+    def get_total_sensitive_host_value(self):
+        """Get the sum of the values of each sensitive host
 
-        Returns:
-            float total_value : total value of each sensitive machine on network
+        Returns
+        -------
+        float
+            total value of each sensitive host on network
         """
-        value = 0
-        for m in self.sensitive_machines:
-            value += m[2]
-        return value
+        total_value = 0
+        for host_value in self.sensitive_hosts.values():
+            total_value += host_value
+        return total_value
 
     def _get_sensitive_addresses(self):
-        """
-        Get addresses of machines which contain sensitive machines, to store
+        """Get addresses of hosts which contain sensitive hosts, to store
         for later efficiency
         """
         sensitive_addresses = []
-        for m in self.sensitive_machines:
-            sensitive_addresses.append((m[0], m[1]))
+        for h in self.sensitive_hosts.keys():
+            sensitive_addresses.append(h)
         return sensitive_addresses
 
     def __str__(self):
@@ -255,31 +263,34 @@ class Network(object):
         output += "Subnets: " + str(self.subnets) + "\n"
         output += "Topology:\n"
         for row in self.topology:
-            output += "\t{}\n".format(row)
-        output += "Sensitive machines: \n"
-        for m in self.sensitive_machines:
-            output += "\t{}\n".format(m)
-        output += "Num_services: " + str(self.num_services) + "\n"
-        output += "Machines:\n"
-        for m in self.machines.values():
+            output += f"\t{row}\n"
+        output += "Sensitive hosts: \n"
+        for addr, value in self.sensitive_hosts.items():
+            output += f"\t{addr}: {value}\n"
+        output += "Num_services: {self.scenario.num_services}\n"
+        output += "Hosts:\n"
+        for m in self.hosts.values():
             output += str(m) + "\n"
         output += "Firewall:\n"
         for c, a in self.firewall.items():
-            output += "\t{}: {}\n".format(c, a)
+            output += f"\t{c}: {a}\n"
         return output
 
 
 def min_subnet_depth(topology):
-    """
-    Find the minumum depth of each subnet in the network graph in terms of steps from an exposed
-    subnet to each subnet
+    """Find the minumum depth of each subnet in the network graph in terms of steps
+    from an exposed subnet to each subnet
 
-    Arguments:
-        2D matrix topology : An adjacency matrix representing the network, with first subnet
-                             representing the internet (i.e. exposed)
+    Arguments
+    ---------
+    topology : 2D matrix
+        An adjacency matrix representing the network, with first subnet representing
+        the internet (i.e. exposed)
 
-    Returns:
-        list depths : a list of depth of each subnet ordered by subnet index in topology
+    Returns
+    -------
+    depths : list
+        depth of each subnet ordered by subnet index in topology
     """
     num_subnets = len(topology)
 

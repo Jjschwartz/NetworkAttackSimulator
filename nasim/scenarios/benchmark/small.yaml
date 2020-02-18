@@ -8,17 +8,23 @@ topology: [[ 1, 1, 0, 0, 0],
 sensitive_hosts:
   (2, 0): 10
   (4, 0): 10
-num_services: 3
+services:
+  - ssh
+  - ftp
+  - http
 exploits:
-  ssh:
-    - 0.8
-    - 3
-  ftp:
-    - 0.5
-    - 1
-  http:
-    - 0.8
-    - 2
+  e_ssh:
+    service: ssh
+    prob: 0.8
+    cost: 3
+  e_ftp:
+    service: ftp
+    prob: 0.5
+    cost: 1
+  e_http:
+    service: http
+    prob: 0.8
+    cost: 2
 scan_cost: 1
 host_configurations:
   (1, 0): [http]

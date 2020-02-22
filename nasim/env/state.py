@@ -19,6 +19,7 @@ class State:
         self._tensor = self._tensorize()
 
     def _tensorize(self):
+        """Create a numpy tensor version of state """
         h0 = self.network.hosts[(1, 0)]
         tensor = np.zeros((len(self.network.hosts), h0.state_size), dtype=np.float32)
         for host_num, host in enumerate(self.network.hosts.values()):
@@ -26,6 +27,13 @@ class State:
         return tensor
 
     def update(self, host_addr):
+        """Updates the state tensor with latest state of given host
+
+        Arguments
+        ---------
+        host_addr : (int, int)
+            the address of host to update state for
+        """
         for host_num, host in enumerate(self.network.hosts.values()):
             if host.address == host_addr:
                 self._tensor[host_num] = host.numpy()
@@ -49,7 +57,7 @@ class State:
         (int, int)
             shape of flattened state
         """
-        return (self.get_state_size(), 1)
+        return self.numpy().shape
 
     def numpy(self):
         """Returns state as a 1D numpy array.

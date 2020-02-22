@@ -24,3 +24,7 @@ EXPLOIT_SERVICE = "service"
 EXPLOIT_OS = "os"
 EXPLOIT_PROB = "prob"
 EXPLOIT_COST = "cost"
+
+# host configuration keys
+HOST_SERVICES = "services"
+HOST_OS = "os"

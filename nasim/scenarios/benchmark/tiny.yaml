@@ -9,16 +9,26 @@ sensitive_hosts:
   (3, 0): 10
 services:
   - ssh
+os:
+  - linux
 exploits:
   e_ssh:
     service: ssh
+    os: linux
     prob: 0.8
     cost: 1
-scan_cost: 1
+service_scan_cost: 1
+os_scan_cost: 1
 host_configurations:
-  (1, 0): [ssh]
-  (2, 0): [ssh]
-  (3, 0): [ssh]
+  (1, 0):
+    services: [ssh]
+    os: linux
+  (2, 0):
+    services: [ssh]
+    os: linux
+  (3, 0):
+    services: [ssh]
+    os: linux
 # two row for each connection between subnets as defined by topology
 # one for each direction of connection
 # list which services to allow

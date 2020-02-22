@@ -12,29 +12,52 @@ services:
   - ssh
   - ftp
   - http
+os:
+  - linux
+  - windows
 exploits:
   e_ssh:
     service: ssh
+    os: linux
     prob: 0.8
     cost: 3
   e_ftp:
     service: ftp
+    os: windows
     prob: 0.5
     cost: 1
   e_http:
     service: http
+    os: None
     prob: 0.8
     cost: 2
-scan_cost: 1
+service_scan_cost: 1
+os_scan_cost: 1
 host_configurations:
-  (1, 0): [http]
-  (2, 0): [ssh, ftp]
-  (3, 0): [ftp]
-  (3, 1): [ftp, http]
-  (3, 2): [ftp]
-  (3, 3): [ftp]
-  (3, 4): [ftp]
-  (4, 0): [ssh, ftp]
+  (1, 0):
+    services: [http]
+    os: linux
+  (2, 0):
+    services: [ssh, ftp]
+    os: linux
+  (3, 0):
+    services: [ftp]
+    os: windows
+  (3, 1):
+    services: [ftp, http]
+    os: windows
+  (3, 2):
+    services: [ftp]
+    os: windows
+  (3, 3):
+    services: [ftp]
+    os: windows
+  (3, 4):
+    services: [ftp]
+    os: windows
+  (4, 0):
+    services: [ssh, ftp]
+    os: linux
 # two row for each connection between subnets as defined by topology
 # one for each direction of connection
 # list which services to allow

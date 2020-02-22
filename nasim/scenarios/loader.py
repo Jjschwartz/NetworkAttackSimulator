@@ -26,6 +26,10 @@ EXPLOIT_KEYS = {u.EXPLOIT_SERVICE: str,
                 u.EXPLOIT_PROB: float,
                 u.EXPLOIT_COST: (int, float)}
 
+# required keys for host configs
+HOST_CONFIG_KEYS = {u.HOST_SERVICES: list,
+                    u.HOST_OS: (str, None)}
+
 
 class ScenarioLoader:
 
@@ -53,9 +57,10 @@ class ScenarioLoader:
         self._parse_subnets()
         self._parse_topology()
         self._parse_services()
+        self._parse_os()
         self._parse_sensitive_hosts()
         self._parse_exploits()
-        self._parse_scan_cost()
+        self._parse_scan_costs()
         self._parse_host_configs()
         self._parse_firewall()
         self._parse_hosts()
@@ -138,7 +143,19 @@ class ScenarioLoader:
         if len(services) < 1:
             raise ValueError(f"{len(services)}. Invalid number of services, must be >= 1")
         if len(services) < len(set(services)):
-            raise ValueError(f"{len(services)}. Services must not contain duplicates")
+            raise ValueError(f"{services}. Services must not contain duplicates")
+
+    def _parse_os(self):
+        os = self.yaml_dict[u.OS]
+        self._validate_os(os)
+        self.os = os
+
+    def _validate_os(self, os):
+        # check services is postive int
+        if len(os) < 1:
+            raise ValueError(f"{len(os)}. Invalid number of OSs, must be >= 1")
+        if len(os) < len(set(os)):
+            raise ValueError(f"{os}. OSs must not contain duplicates")
 
     def _parse_sensitive_hosts(self):
         sensitive_hosts = self.yaml_dict[u.SENSITIVE_HOSTS]
@@ -189,7 +206,7 @@ class ScenarioLoader:
     def _is_valid_host_address(self, subnet_ID, host_ID):
         if not self._is_valid_subnet_ID(subnet_ID):
             return False
-        if type(host_ID) is not int or host_ID < 0 or host_ID >= self.subnets[subnet_ID - 1]:
+        if type(host_ID) is not int or host_ID < 0 or host_ID >= self.subnets[subnet_ID]:
             return False
         return True
 
@@ -212,13 +229,19 @@ class ScenarioLoader:
                 raise ValueError(f"{e_name}. Exploit '{k}' incorrect type. Expected {t}")
         if e[u.EXPLOIT_SERVICE] not in self.services:
             raise ValueError(f"{e_name}. Exploit target service invalid: '{e[u.EXPLOIT_SERVICE]}'")
+
+        if str(e[u.EXPLOIT_OS]).lower() == "none":
+            e[u.EXPLOIT_OS] = None
+        if e[u.EXPLOIT_OS] is not None and e[u.EXPLOIT_OS] not in self.os:
+            raise ValueError(f"{e_name}. Exploit target OS is invalid. '{e[u.EXPLOIT_OS]}'. "
+                             "Should be None or one of the OS in the os list.")
         if e[u.EXPLOIT_PROB] < 0 or 1 < e[u.EXPLOIT_PROB]:
             raise ValueError(f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
                              "a valid probability")
         if e[u.EXPLOIT_COST] < 0:
             raise ValueError(f"{e_name}. Exploit cost must be > 0.")
 
-    def _parse_scan_cost(self):
+    def _parse_scan_costs(self):
         service_scan_cost = self.yaml_dict[u.SERVICE_SCAN_COST]
         os_scan_cost = self.yaml_dict[u.OS_SCAN_COST]
         self._validate_scan_cost(service_scan_cost, os_scan_cost)
@@ -244,9 +267,7 @@ class ScenarioLoader:
             raise ValueError("Host configurations must have no duplicates and have an address for "
                              "each host on network.")
         for cfg in host_configs.values():
-            if not self._is_valid_host_config(cfg):
-                raise ValueError("Host configurations must be at list, contain at least one "
-                                 f"exploitable service and contain no duplicates: {cfg} is invalid")
+            self._validate_host_config(cfg)
 
     def _has_all_host_addresses(self, addresses):
         """Check that list of (subnet_ID, host_ID) tuples contains all addresses on network based
@@ -259,20 +280,27 @@ class ScenarioLoader:
                     return False
         return True
 
-    def _is_valid_host_config(self, cfg):
+    def _validate_host_config(self, cfg):
         """Check if a host config is valid or not given the list of exploits available
         N.B. each host config must contain at least one service
         """
-        if type(cfg) != list or len(cfg) == 0:
-            return False
-        for service in cfg:
+        if not isinstance(cfg, dict) or len(cfg) != 2:
+            raise ValueError(f"Host configurations must be at dict of length 2 {cfg} is invalid")
+
+        for k in HOST_CONFIG_KEYS:
+            if k not in cfg:
+                raise ValueError(f"Host configuation missing key: {k}")
+
+        host_services = cfg[u.HOST_SERVICES]
+        for service in host_services:
             if service not in self.services:
-                return False
-        for i, x in enumerate(cfg):
-            for j, y in enumerate(cfg):
-                if i != j and x == y:
-                    return False
-        return True
+                raise ValueError(f"Invalid service in host configuration services list: {service}")
+        if len(host_services) < len(set(host_services)):
+            raise ValueError(f"Host configuation services list cannot contain duplicates")
+
+        host_os = cfg[u.HOST_OS]
+        if host_os not in self.os:
+            raise ValueError(f"Invalid os in host configuration: {host_os}")
 
     def _parse_firewall(self):
         firewall = self.yaml_dict[u.FIREWALL]
@@ -318,18 +346,21 @@ class ScenarioLoader:
         objects as values
         """
         hosts = dict()
-        for address, services in self.host_configs.items():
+        for address, h_cfg in self.host_configs.items():
             formatted_address = eval(address)
-            cfg = self._construct_host_config(services)
+            services_cfg, os_cfg = self._construct_host_config(h_cfg)
             value = self._get_host_value(formatted_address)
-            hosts[formatted_address] = Host(formatted_address, cfg, value)
+            hosts[formatted_address] = Host(formatted_address, os_cfg, services_cfg, value)
         self.hosts = hosts
 
-    def _construct_host_config(self, host_services):
-        cfg = {}
+    def _construct_host_config(self, host_cfg):
+        services_cfg = {}
         for service in self.services:
-            cfg[service] = service in host_services
-        return cfg
+            services_cfg[service] = service in host_cfg[u.HOST_SERVICES]
+        os_cfg = {None: False}
+        for os_name in self.os:
+            os_cfg[os_name] = os_name == host_cfg[u.HOST_OS]
+        return services_cfg, os_cfg
 
     def _get_host_value(self, address):
         return float(self.sensitive_hosts.get(address, 0.0))

@@ -12,45 +12,86 @@ services:
   - http
   - samba
   - smtp
+os:
+  - linux
+  - windows
 exploits:
   e_ssh:
     service: ssh
+    os: linux
     prob: 0.7
     cost: 1
   e_ftp:
     service: ftp
+    os: windows
     prob: 0.7
     cost: 1
   e_http:
     service: http
+    os: None
     prob: 0.7
     cost: 1
   e_samba:
     service: samba
+    os: windows
     prob: 0.7
     cost: 1
   e_smtp:
     service: smtp
+    os: windows
     prob: 0.7
     cost: 1
-scan_cost: 1
+service_scan_cost: 1
+os_scan_cost: 1
 host_configurations:
-  (1, 0): [ftp]
-  (1, 1): [ftp, ssh]
-  (1, 2): [ftp]
-  (1, 3): [ftp]
-  (1, 4): [ftp]
-  (1, 5): [ftp, ssh]
-  (1, 6): [ftp]
-  (1, 7): [http]
-  (1, 8): [samba]
-  (1, 9): [ftp]
-  (1, 10): [ssh]
-  (1, 11): [ftp]
-  (1, 12): [ftp, ssh]
-  (1, 13): [ftp]
-  (1, 14): [ftp]
-  (1, 15): [http]
+  (1, 0):
+    services: [ftp]
+    os: linux
+  (1, 1):
+    services: [ftp, ssh]
+    os: linux
+  (1, 2):
+    services: [ftp]
+    os: windows
+  (1, 3):
+    services: [ftp]
+    os: windows
+  (1, 4):
+    services: [ftp]
+    os: windows
+  (1, 5):
+    services: [ftp, ssh]
+    os: linux
+  (1, 6):
+    services: [ftp]
+    os: windows
+  (1, 7):
+    services: [http]
+    os: windows
+  (1, 8):
+    services: [samba]
+    os: windows
+  (1, 9):
+    services: [ftp]
+    os: windows
+  (1, 10):
+    services: [ssh]
+    os: windows
+  (1, 11):
+    services: [ftp]
+    os: windows
+  (1, 12):
+    services: [ftp, ssh]
+    os: windows
+  (1, 13):
+    services: [ftp]
+    os: windows
+  (1, 14):
+    services: [ftp]
+    os: windows
+  (1, 15):
+    services: [http]
+    os: linux
 firewall:
   (0, 1): [http]
   (1, 0): []

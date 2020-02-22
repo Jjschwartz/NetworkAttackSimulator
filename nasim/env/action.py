@@ -15,10 +15,12 @@ class Action:
             by the (subnet, machine_id) tuple
     """
 
-    def __init__(self, target, cost, prob=1.0):
+    def __init__(self, name, target, cost, prob=1.0):
         """
         Arguments
         ---------
+        name : str
+            name of action
         target : (int, int)
             address of target
         cost : float
@@ -26,15 +28,22 @@ class Action:
         prob : float
             probability of success for a given action
         """
+        self.name = name
         self.target = target
         self.cost = cost
         self.prob = prob
 
     def is_scan(self):
-        raise NotImplementedError
+        return False
+
+    def is_service_scan(self):
+        return False
+
+    def is_os_scan(self):
+        return False
 
     def __str__(self):
-        return (f"{self.__class__.__name__}: target={self.target}, "
+        return (f"{self.__class__.__name__}: name={self.name}, target={self.target}, "
                 f"cost={self.cost:.2f}, prob={self.prob:.2f}")
 
     def __hash__(self):
@@ -47,8 +56,12 @@ class Action:
             return False
         elif self.target != other.target:
             return False
-        return (math.isclose(self.cost, other.cost)
-                and math.isclose(self.prob, other.prob))
+        elif not (math.isclose(self.cost, other.cost)
+                  and math.isclose(self.prob, other.prob)):
+            return False
+        return (self.is_scan() == other.is_scan()
+                and self.is_service_scan() == other.is_service_scan()
+                and self.is_os_scan() == other.is_os_scan())
 
     @staticmethod
     def load_action_space(scenario):
@@ -66,17 +79,17 @@ class Action:
         """
         action_space = []
         for address in scenario.address_space:
-            scan = ServiceScan(address, scenario.scan_cost)
-            action_space.append(scan)
+            action_space.append(ServiceScan("service_scan", address, scenario.service_scan_cost))
+            action_space.append(OSScan("os_scan", address, scenario.os_scan_cost))
             for e_name, e_def in scenario.exploits.items():
-                exploit = Exploit(address, **e_def)
+                exploit = Exploit(e_name, address, **e_def)
                 action_space.append(exploit)
         return action_space
 
 
 class Exploit(Action):
 
-    def __init__(self, target, cost, service, prob=1.0):
+    def __init__(self, name, target, cost, service, os=None, prob=1.0):
         """
         Arguments
         ---------
@@ -86,22 +99,23 @@ class Exploit(Action):
             cost of performing action
         service : str
             the target service
-        prob : float
-            probability of success
+        os : str, optional
+            the target OS of exploit, if None then exploit works for all OS
+            (default=None)
+        prob : float, optional
+            probability of success (default=1.0)
         """
-        super().__init__(target, cost, prob)
+        super().__init__(name, target, cost, prob)
+        self.os = os
         self.service = service
 
-    def is_scan(self):
-        return False
-
     def __str__(self):
-        return super().__str__() + f", service={self.service}"
+        return super().__str__() + f", os={self.os}, service={self.service}"
 
     def __eq__(self, other):
         if not super().__eq__(other):
             return False
-        return self.service == other.service
+        return self.service == other.service and self.os == other.os
 
 
 class ServiceScan(Action):
@@ -109,7 +123,20 @@ class ServiceScan(Action):
     def is_scan(self):
         return True
 
-    def __eq__(self, other):
-        if not super().__eq__(other):
-            return False
-        return self.is_scan() == other.is_scan()
+    def is_service_scan(self):
+        return True
+
+    def is_os_scan(self):
+        return False
+
+
+class OSScan(Action):
+
+    def is_scan(self):
+        return True
+
+    def is_service_scan(self):
+        return False
+
+    def is_os_scan(self):
+        return True

@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import nasim.scenarios.utils as u
 
 
@@ -13,6 +15,14 @@ class Scenario:
     @property
     def num_services(self):
         return len(self.services)
+
+    @property
+    def os(self):
+        return self.scenario_dict[u.OS]
+
+    @property
+    def num_os(self):
+        return len(self.os)
 
     @property
     def exploits(self):
@@ -43,5 +53,12 @@ class Scenario:
         return list(self.hosts.keys())
 
     @property
-    def scan_cost(self):
-        return self.scenario_dict[u.SCAN_COST]
+    def service_scan_cost(self):
+        return self.scenario_dict[u.SERVICE_SCAN_COST]
+
+    @property
+    def os_scan_cost(self):
+        return self.scenario_dict[u.OS_SCAN_COST]
+
+    def display(self):
+        pprint(self.scenario_dict)

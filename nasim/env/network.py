@@ -39,6 +39,15 @@ class Network:
         self.address_space = scenario.address_space
         self.sensitive_addresses = self._get_sensitive_addresses()
 
+    def reset(self):
+        """Reset network to initial state.
+
+        This only changes the compromised and reachable status of each host in network.
+        """
+        for host_addr, host in self.hosts.items():
+            host.compromised = False
+            host.reachable = self.subnet_public(host_addr[0])
+
     def perform_action(self, action):
         """Perform the given Action against the network.
 
@@ -91,6 +100,56 @@ class Network:
         """
         return host_address in self.sensitive_addresses
 
+    def reachable(self, host_addr):
+        """Checks if a given host is reachable
+
+        Arguments
+        ---------
+        host_addr : (int, int)
+            the host address
+
+        Returns
+        -------
+        bool
+            True if reachable
+        """
+        return self.hosts[host_addr].reachable
+
+    def compromised(self, host_addr):
+        """Checks if a given host is compromised
+
+        Arguments
+        ---------
+        target : (int, int)
+            the host address
+
+        Returns
+        -------
+        bool
+            True if compromised
+        """
+        return self.hosts[host_addr].compromised
+
+    def set_compromised(self, host_addr):
+        """Set the target host state as compromised
+
+        Arguments
+        ---------
+        host_addr : (int, int)
+            the target host address
+        """
+        self.hosts[host_addr].compromised = True
+
+    def set_reachable(self, host_addr):
+        """Set the target host state as reachable
+
+        Arguments
+        ---------
+        host_addr : (int, int)
+            the target host address
+        """
+        self.hosts[host_addr].reachable = True
+
     def get_host_value(self, host_address):
         """Returns the value of a host
 
@@ -105,6 +164,40 @@ class Network:
             the value of host with given address
         """
         return self.hosts[host_address].get_value()
+
+    def host_running_service(self, host_addr, service):
+        """Returns whether a host is running a service or not.
+
+        Arguments
+        ---------
+        host_address : (int, int)
+            host address
+        service : str
+            name of service
+
+        Returns
+        -------
+        bool
+            True if host is runnning service
+        """
+        return self.hosts[host_addr].service_present(service)
+
+    def host_running_os(self, host_addr, os):
+        """Returns OS of host
+
+        Arguments
+        ---------
+        host_address : (int, int)
+            host address
+        os : str
+            the host os
+
+        Returns
+        -------
+        bool
+            True if host is running given OS
+        """
+        return self.hosts[host_addr].is_running_os(os)
 
     def subnets_connected(self, subnet_1, subnet_2):
         """Checks whether two subnets are directly connected. A subnet is also
@@ -256,6 +349,20 @@ class Network:
         for h in self.sensitive_hosts.keys():
             sensitive_addresses.append(h)
         return sensitive_addresses
+
+    def state_size(self):
+        """Get the size of the state of the entire network
+
+        N.B. This is sum of the size of all hosts on the network
+
+        Returns
+        -------
+        int
+            size of state network
+        """
+        # ther will always be a (1, 0), since it is the first host in the first subnet
+        h0 = self.hosts[(1, 0)]
+        return len(self.hosts)*h0.state_size
 
     def __str__(self):
         output = "\n--- Network ---\n"

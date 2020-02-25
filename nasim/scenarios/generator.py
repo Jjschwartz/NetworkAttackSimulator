@@ -63,6 +63,7 @@ class ScenarioGenerator:
                  alpha_V=2.0,
                  lambda_V=1.0,
                  restrictiveness=5,
+                 random_goal=False,
                  seed=None):
         """Generate the network configuration based on standard formula.
 
@@ -106,6 +107,8 @@ class ScenarioGenerator:
         restrictiveness : int, optional
             max number of services allowed to pass through firewalls between zones
             (default=5)
+        random_goal : bool, optional
+            whether to randomly assign the goal user host or not (default=False)
         seed : int, optional
             random number generator seed (default=None)
 
@@ -133,7 +136,7 @@ class ScenarioGenerator:
         self._generate_services(num_services)
         self._generate_os(num_os)
         self._generate_exploits(num_exploits, exploit_cost, exploit_probs)
-        self._generate_sensitive_hosts(r_sensitive, r_user)
+        self._generate_sensitive_hosts(r_sensitive, r_user, random_goal)
         if uniform:
             self._generate_uniform_hosts()
         else:
@@ -208,12 +211,20 @@ class ScenarioGenerator:
     def _generate_os(self, num_os):
         self.os = [f"os_{i}" for i in range(num_os)]
 
-    def _generate_sensitive_hosts(self, r_sensitive, r_user):
+    def _generate_sensitive_hosts(self, r_sensitive, r_user, random_goal):
         sensitive_hosts = {}
         # first sensitive host is first host in SENSITIVE network
         sensitive_hosts[(SENSITIVE, 0)] = r_sensitive
-        # second sensitive host is last host on last USER network
-        sensitive_hosts[(len(self.subnets)-1, self.subnets[-1]-1)] = r_user
+
+        # second sensitive host in USER network
+        if random_goal and len(self.subnets) > SENSITIVE:
+            # randomly choose user host to be goal
+            subnet_id = np.random.randint(USER, len(self.subnets))
+            host_id = np.random.randint(0, self.subnets[subnet_id])
+            sensitive_hosts[(subnet_id, host_id)] = r_user
+        else:
+            # second last host in USER network is goal
+            sensitive_hosts[(len(self.subnets)-1, self.subnets[-1]-1)] = r_user
         self.sensitive_hosts = sensitive_hosts
 
     def _generate_uniform_hosts(self):

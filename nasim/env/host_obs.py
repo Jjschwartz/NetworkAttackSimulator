@@ -1,3 +1,5 @@
+import numpy as np
+
 from .utils import OneHotBool, ServiceState
 
 
@@ -43,10 +45,10 @@ class HostState:
 
     @property
     def compromised(self):
-        return self._com
+        return self._compromised
 
     def update_compromised(self, new_val):
-
+        pass
 
     @property
     def vector_size(self):

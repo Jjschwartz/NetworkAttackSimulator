@@ -28,7 +28,7 @@ class NASimEnv:
     observed the value returned will be a non-obs value (i.e. 0 in most cases).
     """
     rendering_modes = ["readable", "ASCI"]
-    env_modes = ['MDP']
+    env_modes = ['MDP', 'POMDP']
 
     action_space = None
     current_state = None

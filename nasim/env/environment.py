@@ -1,10 +1,8 @@
-import numpy as np
-
 from nasim.env.state import State
 from nasim.env.action import Action
 from nasim.env.render import Viewer
 from nasim.env.network import Network
-from nasim.scenarios import ScenarioLoader, ScenarioGenerator, INTERNET
+from nasim.scenarios import ScenarioLoader, ScenarioGenerator
 
 
 class NASimEnv:
@@ -33,36 +31,38 @@ class NASimEnv:
     action_space = None
     current_state = None
 
-    def __init__(self, scenario, mode='MDP'):
+    def __init__(self, scenario, partially_obs=False):
         """
         Arguments
         ---------
         scenario : Scenario
             Scenario object, defining the properties of the environment
-        mode : str
-            The observability mode of environment (default='MDP')
+        partially_obs : bool
+            The observability mode of environment, if True then uses partially
+            observable mode, otherwise is Fully observable (default=False)
         """
-        assert mode in self.env_modes, f"NASimEnv mode must be one in: {self.env_modes}"
         self.scenario = scenario
-        self.mode = mode
+        self.fully_obs = not partially_obs
 
         self.network = Network(scenario)
         self.address_space = scenario.address_space
         self.action_space = Action.load_action_space(self.scenario)
 
-        self.current_state = self._generate_initial_state()
-        self.compromised_subnets = None
+        self.current_state = State(self.network)
         self.renderer = None
         self.reset()
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, partially_obs):
         """Construct Environment from a scenario file.
 
         Arguments
         ---------
         path : str
             path to the scenario file
+        partially_obs : bool
+            The observability mode of environment, if True then uses partially
+            observable mode, otherwise is Fully observable
 
         Returns
         -------
@@ -71,10 +71,10 @@ class NASimEnv:
         """
         loader = ScenarioLoader()
         scenario = loader.load(path)
-        return cls(scenario)
+        return cls(scenario, partially_obs)
 
     @classmethod
-    def from_params(cls, num_hosts, num_services, **params):
+    def from_params(cls, num_hosts, num_services, partially_obs, **params):
         """Construct Environment from an auto generated network.
 
         Arguments
@@ -83,6 +83,9 @@ class NASimEnv:
             number of hosts to include in network (minimum is 3)
         num_services : int
             number of services to use in environment (minimum is 1)
+        partially_obs : bool
+            The observability mode of environment, if True then uses partially
+            observable mode, otherwise is Fully observable
         params : dict
             generator params (see scenarios.generator for full list)
 
@@ -93,19 +96,19 @@ class NASimEnv:
         """
         generator = ScenarioGenerator()
         scenario = generator.generate(num_hosts, num_services, **params)
-        return cls(scenario)
+        return cls(scenario, partially_obs)
 
     def reset(self):
         """Reset the state of the environment and returns the initial state.
 
         Returns
         -------
-        initial_state : State
-            the initial state of the environment
+        Obs
+            the initial observation of the environment
         """
-        self.compromised_subnets = set([INTERNET])
         self.network.reset()
-        return self.current_state
+        self.current_state.reset()
+        return self.current_state.get_initial_observation(self.fully_obs)
 
     def step(self, action):
         """Run one step of the environment using action.
@@ -127,8 +130,8 @@ class NASimEnv:
 
         Returns
         -------
-        obs : State
-            current state of environment known by agent
+        obs : Observation
+            current observation of environment
         reward : float
             reward from performing action
         done : bool
@@ -140,23 +143,14 @@ class NASimEnv:
         if isinstance(action, int):
             action = self.action_space[action]
 
-        info = {"success": False, "services": {}}
-        if not self.network.reachable(action.target):
-            return self.current_state, 0 - action.cost, False, info
-        if not self._action_traffic_permitted(action):
-            return self.current_state, 0 - action.cost, False, info
-
-        # non-deterministic actions
-        if np.random.rand() > action.prob:
-            return self.current_state, 0 - action.cost, False, info
-
-        success, value, services, os = self.network.perform_action(action)
-        self._update_state(action, success)
+        action_obs = self.network.perform_action(action, self.fully_obs)
+        self._update_state(action, action_obs.success)
+        obs = self.current_state.get_observation(action, action_obs, self.fully_obs)
         done = self._is_goal()
-        reward = value - action.cost
-        return self.current_state, reward, done, {"success": success,
-                                                  "services": services,
-                                                  "os": os}
+        reward = action_obs.value - action.cost
+        return obs, reward, done, {"success": action_obs.success,
+                                   "services": action_obs.services,
+                                   "os": action_obs.os}
 
     def render(self, mode="ASCI"):
         """Render current state.
@@ -277,48 +271,6 @@ class NASimEnv:
         max_reward -= self.network.get_minimal_steps()
         return max_reward
 
-    def _generate_initial_state(self):
-        """Generate the initial state of the environment. Initial state is where no hosts have been
-        compromised, only DMZ subnets are reachable and no information about services has been
-        gained
-
-        Returns
-        -------
-        initial_state : State
-            the initial state of the environment
-        """
-        if self.mode == "MDP":
-            return State.generate_initial_mdp_state(self.network)
-        elif self.mode == "POMDP":
-            raise NotImplementedError
-        raise NotImplementedError
-
-    def _action_traffic_permitted(self, action):
-        """Checks whether an action is permitted in terms of firewall traffic and the target service,
-        based on current set of compromised hosts on network.
-
-        Arguments
-        ---------
-        action : Action
-            the action performed
-
-        Returns
-        -------
-        permitted : bool
-            True if traffic is permitted for action, False otherwise
-        """
-        if not self.network.reachable(action.target):
-            return False
-        # We assume scannning uses alternative methods to work around firewall (e.g. UDP, ARP)
-        if action.is_scan():
-            return True
-        service = action.service
-        dest = action.target[0]
-        for src in self.compromised_subnets:
-            if self.network.traffic_permitted(src, dest, service):
-                return True
-        return False
-
     def _update_state(self, action, success):
         """Updates the current state of environment based on if action was successful and the gained
         service info
@@ -329,45 +281,20 @@ class NASimEnv:
             the action performed
         success : bool
             whether action was successful
-        services : dict
-            service info gained from action
         """
-        target = action.target
-        if not action.is_scan() and success:
-            # a successful exploit
-            # successful exploit so host compromised (handled in Host class)
-            self.compromised_subnets.add(target[0])
-            self._update_reachable(action.target)
-            self.current_state.update(action.target)
+        if not success:
+            return
 
-    def _update_reachable(self, compromised_host):
-        """Updates the reachable status of hosts on network, based on current state and newly
-        exploited host
-
-        Arguments
-        ---------
-        compromised_m : (int, int)
-            compromised host address
-        """
-        comp_subnet = compromised_host[0]
-        for addr in self.address_space:
-            if self.network.reachable(addr):
-                continue
-            host_subnet = addr[0]
-            if self.network.subnets_connected(comp_subnet, host_subnet):
-                self.network.set_reachable(addr)
+        if action.is_exploit() or action.is_subnet_scan():
+            for host_addr in self.address_space:
+                self.current_state.update(host_addr)
 
     def _is_goal(self):
         """Check if the current state is the goal state.
         The goal state is  when all sensitive hosts have been compromised
-
-        Returns
-        -------
-        goal : bool
-            True if goal state, otherwise False
         """
         for sensitive_m in self.network.get_sensitive_hosts():
-            if not self.network.compromised(sensitive_m):
+            if not self.network.host_compromised(sensitive_m):
                 # at least one sensitive host not compromised
                 return False
         return True

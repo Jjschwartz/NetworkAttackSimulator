@@ -2,6 +2,7 @@ import numpy as np
 from collections import deque
 from itertools import permutations
 
+from .action_obs import ActionObservation
 
 # column in topology adjacency matrix that represents connection between subnet and public
 INTERNET = 0
@@ -38,17 +39,20 @@ class Network:
         self.firewall = scenario.firewall
         self.address_space = scenario.address_space
         self.sensitive_addresses = self._get_sensitive_addresses()
+        self.compromised_subnets = None
 
     def reset(self):
         """Reset network to initial state.
 
         This only changes the compromised and reachable status of each host in network.
         """
+        self.compromised_subnets = set([INTERNET])
         for host_addr, host in self.hosts.items():
             host.compromised = False
             host.reachable = self.subnet_public(host_addr[0])
+            host.discovered = host.reachable
 
-    def perform_action(self, action):
+    def perform_action(self, action, fully_obs):
         """Perform the given Action against the network.
 
         Arguments
@@ -58,214 +62,139 @@ class Network:
 
         Returns
         -------
-        success : bool
-            True if action was successful, False otherwise (i.e. False if exploit failed)
-        value : float
-            value gained from action (0 if unsuccessful or scan), otherwise value of host
-        services : list
-            the list of services identified by action. This is the services if exploit
-            was successful or scan, otherwise an empty list
+        ActionObservation
+            the result from the action
         """
         # check if valid target host
         tgt_subnet, tgt_id = action.target
         assert 0 < tgt_subnet and tgt_subnet < len(self.subnets)
         assert tgt_id <= self.subnets[tgt_subnet]
 
-        # action is valid, so perform against host
+        if not self.host_reachable(action.target):
+            # print("host not reachable")
+            return ActionObservation(False, 0.0)
+
+        if not self.host_discovered(action.target):
+            # print("host not discovered")
+            return ActionObservation(False, 0.0)
+
+        if action.is_exploit() and not self.host_service_traffic_permitted(action.target, action.service):
+            # print("Traffic not permitted")
+            # exploit action and host and/or service blocked by firewall
+            return ActionObservation(False, 0.0)
+
+        if action.is_exploit() and self.host_compromised(action.target):
+            # print("Host already compromised")
+            # host already compromised so exploit will work
+            t_host = self.hosts[action.target]
+            return t_host.perform_action(action)
+
+        # non-deterministic actions
+        if np.random.rand() > action.prob:
+            # print("Stochastic action fail")
+            return ActionObservation(False, 0.0)
+
+        # action is valid
+        if action.is_subnet_scan():
+            # print("Performing subnet scan")
+            return self._perform_subnet_scan(action)
+
         t_host = self.hosts[action.target]
-        return t_host.perform_action(action)
+        action_obs = t_host.perform_action(action)
+        self._update(action, action_obs, fully_obs)
+        return action_obs
+
+    def _perform_subnet_scan(self, action):
+        if not self.host_compromised(action.target):
+            # can only perform subnet scan from compromised host
+            return ActionObservation(False, 0.0)
+
+        discovered = {}
+        target_subnet = action.target[0]
+        for h_addr, host in self.hosts.items():
+            if self.subnets_connected(target_subnet, h_addr[0]):
+                discovered[h_addr] = True
+                host.discovered = True
+            else:
+                discovered[h_addr] = False
+        return ActionObservation(True, 0.0, discovered=discovered)
+
+    def _update(self, action, action_obs, fully_obs):
+        if action.is_exploit() and action_obs.success:
+            self.compromised_subnets.add(action.target[0])
+            self._update_reachable(action.target, fully_obs)
+
+    def _update_reachable(self, compromised_addr, fully_obs):
+        """Updates the reachable status of hosts on network, based on current state and newly
+        exploited host
+        """
+        comp_subnet = compromised_addr[0]
+        for addr in self.address_space:
+            if self.host_reachable(addr):
+                continue
+            host_subnet = addr[0]
+            if self.subnets_connected(comp_subnet, host_subnet):
+                self.set_host_reachable(addr)
+                if fully_obs:
+                    self.set_host_discovered(addr)
 
     def get_sensitive_hosts(self):
-        """Get addresses of hosts which contain sensitive information (rewards)
-
-        Returns
-        -------
-        sensitive_addresses : list
-            a list of addresses of sensitive hosts in network
-        """
         return self.sensitive_addresses
 
     def is_sensitive_host(self, host_address):
-        """Returns whether a given host is sensitive or not
-
-        Arguments
-        ---------
-        host_address : (int, int)
-            host address
-
-        Returns
-        -------
-        bool
-            True if host is sensitive, False otherwise
-        """
         return host_address in self.sensitive_addresses
 
-    def reachable(self, host_addr):
-        """Checks if a given host is reachable
-
-        Arguments
-        ---------
-        host_addr : (int, int)
-            the host address
-
-        Returns
-        -------
-        bool
-            True if reachable
-        """
+    def host_reachable(self, host_addr):
         return self.hosts[host_addr].reachable
 
-    def compromised(self, host_addr):
-        """Checks if a given host is compromised
-
-        Arguments
-        ---------
-        target : (int, int)
-            the host address
-
-        Returns
-        -------
-        bool
-            True if compromised
-        """
+    def host_compromised(self, host_addr):
         return self.hosts[host_addr].compromised
 
-    def set_compromised(self, host_addr):
-        """Set the target host state as compromised
+    def host_discovered(self, host_addr):
+        return self.hosts[host_addr].discovered
 
-        Arguments
-        ---------
-        host_addr : (int, int)
-            the target host address
-        """
+    def set_host_compromised(self, host_addr):
         self.hosts[host_addr].compromised = True
 
-    def set_reachable(self, host_addr):
-        """Set the target host state as reachable
-
-        Arguments
-        ---------
-        host_addr : (int, int)
-            the target host address
-        """
+    def set_host_reachable(self, host_addr):
         self.hosts[host_addr].reachable = True
 
+    def set_host_discovered(self, host_addr):
+        self.hosts[host_addr].discovered = True
+
     def get_host_value(self, host_address):
-        """Returns the value of a host
-
-        Arguments
-        ---------
-        host_address : (int, int)
-            host address
-
-        Returns
-        -------
-        float
-            the value of host with given address
-        """
         return self.hosts[host_address].get_value()
 
-    def host_running_service(self, host_addr, service):
-        """Returns whether a host is running a service or not.
-
-        Arguments
-        ---------
-        host_address : (int, int)
-            host address
-        service : str
-            name of service
-
-        Returns
-        -------
-        bool
-            True if host is runnning service
-        """
+    def host_is_running_service(self, host_addr, service):
         return self.hosts[host_addr].service_present(service)
 
-    def host_running_os(self, host_addr, os):
-        """Returns OS of host
-
-        Arguments
-        ---------
-        host_address : (int, int)
-            host address
-        os : str
-            the host os
-
-        Returns
-        -------
-        bool
-            True if host is running given OS
-        """
+    def host_is_running_os(self, host_addr, os):
         return self.hosts[host_addr].is_running_os(os)
 
     def subnets_connected(self, subnet_1, subnet_2):
-        """Checks whether two subnets are directly connected. A subnet is also
-        connected to itself.
-
-        Arguments
-        ---------
-        subnet_1 : int
-            the id of first subnet
-        subnet_2 : int
-            the id of second subnet
-
-        Returns
-        -------
-        bool
-            True if subnets are directly connected
-        """
         return self.topology[subnet_1][subnet_2] == 1
 
-    def traffic_permitted(self, src, dest, service):
-        """Checks whether traffic using a given service is permitted by the firewall
-        from source subnet to destination subnet.
-
-        Arguments
-        ---------
-        src : int
-            id of source subnet
-        dest : int
-            id of destination subnet
-        service : int
-            service id
-
-        Returns
-        -------
-        bool
-            True if traffic is permitted, False otherwise
-        """
-        if src == dest:
+    def subnet_traffic_permitted(self, src_subnet, dest_subnet, service):
+        if src_subnet == dest_subnet:
             # in same subnet so permitted
             return True
-        if not self.subnets_connected(src, dest):
+        if not self.subnets_connected(src_subnet, dest_subnet):
             return False
-        return service in self.firewall[(src, dest)]
+        return service in self.firewall[(src_subnet, dest_subnet)]
+
+    def host_service_traffic_permitted(self, host_addr, service):
+        """Checks whether the firewall permits traffic to a given host and service,
+        based on current set of compromised hosts on network.
+        """
+        for src in self.compromised_subnets:
+            if self.subnet_traffic_permitted(src, host_addr[0], service):
+                return True
+        return False
 
     def subnet_public(self, subnet):
-        """Returns whether a subnet is exposed to the public or not, i.e. is in
-        publicly acces DMZ and so always reachable by attacker.
-
-        Arguments
-        ---------
-        subnet : int
-            the id of subnet
-
-        Returns
-        -------
-        bool
-            True if subnet is publicly exposed
-        """
         return self.topology[subnet][INTERNET] == 1
 
     def get_number_of_subnets(self):
-        """Returns the number of subnets on network, including the internet subnet
-
-        Returns
-        -------
-        int
-            number of subnets on network
-        """
         return len(self.subnets)
 
     def get_subnet_depths(self):
@@ -329,13 +258,6 @@ class Network:
         return shortest
 
     def get_total_sensitive_host_value(self):
-        """Get the sum of the values of each sensitive host
-
-        Returns
-        -------
-        float
-            total value of each sensitive host on network
-        """
         total_value = 0
         for host_value in self.sensitive_hosts.values():
             total_value += host_value

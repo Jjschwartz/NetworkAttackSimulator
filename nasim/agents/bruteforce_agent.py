@@ -18,6 +18,7 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
     done = False
     t = 0
     a = 0
+    print(f"t: Reward")
     while not done and t < step_limit:
         # print("Choose action")
         a = choose_action(env, a)
@@ -46,8 +47,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("env_name", type=str, help="benchmark scenario name")
     parser.add_argument("-s", "--seed", type=int, default=0, help="random seed")
+    parser.add_argument("-o", "--partially_obs", action="store_true", help="Partially Observable Mode")
     args = parser.parse_args()
 
-    env = make_benchmark_env(args.env_name, args.seed)
+    env = make_benchmark_env(args.env_name, args.seed, args.partially_obs)
     print("Max score:", env.get_best_possible_score())
     run_bruteforce_agent(env)

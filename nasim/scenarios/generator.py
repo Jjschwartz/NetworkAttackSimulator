@@ -58,6 +58,7 @@ class ScenarioGenerator:
                  exploit_probs=1.0,
                  service_scan_cost=1,
                  os_scan_cost=1,
+                 subnet_scan_cost=1,
                  uniform=False,
                  alpha_H=2.0,
                  alpha_V=2.0,
@@ -90,6 +91,8 @@ class ScenarioGenerator:
             cost for a service scan (default=1)
         os_scan_cost : int or float, optional
             cost for an os scan (default=1)
+        subnet_scan_cost : int or float, optional
+            cost for an subnet scan (default=1)
         uniform : bool, optional
             whether to use uniform distribution or correlatted of host configs (default=False)
         alpha_H : float, optional
@@ -145,6 +148,7 @@ class ScenarioGenerator:
         self._generate_firewall(restrictiveness)
         self.service_scan_cost = service_scan_cost
         self.os_scan_cost = os_scan_cost
+        self.subnet_scan_cost = subnet_scan_cost
         return self._construct_scenario()
 
     def _construct_scenario(self):
@@ -157,6 +161,7 @@ class ScenarioGenerator:
         scenario_dict[u.EXPLOITS] = self.exploits
         scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
         scenario_dict[u.OS_SCAN_COST] = self.os_scan_cost
+        scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario = Scenario(scenario_dict)

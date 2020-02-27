@@ -16,6 +16,7 @@ DEFAULTS = dict(
     exploit_probs='mixed',
     service_scan_cost=1,
     os_scan_cost=1,
+    subnet_scan_cost=1,
     uniform=False,
     alpha_H=2.0,
     alpha_V=2.0,

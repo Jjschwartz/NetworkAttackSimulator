@@ -19,6 +19,7 @@ def choose_action(env):
         try:
             idx = int(input("Choose index: "))
             action = env.action_space[idx]
+            print(f"Performing: {action}")
             return action
         except Exception:
             print("Invalid choice. Try again.")
@@ -29,15 +30,15 @@ def run_keyboard_agent(env):
     print("STARTING EPISODE")
     print(line_break)
 
-    s = env.reset()
+    o = env.reset()
     total_reward = 0
     done = False
     while not done:
         # print(s)
-        print(s._tensor)
+        print(o._tensor)
         # env.render()
         a = choose_action(env)
-        s, r, done, _ = env.step(a)
+        o, r, done, _ = env.step(a)
         total_reward += r
 
     print(line_break)
@@ -51,8 +52,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("scenario_name", type=str, help="benchmark scenario name")
     parser.add_argument("-s", "--seed", type=int, default=0, help="random seed")
+    parser.add_argument("-o", "--partially_obs", action="store_true", help="Partially Observable Mode")
     args = parser.parse_args()
 
-    env = make_benchmark_env(args.scenario_name, args.seed)
+    env = make_benchmark_env(args.scenario_name, args.seed, args.partially_obs)
     print("Max score:", env.get_best_possible_score())
     run_keyboard_agent(env)

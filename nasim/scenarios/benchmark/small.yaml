@@ -33,6 +33,7 @@ exploits:
     cost: 2
 service_scan_cost: 1
 os_scan_cost: 1
+subnet_scan_cost: 1
 host_configurations:
   (1, 0):
     services: [http]

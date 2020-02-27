@@ -15,6 +15,7 @@ VALID_CONFIG_KEYS = {u.SUBNETS: list,
                      u.OS: list,
                      u.EXPLOITS: dict,
                      u.SERVICE_SCAN_COST: int,
+                     u.SUBNET_SCAN_COST: int,
                      u.OS_SCAN_COST: int,
                      u.HOST_CONFIGS: dict,
                      u.FIREWALL: dict}
@@ -75,6 +76,7 @@ class ScenarioLoader:
         scenario_dict[u.EXPLOITS] = self.exploits
         scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
         scenario_dict[u.OS_SCAN_COST] = self.os_scan_cost
+        scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         return Scenario(scenario_dict)
@@ -244,15 +246,19 @@ class ScenarioLoader:
     def _parse_scan_costs(self):
         service_scan_cost = self.yaml_dict[u.SERVICE_SCAN_COST]
         os_scan_cost = self.yaml_dict[u.OS_SCAN_COST]
-        self._validate_scan_cost(service_scan_cost, os_scan_cost)
+        subnet_scan_cost = self.yaml_dict[u.SUBNET_SCAN_COST]
+        self._validate_scan_cost(service_scan_cost, os_scan_cost, subnet_scan_cost)
         self.service_scan_cost = service_scan_cost
         self.os_scan_cost = os_scan_cost
+        self.subnet_scan_cost = subnet_scan_cost
 
-    def _validate_scan_cost(self, service_scan_cost, os_scan_cost):
+    def _validate_scan_cost(self, service_scan_cost, os_scan_cost, subnet_scan_cost):
         if service_scan_cost < 0:
             raise ValueError("Service Scan Cost must be >= 0.")
         if os_scan_cost < 0:
             raise ValueError("OS Scan Cost must be >= 0.")
+        if subnet_scan_cost < 0:
+            raise ValueError("Subnet Scan Cost must be >= 0.")
 
     def _parse_host_configs(self):
         host_configs = self.yaml_dict[u.HOST_CONFIGS]

@@ -60,5 +60,9 @@ class Scenario:
     def os_scan_cost(self):
         return self.scenario_dict[u.OS_SCAN_COST]
 
+    @property
+    def subnet_scan_cost(self):
+        return self.scenario_dict[u.SUBNET_SCAN_COST]
+
     def display(self):
         pprint(self.scenario_dict)

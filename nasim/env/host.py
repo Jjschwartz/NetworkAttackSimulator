@@ -1,4 +1,5 @@
 from .host_vector import HostVector
+from .action_obs import ActionObservation
 
 
 class Host:
@@ -21,7 +22,8 @@ class Host:
         whether host is reachable by attacker or not
     """
 
-    def __init__(self, address, os, services, value=0.0, compromised=False, reachable=False):
+    def __init__(self, address, os, services, value=0.0, compromised=False, reachable=False,
+                 discovered=False):
         """
         Arguments
         ---------
@@ -45,6 +47,7 @@ class Host:
         self.value = value
         self._compromised = compromised
         self._reachable = reachable
+        self._discovered = discovered
         self._vector = HostVector(self)
 
     @property
@@ -66,6 +69,15 @@ class Host:
         self._vector.set_reachable(val)
 
     @property
+    def discovered(self):
+        return self._discovered
+
+    @discovered.setter
+    def discovered(self, val):
+        self._discovered = val
+        self._vector.set_discovered(val)
+
+    @property
     def state_size(self):
         return self._vector.state_size
 
@@ -79,20 +91,13 @@ class Host:
 
         Returns
         -------
-        success : bool
-            True if exploit/scan was successful, False otherwise
-        value : float
-            value gained from action. Is the value of the host if successfuly
-            exploited, otherwise 0
-        services : dict
-            the dict of services identified by action.
-        os : dict
-            the dict of OS identified by action
+        ActionObservation
+            the result from the action
         """
         if action.is_service_scan():
-            return True, 0, self.services, {}
+            return ActionObservation(True, 0, services=self.services)
         if action.is_os_scan():
-            return True, 0, {}, self.os
+            return ActionObservation(True, 0, os=self.os)
         # action is an exploit
         if self.services[action.service] and (action.os is None or self.os[action.os]):
             # service and os is present so exploit is successful
@@ -101,9 +106,14 @@ class Host:
                 # to ensure a machine is not rewarded twice
                 value = self.value
                 self.compromised = True
-            return True, value, self.services, self.os
+            return ActionObservation(True, value, services=self.services, os=self.os)
         # service absent, exploit fails
-        return False, 0, {}, {}
+        return ActionObservation(False, 0)
+
+    def observe(self, compromised=False, reachable=False, discovered=False,
+                value=False, services=False, os=False):
+        """Make an observation on host """
+        return self._vector.observe(compromised, reachable, discovered, value, services, os)
 
     def service_present(self, service):
         """Returns whether host is running a service or not.

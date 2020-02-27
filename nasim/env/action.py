@@ -33,6 +33,9 @@ class Action:
         self.cost = cost
         self.prob = prob
 
+    def is_exploit(self):
+        return False
+
     def is_scan(self):
         return False
 
@@ -40,6 +43,9 @@ class Action:
         return False
 
     def is_os_scan(self):
+        return False
+
+    def is_subnet_scan(self):
         return False
 
     def __str__(self):
@@ -81,6 +87,7 @@ class Action:
         for address in scenario.address_space:
             action_space.append(ServiceScan("service_scan", address, scenario.service_scan_cost))
             action_space.append(OSScan("os_scan", address, scenario.os_scan_cost))
+            action_space.append(SubnetScan("subnet_scan", address, scenario.subnet_scan_cost))
             for e_name, e_def in scenario.exploits.items():
                 exploit = Exploit(e_name, address, **e_def)
                 action_space.append(exploit)
@@ -109,6 +116,9 @@ class Exploit(Action):
         self.os = os
         self.service = service
 
+    def is_exploit(self):
+        return True
+
     def __str__(self):
         return super().__str__() + f", os={self.os}, service={self.service}"
 
@@ -126,17 +136,20 @@ class ServiceScan(Action):
     def is_service_scan(self):
         return True
 
-    def is_os_scan(self):
-        return False
-
 
 class OSScan(Action):
 
     def is_scan(self):
         return True
 
-    def is_service_scan(self):
-        return False
-
     def is_os_scan(self):
+        return True
+
+
+class SubnetScan(Action):
+
+    def is_scan(self):
+        return True
+
+    def is_subnet_scan(self):
         return True

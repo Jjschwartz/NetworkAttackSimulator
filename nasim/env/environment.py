@@ -209,29 +209,40 @@ class NASimEnv:
         state = self.current_state
         self.renderer.render_graph(state, ax, show)
 
-    def get_state_size(self):
-        """Get the size of an environment state representation in terms of the number of features,
-        where a feature is a value for an individual host (i.e. compromised, reachable,
-        service1, ...).
+    def get_state_shape(self, flat=True):
+        """Get the shape of an environment state representation
 
-        Returns
-        -------
-        state_size : int
-            size of state representation
-        """
-        return self.current_state.get_state_size()
-
-    def get_state_shape(self):
-        """Get the shape of an environment state representation in terms of the number of features,
-        where a feature is a value for an individual host (i.e. compromised, reachable,
-        service1, ...).
+        Arguments
+        ---------
+        flat : bool, optional
+            whether to get shape of flattened state (True) or not (False)
+            (default=True)
 
         Returns
         -------
         (int, int)
             shape of state representation
         """
-        return self.current_state.get_state_shape()
+        if flat:
+            return self.current_state.flat_shape()
+        return self.current_state.shape()
+
+    def get_obs_shape(self, flat=True):
+        """Get the shape of an environment observation representation
+
+        Arguments
+        ---------
+        flat : bool, optional
+            whether to get shape of flattened observation (True) or not (False)
+            (default=True)
+
+        Returns
+        -------
+        (int, int)
+            shape of observation representation
+        """
+        # observation has same shape as state
+        return self.get_state_shape(flat)
 
     def get_num_actions(self):
         """Get the size of the action space for environment

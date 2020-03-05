@@ -47,3 +47,24 @@ class Observation:
     def update_from_host(self, host_idx, host_obs_vector):
         """Update the observation using given host observation vector """
         self._tensor[host_idx][:] = host_obs_vector
+
+    def numpy_flat(self):
+        """Returns observation as a 1D numpy array.
+
+        Returns
+        -------
+        ndarray
+            ID numpy array representation of observation
+        """
+        return self._tensor.flatten()
+
+    def numpy_2D(self):
+        """Returns observation as a 2D numpy array, with each column being
+        the observation of a host.
+
+        Returns
+        -------
+        ndarray
+            numpy array representation of observation
+        """
+        return self._tensor

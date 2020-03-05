@@ -145,10 +145,10 @@ class State:
         (int, int)
             shape of flattened state
         """
-        return self.numpy().shape
+        return self.numpy_flat().shape
 
     def shape(self):
-        """Return the shape of state in terms of the flattened state.
+        """Return the shape of state in terms of the unflattened (tensor) state.
 
         Returns
         -------

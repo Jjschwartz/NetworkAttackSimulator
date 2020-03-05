@@ -32,7 +32,7 @@ class Observation:
         state_shape : (int, int)
             2D shape of the state (i.e. num_hosts, host_vector_size)
         """
-        self._tensor = np.zeros(state_shape, dtype=np.float32)
+        self.tensor = np.zeros(state_shape, dtype=np.float32)
 
     def from_state(self, state):
         """Copy observation from state (i.e. fully observable observation)
@@ -42,11 +42,11 @@ class Observation:
         state : State
             the state object to copy from
         """
-        self._tensor[:] = state._tensor
+        self.tensor[:] = state.tensor
 
     def update_from_host(self, host_idx, host_obs_vector):
         """Update the observation using given host observation vector """
-        self._tensor[host_idx][:] = host_obs_vector
+        self.tensor[host_idx][:] = host_obs_vector
 
     def numpy_flat(self):
         """Returns observation as a 1D numpy array.
@@ -54,9 +54,9 @@ class Observation:
         Returns
         -------
         ndarray
-            ID numpy array representation of observation
+            1D numpy array representation of observation
         """
-        return self._tensor.flatten()
+        return self.tensor.flatten()
 
     def numpy_2D(self):
         """Returns observation as a 2D numpy array, with each column being
@@ -67,4 +67,4 @@ class Observation:
         ndarray
             numpy array representation of observation
         """
-        return self._tensor
+        return self.tensor

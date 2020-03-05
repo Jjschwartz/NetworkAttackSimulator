@@ -168,6 +168,9 @@ class Host:
     def update_vector(self):
         self._vector = HostVector(self)
 
+    def get_readable(self, vector):
+        return self._vector.get_readable(vector)
+
     def __str__(self):
         output = ["Host: {"]
         output.append(f"\taddress: {self.address}")

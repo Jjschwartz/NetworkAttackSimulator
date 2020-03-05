@@ -1,3 +1,5 @@
+import numpy as np
+
 from nasim.env.state import State
 from nasim.env.action import Action
 from nasim.env.render import Viewer
@@ -49,6 +51,7 @@ class NASimEnv:
         self.action_space = Action.load_action_space(self.scenario)
 
         self.current_state = State(self.network)
+        self.last_obs = None
         self.renderer = None
         self.reset()
 
@@ -108,7 +111,8 @@ class NASimEnv:
         """
         self.network.reset()
         self.current_state.reset()
-        return self.current_state.get_initial_observation(self.fully_obs)
+        self.last_obs = self.current_state.get_initial_observation(self.fully_obs)
+        return self.last_obs
 
     def step(self, action):
         """Run one step of the environment using action.
@@ -145,15 +149,15 @@ class NASimEnv:
 
         action_obs = self.network.perform_action(action, self.fully_obs)
         self._update_state(action, action_obs.success)
-        obs = self.current_state.get_observation(action, action_obs, self.fully_obs)
+        self.last_obs = self.current_state.get_observation(action, action_obs, self.fully_obs)
         done = self._is_goal()
         reward = action_obs.value - action.cost
-        return obs, reward, done, {"success": action_obs.success,
-                                   "services": action_obs.services,
-                                   "os": action_obs.os}
+        return self.last_obs, reward, done, {"success": action_obs.success,
+                                             "services": action_obs.services,
+                                             "os": action_obs.os}
 
     def render(self, mode="ASCI"):
-        """Render current state.
+        """Render last observation.
 
         See render module for more details on modes and symbols.
 
@@ -169,11 +173,16 @@ class NASimEnv:
         if self.renderer is None:
             self.renderer = Viewer(self.network)
         if mode == "ASCI":
-            self.renderer.render_asci(self.current_state)
+            self.renderer.render_asci(self.last_obs)
         elif mode == "readable":
-            self.renderer.render_readable(self.current_state)
+            self.renderer.render_readable(self.last_obs)
         else:
             print("Please choose correct render mode: {0}".format(self.rendering_modes))
+
+    def render_action(self, action):
+        if isinstance(action, int):
+            action = self.action_space[action]
+        print(action)
 
     def render_episode(self, episode, width=7, height=7):
         """Render an episode as sequence of network graphs, where an episode is a sequence of
@@ -264,6 +273,21 @@ class NASimEnv:
             minumum possible actions
         """
         return self.network.get_minimal_steps()
+
+    def get_action_mask(self):
+        """Get a vector mask for valid actions.
+
+        Returns
+        -------
+        ndarray
+            numpy vector of 1's and 0's, one for each action. Where an index will
+            be 1 if action is valid given current state, or 0 if action is invalid.
+        """
+        mask = np.zeros(len(self.action_space), dtype=np.float)
+        for i, action in enumerate(self.action_space):
+            if self.network.host_discovered(action.target):
+                mask[i] = 1
+        return mask
 
     def get_best_possible_score(self):
         """Get the best score possible for this environment, assuming action cost of 1 and each

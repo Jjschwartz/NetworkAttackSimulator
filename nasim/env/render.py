@@ -2,6 +2,7 @@ import math
 import random
 import networkx as nx
 import tkinter as Tk
+from prettytable import PrettyTable
 
 # import order important here
 import matplotlib
@@ -23,15 +24,10 @@ class Viewer:
 
     def __init__(self, network):
         """
-        Initialize the Viewer, generating the network Graph given network topology
-        and state
-
         Arguments
         ---------
         network : Network
             network of environment
-        state : State
-            state of network user wants to view (Typically will be initial state)
         """
         self.network = network
         self.subnets = self._get_subnets(network)
@@ -100,28 +96,30 @@ class Viewer:
         G = self._construct_graph(init_ep_state)
         EpisodeViewer(episode, G, self.network.sensitive_hosts, width, height)
 
-    def render_readable(self, state):
-        """Print a readable version of state to stdout
+    def render_readable(self, obs):
+        """Print a readable tabular version of observation to stdout
 
         Arguments
         ---------
-        state : State
-            state of network user wants to view (Typically will be initial state)
+        obs : Observation
+            observation to view
         """
-        output = []
-        for m in self.network.address_space:
-            output.append(f"Host = {m} =>")
-            output.append("\tServices:")
-            for s in self.network.scenario.services:
-                service_state = state.service_state(m, s)
-                output.append(f"\t\t{s} = {service_state}")
-            output.append(f"\treachable: {state.reachable(m)}")
-            output.append(f"\tcompromised: {state.compromised(m)}")
-            output.append(f"\tsensitive: {self.network.is_sensitive_host(m)}")
-        print("\n".join(output))
+        host_obs = []
+        for host_num, (host_addr, host) in enumerate(self.network.hosts.items()):
+            host_obs_vector = obs.tensor[host_num]
+            readable_dict = {"Host Address": host_addr}
+            readable_dict.update(host.get_readable(host_obs_vector))
+            host_obs.append(readable_dict)
 
-    def render_asci(self, state):
-        """Render state in ASCI format to stdout
+        headers = list(host_obs[0].keys())
+        table = PrettyTable(headers)
+        for host in host_obs:
+            row = [str(host[k]) for k in headers]
+            table.add_row(row)
+        print(table)
+
+    def render_asci(self, obs):
+        """Render observation in ASCI format to stdout
 
         Arguments
         ---------
@@ -131,7 +129,7 @@ class Viewer:
         sensitive_hosts = self.network.sensitive_hosts
         subnets = [[] for x in range(len(self.subnets))]
         for m in self.network.address_space:
-            subnets[m[0]].append(get_host_representation(state, sensitive_hosts, m, SYMBOLS))
+            subnets[m[0]].append(get_host_representation(obs, sensitive_hosts, m, SYMBOLS))
 
         max_row_size = max([len(x) for x in subnets])
         min_row_size = min([len(x) for x in subnets])

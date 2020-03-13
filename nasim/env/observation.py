@@ -42,7 +42,7 @@ class Observation:
         state : State
             the state object to copy from
         """
-        self.tensor[:] = state.tensor
+        self.tensor[:] = state._tensor
 
     def update_from_host(self, host_idx, host_obs_vector):
         """Update the observation using given host observation vector """
@@ -68,3 +68,6 @@ class Observation:
             numpy array representation of observation
         """
         return self.tensor
+
+    def __str__(self):
+        return str(self.tensor)

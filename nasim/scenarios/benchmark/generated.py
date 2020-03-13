@@ -10,9 +10,9 @@ see DEFAULTS dict.
 # generated environment constants
 DEFAULTS = dict(
     num_exploits=None,
-    r_sensitive=10,
-    r_user=10,
-    exploit_cost=1,
+    r_sensitive=1000,
+    r_user=1000,
+    exploit_cost=10,
     exploit_probs='mixed',
     service_scan_cost=1,
     os_scan_cost=1,

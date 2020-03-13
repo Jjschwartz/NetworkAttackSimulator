@@ -14,6 +14,7 @@ def print_actions(action_space):
 
 
 def choose_action(env):
+    input("Press enter to choose next action..")
     print_actions(env.action_space)
     while True:
         try:
@@ -31,15 +32,16 @@ def run_keyboard_agent(env):
     print(line_break)
 
     o = env.reset()
+    env.render("readable")
     total_reward = 0
     done = False
     while not done:
-        # print(s)
-        print(o._tensor)
-        # env.render()
         a = choose_action(env)
         o, r, done, _ = env.step(a)
         total_reward += r
+        print("\nObservation recieved:")
+        env.render("readable")
+        print("Reward recieved =", r)
 
     print(line_break)
     print("EPISODE FINISHED")

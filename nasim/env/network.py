@@ -110,14 +110,17 @@ class Network:
             return ActionObservation(False, 0.0)
 
         discovered = {}
+        discovery_reward = 0
         target_subnet = action.target[0]
         for h_addr, host in self.hosts.items():
             if self.subnets_connected(target_subnet, h_addr[0]):
                 discovered[h_addr] = True
-                host.discovered = True
+                if not host.discovered:
+                    host.discovered = True
+                    discovery_reward += host.discovery_value
             else:
                 discovered[h_addr] = False
-        return ActionObservation(True, 0.0, discovered=discovered)
+        return ActionObservation(True, discovery_reward, discovered=discovered)
 
     def _update(self, action, action_obs, fully_obs):
         if action.is_exploit() and action_obs.success:
@@ -135,8 +138,6 @@ class Network:
             host_subnet = addr[0]
             if self.subnets_connected(comp_subnet, host_subnet):
                 self.set_host_reachable(addr)
-                if fully_obs:
-                    self.set_host_discovered(addr)
 
     def get_sensitive_hosts(self):
         return self.sensitive_addresses

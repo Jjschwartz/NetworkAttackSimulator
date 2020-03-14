@@ -16,14 +16,16 @@ class Host:
         active on this host.
     value : float
         the reward gained from exploiting host
-    compromised : bool, optional
+    discovery_value : float
+        the reward gained for discovering the host
+    compromised : bool
         whether host has been compromised or not
     reachable : bool
         whether host is reachable by attacker or not
     """
 
-    def __init__(self, address, os, services, value=0.0, compromised=False, reachable=False,
-                 discovered=False):
+    def __init__(self, address, os, services, value=0.0, discovery_value=0.0,
+                 compromised=False, reachable=False, discovered=False):
         """
         Arguments
         ---------
@@ -36,6 +38,8 @@ class Host:
             are present/absent
         value : float, optional
             value of the host (default=0.0)
+        discovery_value : float, optional
+            the reward gained for discovering the host (default=0.0)
         compromised : bool, optional
             whether host has been compromised or not (default=False)
         reachable : bool, optional
@@ -45,6 +49,7 @@ class Host:
         self.os = os
         self.services = services
         self.value = value
+        self.discovery_value = discovery_value
         self._compromised = compromised
         self._reachable = reachable
         self._discovered = discovered

@@ -65,6 +65,8 @@ class ScenarioGenerator:
                  lambda_V=1.0,
                  restrictiveness=5,
                  random_goal=False,
+                 base_host_value=1,
+                 host_discovery_value=1,
                  seed=None):
         """Generate the network configuration based on standard formula.
 
@@ -112,6 +114,10 @@ class ScenarioGenerator:
             (default=5)
         random_goal : bool, optional
             whether to randomly assign the goal user host or not (default=False)
+        base_host_value : int, optional,
+            value of non sensitive hosts (default=1)
+        host_discovery_value : int, optional
+            value of discovering a host for the first time (default=1)
         seed : int, optional
             random number generator seed (default=None)
 
@@ -140,6 +146,8 @@ class ScenarioGenerator:
         self._generate_os(num_os)
         self._generate_exploits(num_exploits, exploit_cost, exploit_probs)
         self._generate_sensitive_hosts(r_sensitive, r_user, random_goal)
+        self.base_host_value = base_host_value
+        self.host_discovery_value = host_discovery_value
         if uniform:
             self._generate_uniform_hosts()
         else:
@@ -247,7 +255,8 @@ class ScenarioGenerator:
                 os_cfg = self._convert_to_os_map(os)
                 address = (subnet, h)
                 value = self._get_host_value(address)
-                host = Host(address, os_cfg.copy(), service_cfg.copy(), value)
+                host = Host(address, os_cfg.copy(), service_cfg.copy(), value,
+                            self.host_discovery_value)
                 hosts[address] = host
         self.hosts = hosts
 
@@ -316,7 +325,8 @@ class ScenarioGenerator:
                 host_num += 1
                 address = (subnet, m)
                 value = self._get_host_value(address)
-                host = Host(address, os_cfg.copy(), service_cfg.copy(), value)
+                host = Host(address, os_cfg.copy(), service_cfg.copy(), value,
+                            self.host_discovery_value)
                 hosts[address] = host
         self.hosts = hosts
 
@@ -432,7 +442,7 @@ class ScenarioGenerator:
         host.update_vector()
 
     def _get_host_value(self, address):
-        return float(self.sensitive_hosts.get(address, 0.0))
+        return float(self.sensitive_hosts.get(address, self.base_host_value))
 
     def _generate_firewall(self, restrictiveness):
         """Generate the firewall rules as a mapping from (src, dest) connection to set

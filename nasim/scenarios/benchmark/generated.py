@@ -12,7 +12,7 @@ DEFAULTS = dict(
     num_exploits=None,
     r_sensitive=1000,
     r_user=1000,
-    exploit_cost=10,
+    exploit_cost=1,
     exploit_probs='mixed',
     service_scan_cost=1,
     os_scan_cost=1,
@@ -21,7 +21,9 @@ DEFAULTS = dict(
     alpha_H=2.0,
     alpha_V=2.0,
     lambda_V=1.0,
-    random_goal=False
+    random_goal=False,
+    base_host_value=1,
+    host_discovery_value=1
 )
 
 # Generated Scenario definitions

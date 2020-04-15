@@ -2,7 +2,8 @@
 
 class ActionObservation:
 
-    def __init__(self, success, value=0.0, services=None, os=None, discovered=None):
+    def __init__(self, success, value=0.0, services=None, os=None,
+                 discovered=None):
         """
         Arguments
         ---------
@@ -32,3 +33,12 @@ class ActionObservation:
                   f"  OS={self.os}",
                   f"  Discovered={self.discovered}"]
         return "\n".join(output)
+
+    def info(self):
+        return dict(
+            success=self.success,
+            value=self.value,
+            services=self.services,
+            os=self.os,
+            discovered=self.discovered
+        )

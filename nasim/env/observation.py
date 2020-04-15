@@ -10,11 +10,14 @@ class Observation:
 
     An observation contains for each host
     1. compromised : 0 or 1
-        whether the action resulted in the host becoming compromised (1) or not (0)
+        whether the action resulted in the host becoming compromised (1)
+        or not (0)
     2. reachable : 0 or 1
-        whether the action resulted in the host becoming reachable (1) or not (0)
+        whether the action resulted in the host becoming reachable (1)
+        or not (0)
     3. discovered : 0 or 1
-        whether the action resulted in the host becoming discovered (1) or not (0)
+        whether the action resulted in the host becoming discovered (1)
+        or not (0)
     4. value : float
         observed value of host
     5. for each service :
@@ -42,7 +45,7 @@ class Observation:
         state : State
             the state object to copy from
         """
-        self.tensor[:] = state._tensor
+        self.tensor[:] = state.network_state.tensor
 
     def update_from_host(self, host_idx, host_obs_vector):
         """Update the observation using given host observation vector """

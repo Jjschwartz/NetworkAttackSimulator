@@ -41,6 +41,10 @@ class Scenario:
         return self.scenario_dict[u.SENSITIVE_HOSTS]
 
     @property
+    def sensitive_addresses(self):
+        return list(self.sensitive_hosts.keys())
+
+    @property
     def firewall(self):
         return self.scenario_dict[u.FIREWALL]
 

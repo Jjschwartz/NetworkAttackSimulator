@@ -18,14 +18,15 @@ class NASimEnv:
     - mode : the observability mode of the environment.
 
     The mode can be either:
-    1. MDP - Here the state is fully observable, so after each step the actual next
-             state is returned
-    2. POMDP - The state is partially observable, so after each step only what is
-               observed of the next state is returned.
+    1. MDP - Here the state is fully observable, so after each step the actual
+             next state is returned
+    2. POMDP - The state is partially observable, so after each step only what
+               is observed of the next state is returned.
 
-    For both modes the dimensions are the same for the returned state/observation.
-    The only difference is for the POMDP mode, for parts of the state that were not
-    observed the value returned will be a non-obs value (i.e. 0 in most cases).
+    For both modes the dimensions are the same for the returned
+    state/observation. The only difference is for the POMDP mode, for parts of
+    the state that were not observed the value returned will be a non-obs
+    value (i.e. 0 in most cases).
     """
     rendering_modes = ["readable", "ASCI"]
     env_modes = ['MDP', 'POMDP']
@@ -50,7 +51,7 @@ class NASimEnv:
         self.address_space = scenario.address_space
         self.action_space = Action.load_action_space(self.scenario)
 
-        self.current_state = State(self.network)
+        self.current_state = State.generate_initial_state(self.network)
         self.last_obs = None
         self.renderer = None
         self.reset()
@@ -109,23 +110,18 @@ class NASimEnv:
         Obs
             the initial observation of the environment
         """
-        self.network.reset()
-        self.current_state.reset()
-        self.last_obs = self.current_state.get_initial_observation(self.fully_obs)
+        self.current_state = self.network.reset(self.current_state)
+        self.last_obs = self.current_state.get_initial_observation(
+            self.fully_obs
+        )
         return self.last_obs
 
     def step(self, action):
         """Run one step of the environment using action.
 
-        N.B. Does not return a copy of the state, and state is changed by simulator. So if you
-        need to store the state you will need to copy it (see State.copy method)
-
-        info
-        ----
-        "success" : bool
-            whether action was successful
-        "services" : list
-            list of services observed and their value (1=PRESENT, 0=ABSENT)
+        N.B. Does not return a copy of the observation, and observation
+        is changed by simulator. So if you need to store the observation
+        you will need to copy it.
 
         Arguments
         ---------
@@ -141,20 +137,54 @@ class NASimEnv:
         done : bool
             whether the episode has ended or not
         info : dict
-            other information regarding step
+            other information regarding step (see ActionObservation.info())
         """
-        assert isinstance(action, (Action, int)), "Step action must be an integer or an Action object"
+        next_state, obs, reward, done, info = self.generative_step(
+            self.current_state,
+            action
+        )
+        self.current_state = next_state
+        self.last_obs = obs
+        return obs, reward, done, info
+
+    def generative_step(self, state, action):
+        """Run one step of the environment using action in given state.
+
+        Arguments
+        ---------
+        state : State
+            The state to perform the action in
+        action : Action or int
+            Action object from action space or index of action in action space
+
+        Returns
+        -------
+        next_state : State
+            the state after action was performed
+        obs : Observation
+            current observation of environment
+        reward : float
+            reward from performing action
+        done : bool
+            whether the episode has ended or not
+        info : dict
+            other information regarding step (see ActionObservation.info())
+        """
+        assert isinstance(action, (Action, int)), \
+            "Step action must be an integer or an Action object"
         if isinstance(action, int):
             action = self.action_space[action]
 
-        action_obs = self.network.perform_action(action, self.fully_obs)
-        self._update_state(action, action_obs.success)
-        self.last_obs = self.current_state.get_observation(action, action_obs, self.fully_obs)
-        done = self._is_goal()
+        next_state, action_obs = self.network.perform_action(
+            state,
+            action
+        )
+        obs = next_state.get_observation(action,
+                                         action_obs,
+                                         self.fully_obs)
+        done = self.is_goal(next_state)
         reward = action_obs.value - action.cost
-        return self.last_obs, reward, done, {"success": action_obs.success,
-                                             "services": action_obs.services,
-                                             "os": action_obs.os}
+        return next_state, obs, reward, done, action_obs.info()
 
     def render(self, mode="ASCI"):
         """Render last observation.
@@ -177,7 +207,8 @@ class NASimEnv:
         elif mode == "readable":
             self.renderer.render_readable(self.last_obs)
         else:
-            print("Please choose correct render mode: {0}".format(self.rendering_modes))
+            print("Please choose correct render mode from :"
+                  f"{self.rendering_modes}")
 
     def render_action(self, action):
         if isinstance(action, int):
@@ -185,8 +216,9 @@ class NASimEnv:
         print(action)
 
     def render_episode(self, episode, width=7, height=7):
-        """Render an episode as sequence of network graphs, where an episode is a sequence of
-        (state, action, reward, done) tuples generated from interactions with environment.
+        """Render an episode as sequence of network graphs, where an episode
+        is a sequence of (state, action, reward, done) tuples generated from
+        interactions with environment.
 
         Arguments
         ---------
@@ -202,8 +234,9 @@ class NASimEnv:
         self.renderer.render_episode(episode)
 
     def render_network_graph(self, ax=None, show=False):
-        """Render a plot of network as a graph with hosts as nodes arranged into subnets and
-        showing connections between subnets. Renders current state of network.
+        """Render a plot of network as a graph with hosts as nodes arranged
+        into subnets and showing connections between subnets. Renders current
+        state of network.
 
         Arguments
         ---------
@@ -264,8 +297,8 @@ class NASimEnv:
         return len(self.action_space)
 
     def get_minimum_actions(self):
-        """Get the minimum possible actions required to exploit all sensitive hosts from the
-        initial state
+        """Get the minimum possible actions required to exploit all sensitive
+        hosts from the initial state
 
         Returns
         -------
@@ -280,8 +313,9 @@ class NASimEnv:
         Returns
         -------
         ndarray
-            numpy vector of 1's and 0's, one for each action. Where an index will
-            be 1 if action is valid given current state, or 0 if action is invalid.
+            numpy vector of 1's and 0's, one for each action. Where an
+            index will be 1 if action is valid given current state, or
+            0 if action is invalid.
         """
         mask = np.zeros(len(self.action_space), dtype=np.float)
         for i, action in enumerate(self.action_space):
@@ -290,12 +324,14 @@ class NASimEnv:
         return mask
 
     def get_best_possible_score(self):
-        """Get the best score possible for this environment, assuming action cost of 1 and each
-        sensitive host is exploitable from any other connected subnet.
+        """Get the best score possible for this environment, assuming action
+        cost of 1 and each sensitive host is exploitable from any other
+        connected subnet.
 
-        The theoretical best score is where the agent only exploits a single host in each subnet
-        that is required to reach sensitive hosts along the shortest bath in network graph, and
-        exploits the two sensitive hosts (i.e. the minial steps)
+        The theoretical best score is where the agent only exploits a single
+        host in each subnet that is required to reach sensitive hosts along
+        the shortest bath in network graph, and exploits the two sensitive
+        hosts (i.e. the minial steps)
 
         Returns
         -------
@@ -306,33 +342,11 @@ class NASimEnv:
         max_reward -= self.network.get_minimal_steps()
         return max_reward
 
-    def _update_state(self, action, success):
-        """Updates the current state of environment based on if action was successful and the gained
-        service info
-
-        Arguments
-        ---------
-        action : Action
-            the action performed
-        success : bool
-            whether action was successful
-        """
-        if not success:
-            return
-
-        if action.is_exploit() or action.is_subnet_scan():
-            for host_addr in self.address_space:
-                self.current_state.update(host_addr)
-
-    def _is_goal(self):
+    def is_goal(self, state):
         """Check if the current state is the goal state.
         The goal state is  when all sensitive hosts have been compromised
         """
-        for sensitive_m in self.network.get_sensitive_hosts():
-            if not self.network.host_compromised(sensitive_m):
-                # at least one sensitive host not compromised
-                return False
-        return True
+        return self.network.all_sensitive_hosts_compromised(state)
 
     def __str__(self):
         output = "Environment: "

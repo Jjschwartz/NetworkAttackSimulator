@@ -1,5 +1,8 @@
 import numpy as np
 
+from .host_vector import HostVector
+from .network_tensor import NetworkTensor
+
 
 class Observation:
     """An observation for the network attack simulator.
@@ -28,6 +31,10 @@ class Observation:
             whether the os was observed to be present or not
     """
 
+    # obs vector positions for auxiliary observations
+    _success_idx = 0
+    _conn_error_idx = _success_idx+1
+
     def __init__(self, state_shape):
         """
         Arguments
@@ -35,42 +42,58 @@ class Observation:
         state_shape : (int, int)
             2D shape of the state (i.e. num_hosts, host_vector_size)
         """
-        self.tensor = np.zeros(state_shape, dtype=np.float32)
+        self.obs_shape = (state_shape[0]+1, state_shape[1])
+        self.aux_row = self.obs_shape[0]-1
+        self.tensor = np.zeros(self.obs_shape, dtype=np.float32)
 
     def from_state(self, state):
-        """Copy observation from state (i.e. fully observable observation)
+        self.tensor[:self.aux_row] = state.network_state.tensor
 
-        Arguments
-        ---------
-        state : State
-            the state object to copy from
-        """
-        self.tensor[:] = state.network_state.tensor
+    def from_action_obs(self, action_obs):
+        self.tensor[self.aux_row][self._success_idx] = int(action_obs.success)
+        con_err = int(action_obs.connection_error)
+        self.tensor[self.aux_row][self._conn_error_idx] = con_err
+
+    def from_state_and_action(self, state, action_obs):
+        self.from_state(state)
+        self.from_action_obs(action_obs)
 
     def update_from_host(self, host_idx, host_obs_vector):
         """Update the observation using given host observation vector """
         self.tensor[host_idx][:] = host_obs_vector
 
-    def numpy_flat(self):
-        """Returns observation as a 1D numpy array.
+    @property
+    def success(self):
+        return bool(self.tensor[self.aux_row][self._success_idx])
 
-        Returns
-        -------
-        ndarray
-            1D numpy array representation of observation
-        """
+    @property
+    def connection_error(self):
+        return bool(self.tensor[self.aux_row][self._conn_error_idx])
+
+    def numpy_flat(self):
         return self.tensor.flatten()
 
     def numpy_2D(self):
-        """Returns observation as a 2D numpy array, with each column being
-        the observation of a host.
-
-        Returns
-        -------
-        ndarray
-            numpy array representation of observation
-        """
         return self.tensor
+
+    def get_readable(self):
+        host_obs = []
+        for host_idx in NetworkTensor.host_to_idx_map.values():
+            host_obs_vec = self.tensor[host_idx]
+            readable_dict = HostVector.get_readable(host_obs_vec)
+            host_obs.append(readable_dict)
+
+        aux_obs = {
+            "Success": self.success,
+            "Connection Error": self.connection_error
+        }
+        return host_obs, aux_obs
 
     def __str__(self):
         return str(self.tensor)
+
+    def __eq__(self, other):
+        return np.array_equal(self.tensor, other.tensor)
+
+    def __hash__(self):
+        return hash(str(self.tensor))

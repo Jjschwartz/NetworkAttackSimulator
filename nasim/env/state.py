@@ -10,10 +10,6 @@ class State:
     (i.e. as numpy array).
     """
 
-    # the network object which holds variables that are
-    # constant across different states
-    network = None
-
     def __init__(self, network_state):
         """
         Arguments
@@ -73,6 +69,7 @@ class State:
             an observation object
         """
         obs = Observation(self.shape())
+        obs.from_action_obs(action_obs)
         if fully_obs:
             obs.from_state(self)
             return obs
@@ -88,7 +85,7 @@ class State:
             reachable=True,     # must be true for success
             discovered=True,    # must be true for success
             value=False,
-            discovery_value=False,
+            # discovery_value=False,    # this is only added as needed
             services=False,
             os=False
         )
@@ -133,9 +130,27 @@ class State:
     def numpy_2D(self):
         return self.network_state.tensor
 
+    def get_readable(self):
+        host_obs = self.network_state.get_readable()
+        return host_obs
+
     @classmethod
     def generate_initial_state(cls, network):
-        return cls.tensorize(network)
+        state = cls.tensorize(network)
+        return network.reset(state)
+
+    @classmethod
+    def generate_random_initial_state(cls, network):
+        network_tensor = NetworkTensor.tensorize_random(network)
+        state = State(network_tensor)
+        # ensure host state set correctly
+        return network.reset(state)
 
     def __str__(self):
         return str(self.network_state)
+
+    def __hash__(self):
+        return hash(self.network_state)
+
+    def __eq__(self, other):
+        return self.network_state == other.network_state

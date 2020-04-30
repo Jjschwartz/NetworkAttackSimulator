@@ -3,7 +3,7 @@
 class ActionObservation:
 
     def __init__(self, success, value=0.0, services=None, os=None,
-                 discovered=None):
+                 discovered=None, connection_error=False):
         """
         Arguments
         ---------
@@ -18,20 +18,21 @@ class ActionObservation:
             OS identified by action
         discovered : dict
             host addresses discovered by action
+        connection_error : bool
+            True if action failed due to connection error (e.g. could
+            not reach target)
         """
         self.success = success
         self.value = value
         self.services = {} if services is None else services
         self.os = {} if os is None else os
         self.discovered = {} if discovered is None else discovered
+        self.connection_error = connection_error
 
     def __str__(self):
-        output = ["ActionObservation:",
-                  f"  Success={self.success}",
-                  f"  Value={self.value}",
-                  f"  Services={self.services}",
-                  f"  OS={self.os}",
-                  f"  Discovered={self.discovered}"]
+        output = ["ActionObservation:"],
+        for k, v in self.info().items():
+            output.append(f"  {k}={v}")
         return "\n".join(output)
 
     def info(self):
@@ -40,5 +41,6 @@ class ActionObservation:
             value=self.value,
             services=self.services,
             os=self.os,
-            discovered=self.discovered
+            discovered=self.discovered,
+            connection_error=self.connection_error
         )

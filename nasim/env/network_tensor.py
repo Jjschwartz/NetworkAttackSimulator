@@ -24,6 +24,7 @@ class NetworkTensor:
         tensor = np.zeros((len(network.hosts),
                           h0_vector.state_size),
                           dtype=np.float32)
+
         if cls.host_to_idx_map is None:
             cls.host_to_idx_map = dict()
             for host_num, host_addr in enumerate(network.hosts):
@@ -35,8 +36,26 @@ class NetworkTensor:
         return NetworkTensor(tensor)
 
     @classmethod
+    def tensorize_random(cls, network):
+        h0 = network.hosts[(1, 0)]
+        h0_vector = HostVector.vectorize_random(h0)
+        tensor = np.zeros((len(network.hosts),
+                          h0_vector.state_size),
+                          dtype=np.float32)
+
+        if cls.host_to_idx_map is None:
+            cls.host_to_idx_map = dict()
+            for host_num, host_addr in enumerate(network.hosts):
+                cls.host_to_idx_map[host_addr] = host_num
+
+        for host_addr, host in network.hosts.items():
+            host_num = cls.host_to_idx_map[host_addr]
+            HostVector.vectorize_random(host, tensor[host_num])
+        return NetworkTensor(tensor)
+
+    @classmethod
     def get_host_idx(cls, host_addr):
-        return cls.host_to_idx_map(host_addr)
+        return cls.host_to_idx_map[host_addr]
 
     @property
     def hosts(self):
@@ -98,10 +117,23 @@ class NetworkTensor:
     def state_size(self):
         return self.tensor.size
 
+    def get_readable(self):
+        host_obs = []
+        for host_addr in self.host_to_idx_map:
+            host = self.get_host(host_addr)
+            readable_dict = host.readable()
+            host_obs.append(readable_dict)
+        return host_obs
+
     def __str__(self):
         output = "\n--- Network Tensor ---\n"
         output += "Hosts:\n"
-        for host_addr in self.host_to_idx:
-            host = self.get_host(host_addr)
+        for host in self.hosts:
             output += str(host) + "\n"
         return output
+
+    def __hash__(self):
+        return hash(str(self.tensor))
+
+    def __eq__(self, other):
+        return np.array_equal(self.tensor, other.tensor)

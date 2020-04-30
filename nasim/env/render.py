@@ -40,7 +40,8 @@ class Viewer:
         Arguments
         ---------
         state : State
-            state of network user wants to view (Typically will be initial state)
+            state of network user wants to view (Typically will be
+            initial state)
         ax : Axes
             matplotlib axis to plot graph on, or None to plot on new axis
         show : bool
@@ -63,8 +64,16 @@ class Viewer:
         else:
             fig = ax.get_figure()
 
-        nx.draw_networkx_nodes(G, self.positions, node_size=1000, node_color=colors, ax=ax)
-        nx.draw_networkx_labels(G, self.positions, labels, font_size=10, font_weight="bold")
+        nx.draw_networkx_nodes(G,
+                               self.positions,
+                               node_size=1000,
+                               node_color=colors,
+                               ax=ax)
+        nx.draw_networkx_labels(G,
+                                self.positions,
+                                labels,
+                                font_size=10,
+                                font_weight="bold")
         nx.draw_networkx_edges(G, self.positions)
         ax.axis('off')
         ax.set_xlim(left=0.0, right=100.0)
@@ -104,49 +113,40 @@ class Viewer:
         obs : Observation
             observation to view
         """
-        host_obs = []
-        for host_num, (host_addr, host) in enumerate(self.network.hosts.items()):
-            host_obs_vector = obs.tensor[host_num]
-            readable_dict = {"Host Address": host_addr}
-            readable_dict.update(host.get_readable(host_obs_vector))
-            host_obs.append(readable_dict)
+        host_obs, aux_obs = obs.get_readable()
+        aux_table = self._construct_table_from_dict(aux_obs)
+        host_table = self._construct_table_from_list_of_dicts(host_obs)
+        print("Observation:")
+        print(aux_table)
+        print(host_table)
 
-        headers = list(host_obs[0].keys())
-        table = PrettyTable(headers)
-        for host in host_obs:
-            row = [str(host[k]) for k in headers]
-            table.add_row(row)
-        print(table)
-
-    def render_asci(self, obs):
-        """Render observation in ASCI format to stdout
+    def render_readable_state(self, state):
+        """Print a readable tabular version of observation to stdout
 
         Arguments
         ---------
         state : State
-            state of network user wants to view (Typically will be initial state)
+            state to view
         """
-        sensitive_hosts = self.network.sensitive_hosts
-        subnets = [[] for x in range(len(self.subnets))]
-        for m in self.network.address_space:
-            subnets[m[0]].append(get_host_representation(obs, sensitive_hosts, m, SYMBOLS))
+        host_obs = state.get_readable()
+        host_table = self._construct_table_from_list_of_dicts(host_obs)
+        print("State:")
+        print(host_table)
 
-        max_row_size = max([len(x) for x in subnets])
-        min_row_size = min([len(x) for x in subnets])
+    def _construct_table_from_dict(self, d):
+        headers = list(d.keys())
+        table = PrettyTable(headers)
+        row = [str(d[k]) for k in headers]
+        table.add_row(row)
+        return table
 
-        output = "-----------------------------"
-        for i, row in enumerate(subnets):
-            output += "\nsubnet {0}: ".format(i)
-            output += " " * ((max_row_size - len(row)) // 2)
-            for col in row:
-                output += col
-            output += "\n"
-            if i < len(subnets) - 1:
-                n_spaces = (max_row_size - min_row_size) // 2
-                output += " " * (len("subnet X: ") + n_spaces) + "|"
-        output += "-----------------------------\n\n"
-
-        print(output)
+    def _construct_table_from_list_of_dicts(self, l):
+        headers = list(l[0].keys())
+        table = PrettyTable(headers)
+        for d in l:
+            row = [str(d[k]) for k in headers]
+            table.add_row(row)
+        return table
 
     def _construct_graph(self, state):
         """Create a network graph from the current state
@@ -167,7 +167,10 @@ class Viewer:
         # Create a fully connected graph for each subnet
         for subnet in self.subnets:
             for m in subnet:
-                node_color = get_host_representation(state, sensitive_hosts, m, COLORS)
+                node_color = get_host_representation(state,
+                                                     sensitive_hosts,
+                                                     m,
+                                                     COLORS)
                 node_pos = self.positions[m]
                 G.add_node(m, color=node_color, pos=node_pos, label=str(m))
             for x in subnet:
@@ -180,7 +183,8 @@ class Viewer:
         subnet_prime_nodes = []
         for subnet in self.subnets:
             subnet_prime_nodes.append(subnet[0])
-        # Connect connected subnets by creating edge between first host from each subnet
+        # Connect connected subnets by creating edge between first host from
+        # each subnet
         for x in subnet_prime_nodes:
             for y in subnet_prime_nodes:
                 if x == y:
@@ -202,7 +206,8 @@ class Viewer:
         address_space = network.address_space
         depths = network.get_subnet_depths()
         max_depth = max(depths)
-        # list of lists where each list contains subnet_id of subnets with same depth
+        # list of lists where each list contains subnet_id of subnets with
+        # same depth
         subnets_by_depth = [[] for i in range(max_depth + 1)]
         for subnet_id, subnet_depth in enumerate(depths):
             if subnet_id == 0:
@@ -211,11 +216,13 @@ class Viewer:
 
         # max value of position in figure
         max_pos = 100
-        # for spacing between rows and columns and spread of nodes within subnet
+        # for spacing between rows and columns and spread of nodes within
+        # subnet
         margin = 10
         row_height = max_pos / (max_depth + 1)
 
-        # positions are randomly assigned within regions of display based on subnet number
+        # positions are randomly assigned within regions of display based on
+        # subnet number
         positions = {}
         for m in address_space:
             m_subnet = m[0]
@@ -226,16 +233,20 @@ class Viewer:
             # col width is dependent on number of subnets at same depth
             num_cols = len(subnets_by_depth[m_depth])
             col_width = max_pos / num_cols
-            # col of host dependent on subnet_id relative to other subnets of same depth
+            # col of host dependent on subnet_id relative to other subnets of
+            # same depth
             m_col = subnets_by_depth[m_depth].index(m_subnet)
             col_min = m_col * col_width
             col_max = (m_col + 1) * col_width
             # randomly sample position of host within row and column of subnet
-            col_pos, row_pos = self._get_host_position(m, positions, address_space, row_min,
-                                                       row_max, col_min, col_max, margin)
+            col_pos, row_pos = self._get_host_position(
+                m, positions, address_space, row_min, row_max, col_min,
+                col_max, margin
+            )
             positions[m] = (col_pos, row_pos)
 
-        # get position of agent, which is just right of host first host in network
+        # get position of agent, which is just right of host first host in
+        # network
         first_m_pos = positions[address_space[0]]
         agent_row = first_m_pos[1]
         agent_col = min(first_m_pos[0] + margin * 4, max_pos - margin)
@@ -245,9 +256,10 @@ class Viewer:
 
     def _get_host_position(self, m, positions, address_space, row_min, row_max,
                            col_min, col_max, margin):
-        """Get the position of m within the bounds of (row_min, row_max, col_min, col_max)
-        while trying to make the distance between the positions of any two hosts in the
-        same subnet greater than some threshold.
+        """Get the position of m within the bounds of (row_min, row_max,
+        col_min, col_max) while trying to make the distance between the
+        positions of any two hosts in the same subnet greater than some
+        threshold.
         """
         subnet_hosts = []
         for other_m in address_space:

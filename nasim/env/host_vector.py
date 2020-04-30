@@ -55,6 +55,19 @@ class HostVector:
             vector[cls._get_os_idx(os_num)] = int(os_val)
         return cls(vector)
 
+    @classmethod
+    def vectorize_random(cls, host, vector=None):
+        hvec = cls.vectorize(host, vector)
+        # random variables
+        for srv_num in cls.service_idx_map.values():
+            srv_val = np.random.randint(0, 2)
+            hvec.vector[cls._get_service_idx(srv_num)] = srv_val
+
+        chosen_os = np.random.choice(list(cls.os_idx_map.values()))
+        for os_num in cls.os_idx_map.values():
+            hvec.vector[cls._get_os_idx(os_num)] = int(os_num == chosen_os)
+        return hvec
+
     @property
     def compromised(self):
         return self.vector[self._compromised_idx]
@@ -179,9 +192,11 @@ class HostVector:
             v = self.vector[self._discovery_value_idx]
             obs[self._discovery_value_idx] = v
         if services:
-            obs[self._service_idx_slice] = self.vector[self._service_idx_slice]
+            idxs = self._service_idx_slice()
+            obs[idxs] = self.vector[idxs]
         if os:
-            obs[self._os_idx_slice] = self.vector[self._os_idx_slice]
+            idxs = self._os_idx_slice()
+            obs[idxs] = self.vector[idxs]
         return obs
 
     def readable(self):
@@ -213,6 +228,8 @@ class HostVector:
     @classmethod
     def get_readable(cls, vector):
         readable_dict = dict()
+        readable_dict["Address"] = (int(vector[cls._subnet_address_idx]),
+                                    int(vector[cls._host_address_idx]))
         readable_dict["Compromised"] = bool(vector[cls._compromised_idx])
         readable_dict["Reachable"] = bool(vector[cls._reachable_idx])
         readable_dict["Discovered"] = bool(vector[cls._discovered_idx])

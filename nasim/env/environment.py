@@ -186,8 +186,58 @@ class NASimEnv:
         reward = action_obs.value - action.cost
         return next_state, obs, reward, done, action_obs.info()
 
-    def render(self, mode="ASCI"):
-        """Render last observation.
+    def generate_random_initial_state(self):
+        """Generates a random initial state for environment.
+
+        This only randomizes the host configurations (os, services)
+        using a uniform distribution, so may result in networks where
+        it is not possible to reach the goal.
+
+        Returns
+        -------
+        State
+            A random initial state
+        """
+        return State.generate_random_initial_state(self.network)
+
+    def generate_initial_state(self):
+        """Generate the initial state for the environment.
+
+        Note, this does not reset the current state of the environment (use the
+        reset function for that).
+
+        Returns
+        -------
+        State
+            The initial state
+        """
+        return State.generate_initial_state(self.network)
+
+    def render(self, mode="readable", obs=None):
+        """Render observation.
+
+        See render module for more details on modes and symbols.
+
+        Arguments
+        ---------
+        mode : str
+            rendering mode
+        obs : Observation, optional
+            the observation to render (renders last_obs if None)
+        """
+        if obs is None:
+            obs = self.last_obs
+        if self.renderer is None:
+            self.renderer = Viewer(self.network)
+
+        if mode == "readable":
+            self.renderer.render_readable(obs)
+        else:
+            print("Please choose correct render mode from :"
+                  f"{self.rendering_modes}")
+
+    def render_state(self, mode="readable", state=None):
+        """Render state.
 
         See render module for more details on modes and symbols.
 
@@ -200,12 +250,13 @@ class NASimEnv:
         mode : str
             rendering mode
         """
+        if state is None:
+            state = self.current_state
         if self.renderer is None:
             self.renderer = Viewer(self.network)
-        if mode == "ASCI":
-            self.renderer.render_asci(self.last_obs)
-        elif mode == "readable":
-            self.renderer.render_readable(self.last_obs)
+
+        if mode == "readable":
+            self.renderer.render_readable_state(state)
         else:
             print("Please choose correct render mode from :"
                   f"{self.rendering_modes}")

@@ -19,17 +19,20 @@ exploits:
   e_ssh:
     service: ssh
     os: linux
-    prob: 0.8
+    # prob: 0.8
+    prob: 1.0
     cost: 3
   e_ftp:
     service: ftp
     os: windows
-    prob: 0.5
+    # prob: 0.5
+    prob: 1.0
     cost: 1
   e_http:
     service: http
     os: None
-    prob: 0.8
+    # prob: 0.8
+    prob: 1.0
     cost: 2
 service_scan_cost: 1
 os_scan_cost: 1

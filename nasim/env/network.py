@@ -53,18 +53,24 @@ class Network:
 
         if not state.network_state.host_reachable(action.target):
             # print("target not reachable")
-            return next_state, ActionObservation(False, 0.0)
+            return next_state, ActionObservation(False,
+                                                 0.0,
+                                                 connection_error=True)
 
         if not state.network_state.host_discovered(action.target):
             # print("target not discovered")
-            return next_state, ActionObservation(False, 0.0)
+            return next_state, ActionObservation(False,
+                                                 0.0,
+                                                 connection_error=True)
 
         if action.is_exploit() and not \
            self.host_service_traffic_permitted(state,
                                                action.target,
                                                action.service):
             # print("traffic not permitted")
-            return next_state, ActionObservation(False, 0.0)
+            return next_state, ActionObservation(False,
+                                                 0.0,
+                                                 connection_error=True)
 
         if action.is_exploit() and \
            state.network_state.host_compromised(action.target):
@@ -86,7 +92,9 @@ class Network:
 
     def _perform_subnet_scan(self, next_state, action):
         if not next_state.network_state.host_compromised(action.target):
-            return next_state, ActionObservation(False, 0.0)
+            return next_state, ActionObservation(False,
+                                                 0.0,
+                                                 connection_error=True)
 
         discovered = {}
         discovery_reward = 0

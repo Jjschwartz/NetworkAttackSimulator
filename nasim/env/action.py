@@ -49,8 +49,9 @@ class Action:
         return False
 
     def __str__(self):
-        return (f"{self.__class__.__name__}: name={self.name}, target={self.target}, "
-                f"cost={self.cost:.2f}, prob={self.prob:.2f}")
+        return (f"{self.__class__.__name__}: name={self.name}, "
+                f"target={self.target}, cost={self.cost:.2f}, "
+                f"prob={self.prob:.2f}")
 
     def __hash__(self):
         return hash(self.__str__())
@@ -85,9 +86,15 @@ class Action:
         """
         action_space = []
         for address in scenario.address_space:
-            action_space.append(ServiceScan("service_scan", address, scenario.service_scan_cost))
-            action_space.append(OSScan("os_scan", address, scenario.os_scan_cost))
-            action_space.append(SubnetScan("subnet_scan", address, scenario.subnet_scan_cost))
+            action_space.append(ServiceScan("service_scan",
+                                            address,
+                                            scenario.service_scan_cost))
+            action_space.append(OSScan("os_scan",
+                                       address,
+                                       scenario.os_scan_cost))
+            action_space.append(SubnetScan("subnet_scan",
+                                           address,
+                                           scenario.subnet_scan_cost))
             for e_name, e_def in scenario.exploits.items():
                 exploit = Exploit(e_name, address, **e_def)
                 action_space.append(exploit)

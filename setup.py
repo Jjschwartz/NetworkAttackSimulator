@@ -11,7 +11,8 @@ setup(name='nasim',
         'numpy',
         'networkx',
         'matplotlib',
-        'pyyaml'
+        'pyyaml',
+        'prettytable'
       ],
       description="A simple and fast simulator for remote network penetration testing",
       author="Jonathon Schwartz")

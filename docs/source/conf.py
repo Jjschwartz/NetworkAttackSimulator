@@ -22,7 +22,7 @@ copyright = '2020, Jonathon Schwartz'
 author = 'Jonathon Schwartz'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.0.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,6 +40,10 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+
+# Explicitly assign the master document
+# This is required for the readthedocs.org build to work correctly
+master_doc = 'index'
 
 
 # -- Options for HTML output -------------------------------------------------

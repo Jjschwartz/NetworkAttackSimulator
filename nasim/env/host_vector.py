@@ -1,9 +1,37 @@
+""" This module contains the HostVector class.
+
+This is the main class for storing and updating the state of a single host
+in the NASim environment.
+"""
+
 import numpy as np
 
-from .action_obs import ActionObservation
+from .action import ActionResult
 
 
 class HostVector:
+    """ A Vector representation of a single host in NASim.
+
+    Each host is represented as a vector (1D numpy array) for efficiency and to
+    make it easier to use with deep learning agents. The vector is made up of
+    multiple features arranged in a consistent way.
+
+    Features in the vector, listed in order, are:
+    1. subnet address
+    2. host address
+    3. compromised - True/False
+    4. reachable - True/False
+    5. discovered - True/False
+    6. value
+    7. discovery value
+    8. services running - True/False for each service in scenario
+    9. OS - True/False for each OS in scenario (only one OS has value of true)
+
+    Note, that the vector is a float vector so True/False is actually
+    represented as 1/0.
+
+    The size of the vector is equal to 7 + #services + #OS.
+    """
 
     # class properties that are the same for all hosts
     # these are set when calling vectorize method
@@ -144,12 +172,12 @@ class HostVector:
         """
         next_state = self.copy()
         if action.is_service_scan():
-            return next_state, ActionObservation(True,
-                                                 0,
-                                                 services=self.services)
+            return next_state, ActionResult(True,
+                                            0,
+                                            services=self.services)
 
         if action.is_os_scan():
-            return next_state, ActionObservation(True, 0, os=self.os)
+            return next_state, ActionResult(True, 0, os=self.os)
 
         if self.is_running_service(action.service) and \
            (action.os is None or self.is_running_os(action.os)):
@@ -159,12 +187,12 @@ class HostVector:
                 # to ensure a machine is not rewarded twice
                 value = self.value
                 next_state.compromised = True
-            return next_state, ActionObservation(True,
-                                                 value,
-                                                 services=self.services,
-                                                 os=self.os)
+            return next_state, ActionResult(True,
+                                            value,
+                                            services=self.services,
+                                            os=self.os)
         # service absent, exploit fails
-        return next_state, ActionObservation(False, 0)
+        return next_state, ActionResult(False, 0)
 
     def observe(self,
                 address=False,

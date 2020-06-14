@@ -1,27 +1,29 @@
+""" The main Environment class for NASim: NASimEnv.
+
+The NASimEnv class is the main interface for agents interacting with NASim.
+"""
+
 import numpy as np
 
 from nasim.env.state import State
 from nasim.env.action import Action
 from nasim.env.render import Viewer
 from nasim.env.network import Network
-from nasim.scenarios import ScenarioLoader, ScenarioGenerator
 
 
 class NASimEnv:
-    """A simple simulated computer network with subnetworks and hosts with
-    different vulnerabilities.
+    """ A simulated computer network environment for pen-testing.
 
-    Properties
+    ...
+
+    Attributes
     ----------
-    - current_state : the current knowledge the agent has observed
-    - action_space : the set of all actions allowed for environment
-    - mode : the observability mode of the environment.
+    current_state : State
+        the current knowledge the agent has observed
+    action_space : List(Action)
+        list of all actions allowed for environment
+    last_obs : the observability mode of the environment.
 
-    The mode can be either:
-    1. MDP - Here the state is fully observable, so after each step the actual
-             next state is returned
-    2. POMDP - The state is partially observable, so after each step only what
-               is observed of the next state is returned.
 
     For both modes the dimensions are the same for the returned
     state/observation. The only difference is for the POMDP mode, for parts of
@@ -29,23 +31,22 @@ class NASimEnv:
     value (i.e. 0 in most cases).
     """
     rendering_modes = ["readable", "ASCI"]
-    env_modes = ['MDP', 'POMDP']
 
     action_space = None
     current_state = None
 
-    def __init__(self, scenario, partially_obs=False):
+    def __init__(self, scenario, fully_obs=True):
         """
-        Arguments
-        ---------
+        Parameters
+        ----------
         scenario : Scenario
             Scenario object, defining the properties of the environment
-        partially_obs : bool
-            The observability mode of environment, if True then uses partially
-            observable mode, otherwise is Fully observable (default=False)
+        fully_obs : bool, optional
+            The observability mode of environment, if True then uses fully
+            observable mode, otherwise is partially observable (default=True)
         """
         self.scenario = scenario
-        self.fully_obs = not partially_obs
+        self.fully_obs = fully_obs
 
         self.network = Network(scenario)
         self.address_space = scenario.address_space
@@ -53,61 +54,15 @@ class NASimEnv:
 
         self.current_state = State.generate_initial_state(self.network)
         self.last_obs = None
-        self.renderer = None
+        self._renderer = None
         self.reset()
-
-    @classmethod
-    def from_file(cls, path, partially_obs):
-        """Construct Environment from a scenario file.
-
-        Arguments
-        ---------
-        path : str
-            path to the scenario file
-        partially_obs : bool
-            The observability mode of environment, if True then uses partially
-            observable mode, otherwise is Fully observable
-
-        Returns
-        -------
-        NASimEnv
-            a new environment object
-        """
-        loader = ScenarioLoader()
-        scenario = loader.load(path)
-        return cls(scenario, partially_obs)
-
-    @classmethod
-    def from_params(cls, num_hosts, num_services, partially_obs, **params):
-        """Construct Environment from an auto generated network.
-
-        Arguments
-        ---------
-        num_hosts : int
-            number of hosts to include in network (minimum is 3)
-        num_services : int
-            number of services to use in environment (minimum is 1)
-        partially_obs : bool
-            The observability mode of environment, if True then uses partially
-            observable mode, otherwise is Fully observable
-        params : dict
-            generator params (see scenarios.generator for full list)
-
-        Returns
-        -------
-        NASimEnv
-            a new environment object
-        """
-        generator = ScenarioGenerator()
-        scenario = generator.generate(num_hosts, num_services, **params)
-        return cls(scenario, partially_obs)
 
     def reset(self):
         """Reset the state of the environment and returns the initial state.
 
         Returns
         -------
-        Obs
+        Observation
             the initial observation of the environment
         """
         self.current_state = self.network.reset(self.current_state)
@@ -123,8 +78,8 @@ class NASimEnv:
         is changed by simulator. So if you need to store the observation
         you will need to copy it.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         action : Action or int
             Action object from action space or index of action in action space
 
@@ -150,8 +105,8 @@ class NASimEnv:
     def generative_step(self, state, action):
         """Run one step of the environment using action in given state.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         state : State
             The state to perform the action in
         action : Action or int
@@ -218,20 +173,21 @@ class NASimEnv:
 
         See render module for more details on modes and symbols.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         mode : str
             rendering mode
         obs : Observation, optional
-            the observation to render (renders last_obs if None)
+            the observation to render, if None will render last observation
+            (default=None)
         """
         if obs is None:
             obs = self.last_obs
-        if self.renderer is None:
-            self.renderer = Viewer(self.network)
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
 
         if mode == "readable":
-            self.renderer.render_readable(obs)
+            self._renderer.render_readable(obs)
         else:
             print("Please choose correct render mode from :"
                   f"{self.rendering_modes}")
@@ -245,23 +201,36 @@ class NASimEnv:
             Machines displayed in rows, with one row for each subnet and
             hosts displayed in order of id within subnet
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         mode : str
             rendering mode
+        state : State, optional
+            the State to render, if None will render current state
+            (default=None)
         """
         if state is None:
             state = self.current_state
-        if self.renderer is None:
-            self.renderer = Viewer(self.network)
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
 
         if mode == "readable":
-            self.renderer.render_readable_state(state)
+            self._renderer.render_readable_state(state)
         else:
             print("Please choose correct render mode from :"
                   f"{self.rendering_modes}")
 
     def render_action(self, action):
+        """Renders human readable version of action.
+
+        This is mainly useful for getting a text description of the action
+        that corresponds to a given integer.
+
+        Parameters
+        ----------
+        action : int or Action
+            the action to render
+        """
         if isinstance(action, int):
             action = self.action_space[action]
         print(action)
@@ -271,8 +240,8 @@ class NASimEnv:
         is a sequence of (state, action, reward, done) tuples generated from
         interactions with environment.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         episode : list
             list of (State, Action, reward, done) tuples
         width : int
@@ -280,33 +249,33 @@ class NASimEnv:
         height : int
             height of GUI window
         """
-        if self.renderer is None:
-            self.renderer = Viewer(self.network)
-        self.renderer.render_episode(episode)
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
+        self._renderer.render_episode(episode)
 
     def render_network_graph(self, ax=None, show=False):
         """Render a plot of network as a graph with hosts as nodes arranged
         into subnets and showing connections between subnets. Renders current
         state of network.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         ax : Axes
             matplotlib axis to plot graph on, or None to plot on new axis
         show : bool
             whether to display plot, or simply setup plot and showing plot
             can be handled elsewhere by user
         """
-        if self.renderer is None:
-            self.renderer = Viewer(self.network)
+        if self._renderer is None:
+            self._renderer = Viewer(self.network)
         state = self.current_state
-        self.renderer.render_graph(state, ax, show)
+        self._renderer.render_graph(state, ax, show)
 
     def get_state_shape(self, flat=True):
         """Get the shape of an environment state representation
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         flat : bool, optional
             whether to get shape of flattened state (True) or not (False)
             (default=True)
@@ -323,8 +292,8 @@ class NASimEnv:
     def get_obs_shape(self, flat=True):
         """Get the shape of an environment observation representation
 
-        Arguments
-        ---------
+        Parameters
+        -----------
         flat : bool, optional
             whether to get shape of flattened observation (True) or not (False)
             (default=True)
@@ -398,19 +367,3 @@ class NASimEnv:
         The goal state is  when all sensitive hosts have been compromised
         """
         return self.network.all_sensitive_hosts_compromised(state)
-
-    def __str__(self):
-        output = "Environment: "
-        output += "Subnets = {}, ".format(self.network.subnets)
-        output += "Services = {}, ".format(self.scenario.num_services)
-        return output
-
-    def outfile_name(self):
-        """Generate name for environment for use when writing to a file.
-
-        Output format:
-            <list of size of each subnet>_<number of services>
-        """
-        output = "{}_".format(self.network.subnets)
-        output += "{}_".format(self.scenario.num_services)
-        return output

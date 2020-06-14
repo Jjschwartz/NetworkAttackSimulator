@@ -5,13 +5,24 @@ from .network_tensor import NetworkTensor
 
 
 class Observation:
-    """An observation for the network attack simulator.
+    """An observation for NASim.
 
-    This is returned by the step function
+    This is returned by the step function after every action is performed.
+    Each observation is a 2D tensor with a row for each host and an additional
+    row containing auxiliary observations.
+    Each host row is a host_vector.
+    For details see :py:class: nasim.env.host_vector.HostVector
 
-    --------
+    The auxiliary row is the final row in the observation tensor and has the
+    following features (in order):
+    1. Action success - True/False
+        whether the action succeeded or failed
+    2. Connection error - True/False
+        whether there was a connection error or not
 
-    An observation contains for each host
+    Since the number of features in the auxiliary row is less than the number
+    of features in each host row, the remainder of the row is all zeros.
+
     1. compromised : 0 or 1
         whether the action resulted in the host becoming compromised (1)
         or not (0)
@@ -37,8 +48,8 @@ class Observation:
 
     def __init__(self, state_shape):
         """
-        Arguments
-        ---------
+        Parameters
+        ----------
         state_shape : (int, int)
             2D shape of the state (i.e. num_hosts, host_vector_size)
         """

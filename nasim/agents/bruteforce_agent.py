@@ -46,8 +46,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("env_name", type=str, help="benchmark scenario name")
-    parser.add_argument("-s", "--seed", type=int, default=0, help="random seed")
-    parser.add_argument("-o", "--partially_obs", action="store_true", help="Partially Observable Mode")
+    parser.add_argument("-s", "--seed", type=int, default=0,
+                        help="random seed")
+    parser.add_argument("-o", "--partially_obs", action="store_true",
+                        help="Partially Observable Mode")
     args = parser.parse_args()
 
     env = make_benchmark_env(args.env_name, args.seed, args.partially_obs)

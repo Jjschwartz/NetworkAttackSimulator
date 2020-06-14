@@ -20,24 +20,12 @@ Future extensions
 - Add priviledge escalation
 
 
-User Guide
-----------
-
 .. toctree::
    :maxdepth: 2
 
-   user/installation
-   user/development
-   user/license
-   user/help
-   user/acknowledgements
-   user/contact
-
-
-API reference
--------------
-
-Coming soon..
+   tutorials/index
+   reference/index
+   community/index
 
 
 How should I cite NASim?

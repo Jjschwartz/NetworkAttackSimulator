@@ -1,11 +1,14 @@
-"""This module contains functionality for generating network configurations based on number of
-hosts and services in network using standard formula.
+"""This module contains functionality for generating scenarios.
+
+Specifically, it generates network configurations and action space
+configurations based on number of hosts and services in network using standard
+formula.
 """
 import numpy as np
 
-from nasim.env.host import Host
 import nasim.scenarios.utils as u
 from nasim.scenarios import Scenario
+from nasim.scenarios.host import Host
 
 # Constants for generating network
 USER_SUBNET_SIZE = 5
@@ -19,27 +22,29 @@ class ScenarioGenerator:
 
     Host Configuration distribution:
         1. if uniform=True
-            => host configurations are chosen uniformly at random from set of all valid
-               possible configurations
+            => host configurations are chosen uniformly at random from set of
+               all valid possible configurations
         2. if uniform=False
             => host configurations are chosen to be corelated (see below)
 
     CORRELATED CONFIGURATIONS:
-    The distribution of configurations of each host in the network are generated using a
-    Nested Dirichlet Process, so that across the network hosts will have corelated
-    configurations (i.e. certain services/configurations will be more common across hosts on
-    the network), the degree of corelation is controlled by alpha_H and alpha_V, with lower
+    The distribution of configurations of each host in the network are
+    generated using a Nested Dirichlet Process, so that across the network
+    hosts will have corelated configurations (i.e. certain
+    services/configurations will be more common across hosts on the network),
+    the degree of corelation is controlled by alpha_H and alpha_V, with lower
     values leading to greater corelation.
 
-    lambda_V controls the average number of services running per host. Higher values will
-    mean more services (so more vulnerable) hosts on average.
+    lambda_V controls the average number of services running per host. Higher
+    values will mean more services (so more vulnerable) hosts on average.
 
     EXPLOIT PROBABILITIES
     Success probabilities of each exploit are determined as follows:
         - None - probabilities generated randomly from uniform distribution
-        - "mixed" - probabilities randomly chosen from distribution of low: 0.2,
-            med: 0.5 and high: 0.8 with probability of level based on attack complexity
-            distribution of top 10 vulnerabilities in 2017.
+        - "mixed" - probabilities randomly chosen from distribution of
+            low: 0.2, med: 0.5 and high: 0.8 with probability of level based
+            on attack complexity distribution of top 10 vulnerabilities in
+            2017.
         - single-float - probability of each exploit is set to value
         - list of float - probability of each exploit is set to
             corresponding value in list
@@ -79,8 +84,8 @@ class ScenarioGenerator:
         num_os : int, optional
             number of OS running on network (minimum is 1) (default=2)
         num_exploits : int, optional
-            number of exploits to use. minimum is 1. If None will use num_services.
-            (default=None)
+            number of exploits to use. minimum is 1. If None will use
+            num_services (default=None)
         r_sensitive : float, optional
             reward for sensitive subnet documents (default=10)
         r_user : float, optional
@@ -96,7 +101,8 @@ class ScenarioGenerator:
         subnet_scan_cost : int or float, optional
             cost for an subnet scan (default=1)
         uniform : bool, optional
-            whether to use uniform distribution or correlatted of host configs (default=False)
+            whether to use uniform distribution or correlatted of host configs
+            (default=False)
         alpha_H : float, optional
             (only used when uniform=False) Scaling/concentration parameter for
             controlling corelation between host configurations (must be > 0)
@@ -110,10 +116,11 @@ class ScenarioGenerator:
             number of services running per host configuration (must be > 0)
             (default=1.0)
         restrictiveness : int, optional
-            max number of services allowed to pass through firewalls between zones
-            (default=5)
+            max number of services allowed to pass through firewalls between
+            zones (default=5)
         random_goal : bool, optional
-            whether to randomly assign the goal user host or not (default=False)
+            whether to randomly assign the goal user host or not
+            (default=False)
         base_host_value : int, optional,
             value of non sensitive hosts (default=1)
         host_discovery_value : int, optional
@@ -123,8 +130,8 @@ class ScenarioGenerator:
 
         Returns
         -------
-        scenario_dict : dict
-            dictionary with scenario definition
+        Scenario
+            scenario description
         """
         assert 0 < num_services
         assert 2 < num_hosts

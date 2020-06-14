@@ -3,17 +3,23 @@ from .network_tensor import NetworkTensor
 
 
 class State:
-    """A state in the network attack simulator environment.
+    """A state in the NASim Environment.
 
     This class mainly acts as a wrapper to the Environment Network class and
     provides functionality for getting the state in friendly format
     (i.e. as numpy array).
+
+    ...
+    Attributes
+    ----------
+    network_state : NetworkTensor
+        tensor representation of the state of network
     """
 
     def __init__(self, network_state):
         """
-        Arguments
-        ---------
+        Parameters
+        ----------
         network_state : NetworkTensor
             the current network state
         """
@@ -54,8 +60,8 @@ class State:
     def get_observation(self, action, action_obs, fully_obs):
         """Get observation given last action
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         action : Action
             last action performed
         action_obs : ActionObservation

@@ -94,8 +94,8 @@ def min_subnet_depth(topology):
     """Find the minumum depth of each subnet in the network graph in terms of steps
     from an exposed subnet to each subnet
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     topology : 2D matrix
         An adjacency matrix representing the network, with first subnet
         representing the internet (i.e. exposed)

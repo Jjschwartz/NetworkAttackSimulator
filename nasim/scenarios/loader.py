@@ -1,10 +1,10 @@
 """This module contains functionality for loading network scenarios from yaml
 files.
 """
-from nasim.env.host import Host
 import nasim.scenarios.utils as u
 import nasim.utils.futils as futils
 from nasim.scenarios import Scenario
+from nasim.scenarios.host import Host
 
 
 # dictionary of valid key names and value types for config file

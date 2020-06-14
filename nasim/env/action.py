@@ -1,4 +1,4 @@
-""" Action classes for the NASim environment.
+""" Action related classes for the NASim environment.
 
 This module contains the different action classes that are used
 to define implement actions within a NASim environment.
@@ -8,10 +8,14 @@ some common attributes and functions. Different types of actions
 are implemented as subclasses of the Action class.
 
 Action types implemented:
+
 - Exploit
 - ServiceScan
 - OSScan
 - SubnetScan
+
+Additionally, it also contains the ActionResult dataclass for storing
+the results of performing an action.
 """
 
 import math
@@ -70,7 +74,7 @@ class Action:
         bool
             True if action is exploit, otherwise False
         """
-        return False
+        return type(self, Exploit)
 
     def is_scan(self):
         """Check if action is a scan
@@ -80,7 +84,7 @@ class Action:
         bool
             True if action is scan, otherwise False
         """
-        return False
+        return type(self, ServiceScan, OSScan, SubnetScan)
 
     def is_service_scan(self):
         """Check if action is a service scan
@@ -90,7 +94,7 @@ class Action:
         bool
             True if action is service scan, otherwise False
         """
-        return False
+        return type(self, ServiceScan)
 
     def is_os_scan(self):
         """Check if action is an OS scan
@@ -100,7 +104,7 @@ class Action:
         bool
             True if action is an OS scan, otherwise False
         """
-        return False
+        return type(self, OSScan)
 
     def is_subnet_scan(self):
         """Check if action is a subnet scan
@@ -110,7 +114,7 @@ class Action:
         bool
             True if action is a subnet scan, otherwise False
         """
-        return False
+        return type(self, SubnetScan)
 
     def __str__(self):
         return (f"{self.__class__.__name__}: name={self.name}, "
@@ -173,8 +177,9 @@ class Exploit(Action):
 
     ...
 
-    Additional Attributes
-    ---------------------
+
+    Attributes
+    ----------
     service : str
         the service targeted by exploit
     os : str
@@ -201,10 +206,6 @@ class Exploit(Action):
         self.os = os
         self.service = service
 
-    def is_exploit(self):
-        # docstring inherited
-        return True
-
     def __str__(self):
         return super().__str__() + f", os={self.os}, service={self.service}"
 
@@ -217,46 +218,96 @@ class Exploit(Action):
 class ServiceScan(Action):
     """A Service Scan action in the environment
 
-    Inherits from the base Action Class. It overrides the is_scan() and
-    is_service_scan() methods.
+    Inherits from the base Action Class.
     """
-
-    def is_scan(self):
-        # docstring inherited
-        return True
-
-    def is_service_scan(self):
-        # docstring inherited
-        return True
+    pass
 
 
 class OSScan(Action):
     """An OS Scan action in the environment
 
-    Inherits from the base Action Class. It overrides the is_scan() and
-    is_os_scan() methods.
+    Inherits from the base Action Class.
     """
-
-    def is_scan(self):
-        # docstring inherited
-        return True
-
-    def is_os_scan(self):
-        # docstring inherited
-        return True
+    pass
 
 
 class SubnetScan(Action):
     """A Subnet Scan action in the environment
 
-    Inherits from the base Action Class. It overrides the is_scan() and
-    is_subnet_scan() methods.
+    Inherits from the base Action Class.
+    """
+    pass
+
+
+class ActionResult:
+    """A dataclass for storing the results of an Action.
+
+    These results are then used to update the full state and observation.
+
+    ...
+
+    Attributes
+    ----------
+    success : bool
+        True if exploit/scan was successful, False otherwise
+    value : float
+        value gained from action. Is the value of the host if successfuly
+        exploited, otherwise 0
+    services : dict
+        services identified by action.
+    os : dict
+        OS identified by action
+    discovered : dict
+        host addresses discovered by action
+    connection_error : bool
+        True if action failed due to connection error (e.g. could
+        not reach target)
     """
 
-    def is_scan(self):
-        # docstring inherited
-        return True
+    def __init__(self, success, value=0.0, services=None, os=None,
+                 discovered=None, connection_error=False):
+        """
+        Parameters
+        ----------
+        success : bool
+            True if exploit/scan was successful, False otherwise
+        value : float, optional
+            value gained from action (default=0.0)
+        services : dict, optional
+            services identified by action (default=None)
+        os : dict, optional
+            OS identified by action (default=None)
+        discovered : dict, optional
+            host addresses discovered by action (default=None)
+        connection_error : bool, optional
+            True if action failed due to connection error (default=None)
+        """
+        self.success = success
+        self.value = value
+        self.services = {} if services is None else services
+        self.os = {} if os is None else os
+        self.discovered = {} if discovered is None else discovered
+        self.connection_error = connection_error
 
-    def is_subnet_scan(self):
-        # docstring inherited
-        return True
+    def info(self):
+        """Get results as dict
+
+        Returns
+        -------
+        dict
+            action results information
+        """
+        return dict(
+            success=self.success,
+            value=self.value,
+            services=self.services,
+            os=self.os,
+            discovered=self.discovered,
+            connection_error=self.connection_error
+        )
+
+    def __str__(self):
+        output = ["ActionObservation:"],
+        for k, v in self.info().items():
+            output.append(f"  {k}={v}")
+        return "\n".join(output)

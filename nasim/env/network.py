@@ -51,6 +51,10 @@ class Network:
 
         next_state = state.copy()
 
+        if action.is_noop():
+            # do nothing
+            return next_state, ActionResult(True)
+
         if not state.network_state.host_reachable(action.target):
             # print("target not reachable")
             return next_state, ActionResult(False,

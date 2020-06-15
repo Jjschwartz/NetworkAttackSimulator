@@ -1,13 +1,11 @@
-from nasim.env import make_benchmark_env
+from itertools import product
+
+import nasim
 
 line_break = "-"*60
 
 
-def choose_action(env, last_a):
-    return (last_a + 1) % len(env.action_space)
-
-
-def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
+def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
     if verbose:
         print(line_break)
         print("STARTING EPISODE")
@@ -17,16 +15,31 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
     total_reward = 0
     done = False
     t = 0
-    a = 0
+    cycle_complete = False
+
+    if flat_actions:
+        a = 0
+    else:
+        a_iter = product(*[range(n) for n in env.action_space.nvec])
+
     print(f"t: Reward")
     while not done and t < step_limit:
-        # print("Choose action")
-        a = choose_action(env, a)
-        # print("Take step")
+        if flat_actions:
+            a = (a + 1) % env.action_space.n
+            cycle_complete = (t > 0 and a == 0)
+        else:
+            try:
+                a = next(a_iter)
+                cycle_complete = False
+            except StopIteration:
+                a_iter = product(*[range(n) for n in env.action_space.nvec])
+                a = next(a_iter)
+                cycle_complete = True
+
         _, r, done, _ = env.step(a)
-        # print("Step done")
         total_reward += r
-        if (t+1) % len(env.action_space) == 0 and verbose:
+
+        if cycle_complete and verbose:
             print(f"{t}: {total_reward}")
         t += 1
 
@@ -50,8 +63,15 @@ if __name__ == "__main__":
                         help="random seed")
     parser.add_argument("-o", "--partially_obs", action="store_true",
                         help="Partially Observable Mode")
+    parser.add_argument("-p", "--param_actions", action="store_true",
+                        help="Use Parameterised action space")
+    parser.add_argument("-f", "--box_obs", action="store_true",
+                        help="Use 2D observation space")
     args = parser.parse_args()
 
-    env = make_benchmark_env(args.env_name, args.seed, args.partially_obs)
-    print("Max score:", env.get_best_possible_score())
-    run_bruteforce_agent(env)
+    env = nasim.make_benchmark(args.env_name,
+                               args.seed,
+                               not args.partially_obs,
+                               not args.param_actions,
+                               not args.box_obs)
+    run_bruteforce_agent(env, flat_actions=not args.param_actions)

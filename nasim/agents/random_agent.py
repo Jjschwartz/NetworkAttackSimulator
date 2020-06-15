@@ -1,12 +1,6 @@
-import random
-
-from nasim.env import make_benchmark_env
+import nasim
 
 line_break = "-"*60
-
-
-def choose_action(env):
-    return random.choice(env.action_space)
 
 
 def run_random_agent(env, step_limit=1e6, verbose=True):
@@ -23,12 +17,12 @@ def run_random_agent(env, step_limit=1e6, verbose=True):
     print(f"t: Reward")
     while not done and t < step_limit:
         # print("Choose action")
-        a = choose_action(env)
+        a = env.action_space.sample()
         # print("Take step")
         _, r, done, _ = env.step(a)
         # print("Step done")
         total_reward += r
-        if (t+1) % len(env.action_space) == 0 and verbose:
+        if (t+1) % 100 == 0 and verbose:
             print(f"{t}: {total_reward}")
         t += 1
 
@@ -53,8 +47,16 @@ if __name__ == "__main__":
                         help="random seed")
     parser.add_argument("-o", "--partially_obs", action="store_true",
                         help="Partially Observable Mode")
+    parser.add_argument("-p", "--param_actions", action="store_true",
+                        help="Use Parameterised action space")
+    parser.add_argument("-f", "--box_obs", action="store_true",
+                        help="Use 2D observation space")
     args = parser.parse_args()
 
-    env = make_benchmark_env(args.env_name, args.seed, args.partially_obs)
-    print("Max score:", env.get_best_possible_score())
+    env = nasim.make_benchmark(args.env_name,
+                               args.seed,
+                               not args.partially_obs,
+                               not args.param_actions,
+                               not args.box_obs)
+    print(env.action_space)
     run_random_agent(env)

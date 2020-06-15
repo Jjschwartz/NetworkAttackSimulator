@@ -7,6 +7,7 @@ class Scenario:
 
     def __init__(self, scenario_dict):
         self.scenario_dict = scenario_dict
+        self._e_map = None
 
     @property
     def services(self):
@@ -27,6 +28,38 @@ class Scenario:
     @property
     def exploits(self):
         return self.scenario_dict[u.EXPLOITS]
+
+    @property
+    def exploit_map(self):
+        """A nested dictionary for all exploits in scenario.
+
+        I.e. {service_name: {
+                 os_name: {
+                     name: e_name,
+                     cost: e_cost,
+                     prob: e_prob
+                 }
+             }
+        """
+        if self._e_map is None:
+            e_map = {}
+            for e_name, e_def in self.exploits.items():
+                srv_name = e_def[u.EXPLOIT_SERVICE]
+                if srv_name not in e_map:
+                    e_map[srv_name] = {}
+                srv_map = e_map[srv_name]
+
+                os = e_def[u.EXPLOIT_OS]
+                if os not in srv_map:
+                    srv_map[os] = {
+                        "name": e_name,
+                        u.EXPLOIT_SERVICE: srv_name,
+                        u.EXPLOIT_OS: os,
+                        u.EXPLOIT_COST: e_def[u.EXPLOIT_COST],
+                        u.EXPLOIT_PROB: e_def[u.EXPLOIT_PROB]
+                    }
+            self._e_map = e_map
+        return self._e_map
 
     @property
     def subnets(self):

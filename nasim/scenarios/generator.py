@@ -287,8 +287,8 @@ class ScenarioGenerator:
     def _permutations(self, n):
         """Generate list of all possible permutations of n bools
 
-        N.B First permutation in list is always the all True permutation and final
-        permutation in list is always the all False permutationself.
+        N.B First permutation in list is always the all True permutation
+        and final permutation in list is always the all False permutationself.
 
         perms[1] = [True, ..., True]
         perms[-1] = [False, ..., False]
@@ -325,8 +325,13 @@ class ScenarioGenerator:
             if subnet == u.INTERNET:
                 continue
             for m in range(size):
-                services, os = self._get_host_config(host_num, alpha_H, prev_configs,
-                                                     alpha_V, prev_vuls, lambda_V, prev_os)
+                services, os = self._get_host_config(host_num,
+                                                     alpha_H,
+                                                     prev_configs,
+                                                     alpha_V,
+                                                     prev_vuls,
+                                                     lambda_V,
+                                                     prev_os)
                 service_cfg = self._convert_to_service_map(services)
                 os_cfg = self._convert_to_os_map(os)
                 host_num += 1
@@ -337,13 +342,18 @@ class ScenarioGenerator:
                 hosts[address] = host
         self.hosts = hosts
 
-    def _get_host_config(self, host_num, alpha_H, prev_configs, alpha_V, prev_vuls, lambda_V, prev_os):
-        """Select a host configuration from all possible configurations based using a Nested
-        Dirichlet Process
+    def _get_host_config(self, host_num, alpha_H, prev_configs, alpha_V,
+                         prev_vuls, lambda_V, prev_os):
+        """Select a host configuration from all possible configurations based
+        using a Nested Dirichlet Process
         """
-        if host_num == 0 or np.random.rand() < (alpha_H / (alpha_H + host_num - 1)):
-            # if first host or with prob proportional to alpha_H choose new config
-            new_config = self._sample_config(alpha_V, prev_vuls, lambda_V, prev_os)
+        if host_num == 0 \
+           or np.random.rand() < (alpha_H / (alpha_H + host_num - 1)):
+            # if first host or with prob proportional to alpha_H
+            # choose new config
+            new_config = self._sample_config(
+                alpha_V, prev_vuls, lambda_V, prev_os
+            )
         else:
             # sample uniformly from previous sampled configs
             new_config = prev_configs[np.random.choice(len(prev_configs))]
@@ -351,8 +361,8 @@ class ScenarioGenerator:
         return new_config
 
     def _sample_config(self, alpha_V, prev_vuls, lambda_V, prev_os):
-        """Sample a host configuration from all possible configurations based using a Dirichlet
-        Process
+        """Sample a host configuration from all possible configurations based
+        using a Dirichlet Process
         """
         num_services = len(self.services)
         # no services present by default
@@ -360,7 +370,8 @@ class ScenarioGenerator:
         # randomly get number of times to sample using poission dist in range
         # (0, num_services) minimum 1 service running
         n = max(np.random.poisson(lambda_V), 1)
-        # draw n samples from Dirichlet Process (alpha_V, uniform dist of services)
+        # draw n samples from Dirichlet Process
+        # (alpha_V, uniform dist of services)
         for i in range(n):
             if i == 0 or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
                 # draw randomly from uniform dist over services
@@ -371,7 +382,8 @@ class ScenarioGenerator:
             new_services_cfg[x] = True
             prev_vuls.append(x)
         # sample an os from Dirichlet Process (alpha_V, uniform dist of OSs)
-        if len(prev_os) == 0 or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
+        if len(prev_os) == 0 \
+           or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
             # draw randomly from uniform dist over services
             os = np.random.choice(self.os)
         else:
@@ -393,8 +405,9 @@ class ScenarioGenerator:
     def _convert_to_os_map(self, os):
         """Converts an OS string to a map from os name -> bool
 
-        N.B. also adds an entry for None os, which makes it easier for vectorizing
-        and checking if an exploit will work (since exploits can have os=None)
+        N.B. also adds an entry for None os, which makes it easier for
+        vectorizing and checking if an exploit will work (since exploits can
+        have os=None)
         """
         os_map = {None: False}
         for os_name in self.os:
@@ -407,7 +420,8 @@ class ScenarioGenerator:
         """
         vulnerable_subnets = set()
         for host_addr, host in self.hosts.items():
-            if not self._is_sensitive_host(host_addr) and host_addr[0] in vulnerable_subnets:
+            if not self._is_sensitive_host(host_addr) \
+               and host_addr[0] in vulnerable_subnets:
                 continue
             if self._host_is_vulnerable(host):
                 vulnerable_subnets.add(host_addr[0])

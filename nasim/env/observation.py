@@ -81,6 +81,12 @@ class Observation:
     def connection_error(self):
         return bool(self.tensor[self.aux_row][self._conn_error_idx])
 
+    def flat_shape(self):
+        return self.numpy_flat().shape
+
+    def shape(self):
+        return self.obs_shape
+
     def numpy_flat(self):
         return self.tensor.flatten()
 

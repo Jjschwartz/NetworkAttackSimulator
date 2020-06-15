@@ -5,6 +5,7 @@ chardet==3.0.4
 cycler==0.10.0
 decorator==4.4.1
 docutils==0.16
+gym==0.17.2
 idna==2.9
 imagesize==1.2.0
 Jinja2==2.11.2

@@ -8,11 +8,12 @@ assert sys.version_info.major == 3 and sys.version_info.minor >= 6, \
 setup(name='nasim',
       version='0.0.5',
       install_requires=[
-        'numpy',
-        'networkx',
-        'matplotlib',
-        'pyyaml',
-        'prettytable'
+          'gym',
+          'numpy',
+          'networkx',
+          'matplotlib',
+          'pyyaml',
+          'prettytable'
       ],
       description="A simple and fast simulator for remote network pen-testing",
       author="Jonathon Schwartz")

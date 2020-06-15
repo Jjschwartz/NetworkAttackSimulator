@@ -72,6 +72,7 @@ class ScenarioLoader:
         scenario_dict[u.SUBNETS] = self.subnets
         scenario_dict[u.TOPOLOGY] = self.topology
         scenario_dict[u.SERVICES] = self.services
+        scenario_dict[u.OS] = self.os
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
         scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost

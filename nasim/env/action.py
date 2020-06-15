@@ -19,6 +19,24 @@ the results of performing an action.
 """
 
 import math
+import numpy as np
+from gym import spaces
+
+
+def load_action_list(scenario):
+    """Load list of actions for environment for given scenario """
+    action_list = []
+    for address in scenario.address_space:
+        action_list.append(ServiceScan(address,
+                                       scenario.service_scan_cost))
+        action_list.append(OSScan(address,
+                                  scenario.os_scan_cost))
+        action_list.append(SubnetScan(address,
+                                      scenario.subnet_scan_cost))
+        for e_name, e_def in scenario.exploits.items():
+            exploit = Exploit(e_name, address, **e_def)
+            action_list.append(exploit)
+    return action_list
 
 
 class Action:
@@ -47,7 +65,7 @@ class Action:
         fail. For deterministic actions this will be 1.0.
     """
 
-    def __init__(self, name, target, cost, prob=1.0):
+    def __init__(self, name, target, cost, prob=1.0, **kwargs):
         """
         Parameters
         ---------
@@ -74,7 +92,7 @@ class Action:
         bool
             True if action is exploit, otherwise False
         """
-        return type(self, Exploit)
+        return isinstance(self, Exploit)
 
     def is_scan(self):
         """Check if action is a scan
@@ -84,7 +102,7 @@ class Action:
         bool
             True if action is scan, otherwise False
         """
-        return type(self, ServiceScan, OSScan, SubnetScan)
+        return isinstance(self, (ServiceScan, OSScan, SubnetScan))
 
     def is_service_scan(self):
         """Check if action is a service scan
@@ -94,7 +112,7 @@ class Action:
         bool
             True if action is service scan, otherwise False
         """
-        return type(self, ServiceScan)
+        return isinstance(self, ServiceScan)
 
     def is_os_scan(self):
         """Check if action is an OS scan
@@ -104,7 +122,7 @@ class Action:
         bool
             True if action is an OS scan, otherwise False
         """
-        return type(self, OSScan)
+        return isinstance(self, OSScan)
 
     def is_subnet_scan(self):
         """Check if action is a subnet scan
@@ -114,7 +132,17 @@ class Action:
         bool
             True if action is a subnet scan, otherwise False
         """
-        return type(self, SubnetScan)
+        return isinstance(self, SubnetScan)
+
+    def is_noop(self):
+        """Check if action is a do nothing action.
+
+        Returns
+        -------
+        bool
+            True if action is a noop action, otherwise False
+        """
+        return isinstance(self, NoOp)
 
     def __str__(self):
         return (f"{self.__class__.__name__}: name={self.name}, "
@@ -138,36 +166,6 @@ class Action:
                 and self.is_service_scan() == other.is_service_scan()
                 and self.is_os_scan() == other.is_os_scan())
 
-    @staticmethod
-    def load_action_space(scenario):
-        """Load the action space for the environment from scenario
-
-        Parameters
-        ---------
-        scenario : Scenario
-            scenario description
-
-        Returns
-        -------
-        list
-            list of actions for environment
-        """
-        action_space = []
-        for address in scenario.address_space:
-            action_space.append(ServiceScan("service_scan",
-                                            address,
-                                            scenario.service_scan_cost))
-            action_space.append(OSScan("os_scan",
-                                       address,
-                                       scenario.os_scan_cost))
-            action_space.append(SubnetScan("subnet_scan",
-                                           address,
-                                           scenario.subnet_scan_cost))
-            for e_name, e_def in scenario.exploits.items():
-                exploit = Exploit(e_name, address, **e_def)
-                action_space.append(exploit)
-        return action_space
-
 
 class Exploit(Action):
     """An Exploit action in the environment
@@ -186,7 +184,14 @@ class Exploit(Action):
         the OS targeted by exploit. If None then exploit works for all OSs.
     """
 
-    def __init__(self, name, target, cost, service, os=None, prob=1.0):
+    def __init__(self,
+                 name,
+                 target,
+                 cost,
+                 service,
+                 os=None,
+                 prob=1.0,
+                 **kwargs):
         """
         Parameters
         ---------
@@ -220,7 +225,23 @@ class ServiceScan(Action):
 
     Inherits from the base Action Class.
     """
-    pass
+
+    def __init__(self, target, cost, prob=1.0, **kwargs):
+        """
+        Parameters
+        ---------
+        target : (int, int)
+            address of target
+        cost : float
+            cost of performing action
+        prob : float, optional
+            probability of success for a given action (default=1.0)
+        """
+        super().__init__("service_scan",
+                         target=target,
+                         cost=cost,
+                         prob=prob,
+                         **kwargs)
 
 
 class OSScan(Action):
@@ -228,7 +249,23 @@ class OSScan(Action):
 
     Inherits from the base Action Class.
     """
-    pass
+
+    def __init__(self, target, cost, prob=1.0, **kwargs):
+        """
+        Parameters
+        ---------
+        target : (int, int)
+            address of target
+        cost : float
+            cost of performing action
+        prob : float, optional
+            probability of success for a given action (default=1.0)
+        """
+        super().__init__("os_scan",
+                         target=target,
+                         cost=cost,
+                         prob=prob,
+                         **kwargs)
 
 
 class SubnetScan(Action):
@@ -236,7 +273,33 @@ class SubnetScan(Action):
 
     Inherits from the base Action Class.
     """
-    pass
+
+    def __init__(self, target, cost, prob=1.0, **kwargs):
+        """
+        Parameters
+        ---------
+        target : (int, int)
+            address of target
+        cost : float
+            cost of performing action
+        prob : float, optional
+            probability of success for a given action (default=1.0)
+        """
+        super().__init__("subnet_scan",
+                         target=target,
+                         cost=cost,
+                         prob=prob,
+                         **kwargs)
+
+
+class NoOp(Action):
+    """A do nothing action in the environment
+
+    Inherits from the base Action Class
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(name="noop", target=(1, 0), cost=0, prob=1.0)
 
 
 class ActionResult:
@@ -264,8 +327,13 @@ class ActionResult:
         not reach target)
     """
 
-    def __init__(self, success, value=0.0, services=None, os=None,
-                 discovered=None, connection_error=False):
+    def __init__(self,
+                 success,
+                 value=0.0,
+                 services=None,
+                 os=None,
+                 discovered=None,
+                 connection_error=False):
         """
         Parameters
         ----------
@@ -311,3 +379,146 @@ class ActionResult:
         for k, v in self.info().items():
             output.append(f"  {k}={v}")
         return "\n".join(output)
+
+
+class FlatActionSpace(spaces.Discrete):
+    """Flat Action space for NASim environment.
+
+    Inherits and implements the gym.spaces.Discrete action space
+    """
+
+    def __init__(self, scenario):
+        """
+        Parameters
+        ---------
+        scenario : Scenario
+            scenario description
+        """
+        self.actions = load_action_list(scenario)
+        super().__init__(len(self.actions))
+
+    def get_action(self, action_idx):
+        """Get Action object corresponding to action idx
+
+        Parameters
+        ----------
+        action_idx : int
+            the action idx
+
+        Returns
+        -------
+        Action
+            Corresponding Action object
+        """
+        assert isinstance(action_idx, int), \
+            ("When using flat action space, action must be an integer"
+             f" or an Action object: {action_idx} is invalid")
+        return self.actions[action_idx]
+
+
+class ParameterisedActionSpace(spaces.MultiDiscrete):
+    """A parameterised action space for NASim environment.
+
+    Inherits and implements the gym.spaces.MultiDiscrete action space, where
+    each dimension corresponds to a different action parameter.
+
+    Action parameters:
+    0. Action Type = [0, 3]
+        where 0=Exploit, 1=ServiceScan, 2=OSScan, 3=SubnetScan
+    1. Subnet = [0, #subnets-1]
+        -1 since we don't include the internet subnet
+    2. Host = [0, max subnets size-1]
+    3. Service = [0, #services]
+        Note, this is only important for exploits
+    4. OS = [0, #OS+1]
+        Where 0=None.
+        Note, this is only important for exploits.
+    """
+
+    _action_types = [Exploit, ServiceScan, OSScan, SubnetScan]
+
+    def __init__(self, scenario):
+        """
+        Parameters
+        ---------
+        scenario : Scenario
+            scenario description
+        """
+        self.scenario = scenario
+        self.actions = load_action_list(scenario)
+
+        nvec = [
+            len(self._action_types),
+            len(self.scenario.subnets)-1,
+            max(self.scenario.subnets),
+            self.scenario.num_services,
+            self.scenario.num_os+1
+        ]
+
+        super().__init__(nvec)
+
+    def get_action(self, action_vec):
+        """Get Action object corresponding to action vector.
+
+        Some notes:
+        -----------
+        1. if host# specified in action vector is greater than
+           the number of hosts in the specified subnet, then host#
+           will be changed to host# % subnet size.
+        2. if action is an exploit and parameters do not match
+           any exploit definition in the scenario description then
+           a NoOp action is returned with 0 cost.
+
+        Parameters
+        ----------
+        action_vector : list, tuple, Numpy.Array
+            the action vector
+
+        Returns
+        -------
+        Action
+            Corresponding Action object
+        """
+        assert isinstance(action_vec, (list, tuple, np.ndarray)), \
+            ("When using parameterised action space, action must be an Action"
+             f" object, a list or a numpy array: {action_vec} is invalid")
+        a_class = self._action_types[action_vec[0]]
+        # need to add one to subnet to account for Internet subnet
+        subnet = action_vec[1]+1
+        host = action_vec[2] % self.scenario.subnets[subnet]
+
+        target = (subnet, host)
+
+        if not (a_class == Exploit):
+            # can ignore other action parameters
+            kwargs = self._get_scan_action_def(a_class)
+            return a_class(target=target, **kwargs)
+
+        # action is exploit, so have to make sure it is valid choice
+        # and get constant params (name, cost, prob)
+        service = self.scenario.services[action_vec[3]]
+        os = None if action_vec[4] == 0 else self.scenario.os[action_vec[4]-1]
+        e_def = self._get_exploit_def(service, os)
+        if e_def is None:
+            return NoOp()
+        return a_class(target=target, **e_def)
+
+    def _get_scan_action_def(self, a_class):
+        """Get the constants for scan actions definitions """
+        if a_class == ServiceScan:
+            return {"cost": self.scenario.service_scan_cost}
+        elif a_class == OSScan:
+            return {"cost": self.scenario.os_scan_cost}
+        elif a_class == SubnetScan:
+            return {"cost": self.scenario.subnet_scan_cost}
+        else:
+            raise TypeError(f"Not implemented for Action class {a_class}")
+
+    def _get_exploit_def(self, service, os):
+        """Check if exploit parameters are valid """
+        e_map = self.scenario.exploit_map
+        if service not in e_map:
+            return None
+        if os not in e_map[service]:
+            return None
+        return e_map[service][os]

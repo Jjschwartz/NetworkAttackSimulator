@@ -1,5 +1,4 @@
-"""
-Experiment for testing the performance of the environment.
+"""Experiment for testing the performance of the environment.
 
 Performance metrics:
     - Actions per second

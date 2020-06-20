@@ -1,45 +1,39 @@
 import numpy as np
 
 from .host_vector import HostVector
-from .network_tensor import NetworkTensor
 
 
 class Observation:
     """An observation for NASim.
 
-    This is returned by the step function after every action is performed.
     Each observation is a 2D tensor with a row for each host and an additional
-    row containing auxiliary observations.
-    Each host row is a host_vector.
-    For details see :py:class: nasim.env.host_vector.HostVector
+    row containing auxiliary observations. Each host row is a host_vector (for
+    details see :class:`HostVector`) while the auxiliary
+    row contains non-host specific observations (see Notes section).
 
+    ...
+
+    Attributes
+    ----------
+    obs_shape : (int, int)
+        the shape of the observation
+    aux_row : int
+        the row index for the auxiliary row
+    tensor : numpy.ndarray
+        2D Numpy array storing the observation
+
+    Notes
+    -----
     The auxiliary row is the final row in the observation tensor and has the
     following features (in order):
-    1. Action success - True/False
-        whether the action succeeded or failed
-    2. Connection error - True/False
-        whether there was a connection error or not
+
+    1. Action success - True (1) or False (0)
+        indicates whether the action succeeded or failed
+    2. Connection error - True (1) or False (0)
+        indicates whether there was a connection error or not
 
     Since the number of features in the auxiliary row is less than the number
     of features in each host row, the remainder of the row is all zeros.
-
-    1. compromised : 0 or 1
-        whether the action resulted in the host becoming compromised (1)
-        or not (0)
-    2. reachable : 0 or 1
-        whether the action resulted in the host becoming reachable (1)
-        or not (0)
-    3. discovered : 0 or 1
-        whether the action resulted in the host becoming discovered (1)
-        or not (0)
-    4. value : float
-        observed value of host
-    5. for each service :
-        i. present : 0 or 1
-            whether the service was observed to be present or not
-    6. for each os :
-        i. present : 0 or 1
-            whether the os was observed to be present or not
     """
 
     # obs vector positions for auxiliary observations
@@ -58,44 +52,86 @@ class Observation:
         self.tensor = np.zeros(self.obs_shape, dtype=np.float32)
 
     def from_state(self, state):
-        self.tensor[:self.aux_row] = state.network_state.tensor
+        self.tensor[:self.aux_row] = state.tensor
 
-    def from_action_obs(self, action_obs):
-        self.tensor[self.aux_row][self._success_idx] = int(action_obs.success)
-        con_err = int(action_obs.connection_error)
+    def from_action_result(self, action_result):
+        success = int(action_result.success)
+        self.tensor[self.aux_row][self._success_idx] = success
+        con_err = int(action_result.connection_error)
         self.tensor[self.aux_row][self._conn_error_idx] = con_err
 
-    def from_state_and_action(self, state, action_obs):
+    def from_state_and_action(self, state, action_result):
         self.from_state(state)
-        self.from_action_obs(action_obs)
+        self.from_action_result(action_result)
 
     def update_from_host(self, host_idx, host_obs_vector):
-        """Update the observation using given host observation vector """
         self.tensor[host_idx][:] = host_obs_vector
 
     @property
     def success(self):
+        """Whether the action succeded or not
+
+        Returns
+        -------
+        bool
+            True if the action succeeded, otherwise False
+        """
         return bool(self.tensor[self.aux_row][self._success_idx])
 
     @property
     def connection_error(self):
+        """Whether there was a connection error or not
+
+        Returns
+        -------
+        bool
+            True if there was a connection error, otherwise False
+        """
         return bool(self.tensor[self.aux_row][self._conn_error_idx])
 
-    def flat_shape(self):
+    def shape_flat(self):
+        """Get the flat (1D) shape of the Observation.
+
+        Returns
+        -------
+        (int, )
+            the flattened shape of observation
+        """
         return self.numpy_flat().shape
 
     def shape(self):
+        """Get the (2D) shape of the observation
+
+        Returns
+        -------
+        (int, int)
+            the 2D shape of the observation
+        """
         return self.obs_shape
 
     def numpy_flat(self):
+        """Get the flattened observation tensor
+
+        Returns
+        -------
+        numpy.ndarray
+            the flattened (1D) observation tenser
+        """
         return self.tensor.flatten()
 
-    def numpy_2D(self):
+    def numpy(self):
+        """Get the observation tensor
+
+        Returns
+        -------
+        numpy.ndarray
+            the (2D) observation tenser
+        """
         return self.tensor
 
     def get_readable(self):
         host_obs = []
-        for host_idx in NetworkTensor.host_to_idx_map.values():
+        for host_idx in range(self.obs_shape[0]-1):
             host_obs_vec = self.tensor[host_idx]
             readable_dict = HostVector.get_readable(host_obs_vec)
             host_obs.append(readable_dict)

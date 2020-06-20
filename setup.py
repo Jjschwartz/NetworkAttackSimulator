@@ -13,7 +13,8 @@ setup(name='nasim',
           'networkx',
           'matplotlib',
           'pyyaml',
-          'prettytable'
+          'prettytable',
+          'pytest'
       ],
       description="A simple and fast simulator for remote network pen-testing",
       author="Jonathon Schwartz")

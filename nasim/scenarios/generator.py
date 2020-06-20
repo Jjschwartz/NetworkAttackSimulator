@@ -451,7 +451,7 @@ class ScenarioGenerator:
         return e_os is None or host.os[e_os]
 
     def _update_host_to_vulnerable(self, host):
-        """Update the host config so it's vulnerable to at least one exploit """
+        """Update host config so it's vulnerable to at least one exploit """
         # choose an exploit randomly and make host vulnerable to it
         e_def = np.random.choice(list(self.exploits.values()))
         host.services[e_def[u.EXPLOIT_SERVICE]] = True
@@ -460,30 +460,32 @@ class ScenarioGenerator:
             for os_name in host.os.keys():
                 host.os[os_name] = False
             host.os[e_def[u.EXPLOIT_OS]] = True
-        host.update_vector()
 
     def _get_host_value(self, address):
         return float(self.sensitive_hosts.get(address, self.base_host_value))
 
     def _generate_firewall(self, restrictiveness):
-        """Generate the firewall rules as a mapping from (src, dest) connection to set
-        of allowed services, which defines for each service whether traffic using that
-        service is allowed between pairs of subnets.
+        """Generate the firewall rules.
 
-        Restrictiveness parameter controls how many services are blocked by firewall
-        between zones (i.e. between internet, DMZ, sensitive and user zones). Traffic
-        from at least one service running on each subnet will be allowed between each
-        zone. This may mean more services will be allowed than restrictiveness parameter.
-
-        Arguments
-        ---------
+        Parameters
+        ----------
         restrictiveness : int
-            max number of services allowed to pass through a firewall
+            parameter that controls how many services are blocked by
+            firewall between zones (i.e. between internet, DMZ, sensitive
+            and user zones).
 
         Returns
         -------
-        firewall_dict : dict
-            firewall map
+        dict
+            firewall rules that are a mapping from (src, dest) connection to
+            set of allowed services, which defines for each service whether
+            traffic using that service is allowed between pairs of subnets.
+
+        Notes
+        -----
+        Traffic from at least one service running on each subnet will be
+        allowed between each zone. This may mean more services will be allowed
+        than restrictiveness parameter.
         """
         num_subnets = len(self.subnets)
         firewall = {}
@@ -509,15 +511,18 @@ class ScenarioGenerator:
                     allowed = set(self.services)
                     firewall[(src, dest)] = allowed
                     continue
-                # else src and dest in different zones => block services based on restrictiveness
+                # else src and dest in different zones => block services based
+                # on restrictiveness
                 dest_avail = subnet_services[dest].copy()
                 if len(dest_avail) < restrictiveness:
-                    # restrictiveness not limiting allowed traffic, all services allowed
+                    # restrictiveness not limiting allowed traffic, all
+                    # services allowed
                     firewall[(src, dest)] = dest_avail.copy()
                     continue
                 # add at least one service to allowed service
                 dest_allowed = np.random.choice(list(dest_avail))
-                # for dest subnet choose available services upto restrictiveness limit or all services
+                # for dest subnet choose available services upto
+                # restrictiveness limit or all services
                 dest_avail.remove(dest_allowed)
                 allowed = set()
                 allowed.add(dest_allowed)
@@ -569,14 +574,15 @@ class ScenarioGenerator:
 
         elif type(exploit_probs) is list:
             if len(exploit_probs) == num_exploits:
-                raise ValueError("Lengh of exploit probability list must equal number of exploits")
+                raise ValueError("Length of exploit probability list must "
+                                 "equal number of exploits")
             for e in exploit_probs:
                 if e <= 0.0 or e > 1.0:
-                    raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
+                    raise ValueError("Exploit probs must be in (0.0, 1.0]")
 
         else:
             if exploit_probs <= 0.0 or exploit_probs > 1.0:
-                raise ValueError("Exploit probabilities must be > 0.0 and <=1.0")
+                raise ValueError("Exploit probs must be in (0.0, 1.0]")
             exploit_probs = [exploit_probs] * num_exploits
 
         return exploit_probs

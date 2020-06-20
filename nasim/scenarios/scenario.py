@@ -9,6 +9,12 @@ class Scenario:
         self.scenario_dict = scenario_dict
         self._e_map = None
 
+        # this is used for consistent positioning of
+        # host state and obs in state and obs matrices
+        self.host_num_map = {}
+        for host_num, host_addr in enumerate(self.hosts):
+            self.host_num_map[host_addr] = host_num
+
     @property
     def services(self):
         return self.scenario_dict[u.SERVICES]

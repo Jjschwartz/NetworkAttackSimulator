@@ -17,20 +17,24 @@ class HostVector:
     multiple features arranged in a consistent way.
 
     Features in the vector, listed in order, are:
-    1. subnet address
-    2. host address
-    3. compromised - True/False
-    4. reachable - True/False
-    5. discovered - True/False
-    6. value
-    7. discovery value
-    8. services running - True/False for each service in scenario
-    9. OS - True/False for each OS in scenario (only one OS has value of true)
 
-    Note, that the vector is a float vector so True/False is actually
-    represented as 1/0.
+    1. subnet address - int
+    2. host address - int
+    3. compromised - bool
+    4. reachable - bool
+    5. discovered - bool
+    6. value - float
+    7. discovery value - float
+    8. services running - bool for each service in scenario
+    9. OS - bool for each OS in scenario (only one OS has value of true)
 
-    The size of the vector is equal to 7 + #services + #OS.
+    Notes
+    -----
+
+    - The size of the vector is equal to 7 + #services + #OS.
+    - The vector is a float vector so True/False is actually represented as
+      1.0/0.0.
+
     """
 
     # class properties that are the same for all hosts
@@ -58,6 +62,8 @@ class HostVector:
 
     @classmethod
     def vectorize(cls, host, vector=None):
+        cls.os_idx_map = {}
+        cls.service_idx_map = {}
         cls.num_os = len(host.os)
         cls.num_services = len(host.services)
         cls.state_size = cls._service_start_idx + cls.num_os + cls.num_services

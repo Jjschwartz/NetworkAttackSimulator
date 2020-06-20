@@ -1,4 +1,4 @@
-""" Action related classes for the NASim environment.
+"""Action related classes for the NASim environment.
 
 This module contains the different action classes that are used
 to define implement actions within a NASim environment.
@@ -422,17 +422,17 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     Inherits and implements the gym.spaces.MultiDiscrete action space, where
     each dimension corresponds to a different action parameter.
 
-    Action parameters:
-    0. Action Type = [0, 3]
-        where 0=Exploit, 1=ServiceScan, 2=OSScan, 3=SubnetScan
-    1. Subnet = [0, #subnets-1]
-        -1 since we don't include the internet subnet
-    2. Host = [0, max subnets size-1]
-    3. Service = [0, #services]
-        Note, this is only important for exploits
-    4. OS = [0, #OS+1]
-        Where 0=None.
-        Note, this is only important for exploits.
+    The action parameters (in order) are:
+        0. Action Type = [0, 3]
+           where 0=Exploit, 1=ServiceScan, 2=OSScan, 3=SubnetScan
+        1. Subnet = [0, #subnets-1]
+           -1 since we don't include the internet subnet
+        2. Host = [0, max subnets size-1]
+        3. Service = [0, #services]
+           Note, this is only important for exploits
+        4. OS = [0, #OS+1]
+           Where 0=None.
+           Note, this is only important for exploits.
     """
 
     _action_types = [Exploit, ServiceScan, OSScan, SubnetScan]
@@ -440,7 +440,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     def __init__(self, scenario):
         """
         Parameters
-        ---------
+        ----------
         scenario : Scenario
             scenario description
         """
@@ -460,15 +460,6 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     def get_action(self, action_vec):
         """Get Action object corresponding to action vector.
 
-        Some notes:
-        -----------
-        1. if host# specified in action vector is greater than
-           the number of hosts in the specified subnet, then host#
-           will be changed to host# % subnet size.
-        2. if action is an exploit and parameters do not match
-           any exploit definition in the scenario description then
-           a NoOp action is returned with 0 cost.
-
         Parameters
         ----------
         action_vector : list, tuple, Numpy.Array
@@ -478,6 +469,15 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         -------
         Action
             Corresponding Action object
+
+        Notes
+        -----
+        1. if host# specified in action vector is greater than
+           the number of hosts in the specified subnet, then host#
+           will be changed to host# % subnet size.
+        2. if action is an exploit and parameters do not match
+           any exploit definition in the scenario description then
+           a NoOp action is returned with 0 cost.
         """
         assert isinstance(action_vec, (list, tuple, np.ndarray)), \
             ("When using parameterised action space, action must be an Action"

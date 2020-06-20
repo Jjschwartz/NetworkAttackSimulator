@@ -7,9 +7,9 @@ import numpy as np
 from gym import spaces
 
 from nasim.env.state import State
-from nasim.env.action import Action, FlatActionSpace, ParameterisedActionSpace
 from nasim.env.render import Viewer
 from nasim.env.network import Network
+from nasim.env.action import Action, FlatActionSpace, ParameterisedActionSpace
 
 
 class NASimEnv(gym.Env):
@@ -22,15 +22,17 @@ class NASimEnv(gym.Env):
     Attributes
     ----------
     action_space : FlatActionSpace or ParameterisedActionSpace
-        Action space for environment (is a subclass of gym.spaces.Space).
-        If flat_action=True then this is a discrete action space (which
+        Action space for environment.
+        If *flat_action=True* then this is a discrete action space (which
         subclasses gym.spaces.Discrete), so each action is represented by an
         integer.
-        If flat_action=False then this is a parameterised action space (which
+        If *flat_action=False* then this is a parameterised action space (which
         subclasses gym.spaces.MultiDiscrete), so each action is represented
         using a list of parameters.
     observation_space : gym.spaces.Box
-        observation space for environment
+        observation space for environment.
+        If *flat_obs=True* then observations are represented by a 1D vector,
+        otherwise observations are represented as a 2D matrix.
     current_state : State
         the current state of the environment
     last_obs : Observation
@@ -70,7 +72,6 @@ class NASimEnv(gym.Env):
         self.flat_obs = flat_obs
 
         self.network = Network(scenario)
-        self.address_space = scenario.address_space
         self.current_state = State.generate_initial_state(self.network)
         self._renderer = None
         self.reset()
@@ -81,7 +82,7 @@ class NASimEnv(gym.Env):
             self.action_space = ParameterisedActionSpace(self.scenario)
 
         if self.flat_obs:
-            obs_shape = self.last_obs.flat_shape()
+            obs_shape = self.last_obs.shape_flat()
         else:
             obs_shape = self.last_obs.shape()
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=obs_shape)
@@ -89,7 +90,7 @@ class NASimEnv(gym.Env):
     def reset(self):
         """Reset the state of the environment and returns the initial state.
 
-        Implements gym.Env.reset()
+        Implements gym.Env.reset().
 
         Returns
         -------
@@ -105,27 +106,26 @@ class NASimEnv(gym.Env):
     def step(self, action):
         """Run one step of the environment using action.
 
-        N.B. Does not return a copy of the observation, and observation
-        is changed by simulator. So if you need to store the observation
-        you will need to copy it.
-
-        Implements gym.Env.step()
+        Implements gym.Env.step().
 
         Parameters
         ----------
-        action : Action or int
-            Action object from action space or index of action in action space
+        action : Action, int, list, NumpyArray
+            Action to perform. If not Action object, then if using
+            flat actions this should be an int and if using non-flat actions
+            this should be an indexable array.
 
         Returns
         -------
-        obs : Observation
-            current observation of environment
-        reward : float
+        Observation
+            observation from performing action
+        float
             reward from performing action
-        done : bool
+        bool
             whether the episode has ended or not
-        info : dict
-            other information regarding step (see ActionObservation.info())
+        dict
+            auxiliary information regarding step
+            (see :func:`nasim.env.action.ActionResult.info`)
         """
         next_state, obs, reward, done, info = self.generative_step(
             self.current_state,
@@ -149,16 +149,17 @@ class NASimEnv(gym.Env):
 
         Returns
         -------
-        next_state : State
-            the state after action was performed
-        obs : Observation
-            current observation of environment
-        reward : float
+        State
+            the next state after action was performed
+        Observation
+            observation from performing action
+        float
             reward from performing action
-        done : bool
+        bool
             whether the episode has ended or not
-        info : dict
-            other information regarding step (see ActionObservation.info())
+        dict
+            auxiliary information regarding step
+            (see :func:`nasim.env.action.ActionResult.info`)
         """
         if not isinstance(action, Action):
             action = self.action_space.get_action(action)
@@ -191,13 +192,15 @@ class NASimEnv(gym.Env):
     def generate_initial_state(self):
         """Generate the initial state for the environment.
 
-        Note, this does not reset the current state of the environment (use the
-        reset function for that).
-
         Returns
         -------
         State
             The initial state
+
+        Notes
+        -----
+        This does not reset the current state of the environment (use
+        :func:`reset` for that).
         """
         return State.generate_initial_state(self.network)
 
@@ -304,59 +307,16 @@ class NASimEnv(gym.Env):
         state = self.current_state
         self._renderer.render_graph(state, ax, show)
 
-    def get_state_shape(self, flat=True):
-        """Get the shape of an environment state representation
-
-        Parameters
-        ----------
-        flat : bool, optional
-            whether to get shape of flattened state (True) or not (False)
-            (default=True)
-
-        Returns
-        -------
-        (int, int)
-            shape of state representation
-        """
-        if flat:
-            return self.current_state.flat_shape()
-        return self.current_state.shape()
-
-    def get_obs_shape(self, flat=True):
-        """Get the shape of an environment observation representation
-
-        Parameters
-        -----------
-        flat : bool, optional
-            whether to get shape of flattened observation (True) or not (False)
-            (default=True)
-
-        Returns
-        -------
-        (int, int)
-            shape of observation representation
-        """
-        # observation has same shape as state
-        return self.get_state_shape(flat)
-
-    def get_num_actions(self):
-        """Get the size of the action space for environment
-
-        Returns
-        -------
-        num_actions : int
-            action space size
-        """
-        return len(self.action_space)
-
     def get_minimum_actions(self):
-        """Get the minimum possible actions required to exploit all sensitive
-        hosts from the initial state
+        """Get the minimum number of actions required to reach the goal.
+
+        That is minimum number of actions to exploit all sensitive hosts on
+        the network starting from the initial state
 
         Returns
         -------
-        minimum_actions : int
-            minumum possible actions
+        int
+            minumum possible actions to reach goal
         """
         return self.network.get_minimal_steps()
 
@@ -376,19 +336,19 @@ class NASimEnv(gym.Env):
                 mask[i] = 1
         return mask
 
-    def get_best_possible_score(self):
-        """Get the best score possible for this environment, assuming action
-        cost of 1 and each sensitive host is exploitable from any other
-        connected subnet.
+    def get_score_upper_bound(self):
+        """Get the theoretical upper bound for total reward for scenario.
 
-        The theoretical best score is where the agent only exploits a single
-        host in each subnet that is required to reach sensitive hosts along
-        the shortest bath in network graph, and exploits the two sensitive
-        hosts (i.e. the minial steps)
+        The theoretical upper bound score is where the agent exploits only a
+        single host in each subnet that is required to reach sensitive hosts
+        along the shortest bath in network graph, and exploits the two
+        sensitive hosts (i.e. the minial steps). Assuming action cost of 1 and
+        each sensitive host is exploitable from any other connected subnet
+        (which may not be true, hence being an upper bound).
 
         Returns
         -------
-        max_score : float
+        float
             theoretical max score
         """
         max_reward = self.network.get_total_sensitive_host_value()
@@ -397,6 +357,17 @@ class NASimEnv(gym.Env):
 
     def is_goal(self, state):
         """Check if the current state is the goal state.
-        The goal state is  when all sensitive hosts have been compromised
+
+        The goal state is  when all sensitive hosts have been compromised.
+
+        Parameters
+        ----------
+        state : State
+            the current state
+
+        Returns
+        -------
+        bool
+            True if state is goal state, otherwise False.
         """
         return self.network.all_sensitive_hosts_compromised(state)

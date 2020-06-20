@@ -12,6 +12,7 @@ class Network:
 
     def __init__(self, scenario):
         self.hosts = scenario.hosts
+        self.host_num_map = scenario.host_num_map
         self.subnets = scenario.subnets
         self.topology = scenario.topology
         self.firewall = scenario.firewall
@@ -22,7 +23,7 @@ class Network:
     def reset(self, state):
         next_state = state.copy()
         for host_addr in self.address_space:
-            host = next_state.network_state.get_host(host_addr)
+            host = next_state.get_host(host_addr)
             host.compromised = False
             host.reachable = self.subnet_public(host_addr[0])
             host.discovered = host.reachable
@@ -55,13 +56,13 @@ class Network:
             # do nothing
             return next_state, ActionResult(True)
 
-        if not state.network_state.host_reachable(action.target):
+        if not state.host_reachable(action.target):
             # print("target not reachable")
             return next_state, ActionResult(False,
                                             0.0,
                                             connection_error=True)
 
-        if not state.network_state.host_discovered(action.target):
+        if not state.host_discovered(action.target):
             # print("target not discovered")
             return next_state, ActionResult(False,
                                             0.0,
@@ -77,7 +78,7 @@ class Network:
                                             connection_error=True)
 
         if action.is_exploit() and \
-           state.network_state.host_compromised(action.target):
+           state.host_compromised(action.target):
             # host already compromised so exploits don't fail due to randomness
             pass
         elif np.random.rand() > action.prob:
@@ -88,14 +89,14 @@ class Network:
             # print("subnet scan")
             return self._perform_subnet_scan(next_state, action)
 
-        t_host = state.network_state.get_host(action.target)
+        t_host = state.get_host(action.target)
         next_host_state, action_obs = t_host.perform_action(action)
-        next_state.network_state.update_host(action.target, next_host_state)
+        next_state.update_host(action.target, next_host_state)
         self._update(next_state, action, action_obs)
         return next_state, action_obs
 
     def _perform_subnet_scan(self, next_state, action):
-        if not next_state.network_state.host_compromised(action.target):
+        if not next_state.host_compromised(action.target):
             return next_state, ActionResult(False,
                                             0.0,
                                             connection_error=True)
@@ -106,7 +107,7 @@ class Network:
         for h_addr in self.address_space:
             if self.subnets_connected(target_subnet, h_addr[0]):
                 discovered[h_addr] = True
-                host = next_state.network_state.get_host(h_addr)
+                host = next_state.get_host(h_addr)
                 if not host.discovered:
                     host.discovered = True
                     discovery_reward += host.discovery_value
@@ -125,10 +126,10 @@ class Network:
         """
         comp_subnet = compromised_addr[0]
         for addr in self.address_space:
-            if state.network_state.host_reachable(addr):
+            if state.host_reachable(addr):
                 continue
             if self.subnets_connected(comp_subnet, addr[0]):
-                state.network_state.set_host_reachable(addr)
+                state.set_host_reachable(addr)
 
     def get_sensitive_hosts(self):
         return self.sensitive_addresses
@@ -152,7 +153,7 @@ class Network:
         based on current set of compromised hosts on network.
         """
         for src_addr in self.address_space:
-            if not state.network_state.host_compromised(src_addr) and \
+            if not state.host_compromised(src_addr) and \
                not self.subnet_public(src_addr[0]):
                 continue
             if self.subnet_traffic_permitted(src_addr[0],
@@ -169,7 +170,7 @@ class Network:
 
     def all_sensitive_hosts_compromised(self, state):
         for host_addr in self.sensitive_addresses:
-            if not state.network_state.host_compromised(host_addr):
+            if not state.host_compromised(host_addr):
                 return False
         return True
 

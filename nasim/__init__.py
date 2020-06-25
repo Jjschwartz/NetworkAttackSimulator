@@ -5,7 +5,7 @@ from nasim.scenarios import ScenarioLoader, ScenarioGenerator
 
 def make_benchmark(scenario_name,
                    seed=None,
-                   fully_obs=True,
+                   fully_obs=False,
                    flat_actions=True,
                    flat_obs=True):
     """Make a new benchmark NASim environment.
@@ -18,7 +18,7 @@ def make_benchmark(scenario_name,
         random seed to use to generate environment (default=None)
     fully_obs : bool, optional
         the observability mode of environment, if True then uses fully
-        observable mode, otherwise partially observable (default=True)
+        observable mode, otherwise partially observable (default=False)
     flat_actions : bool, optional
         if true then uses a flat action space, otherwise will use
         parameterised action space (default=True).
@@ -45,7 +45,7 @@ def make_benchmark(scenario_name,
         env = generate(**env_kwargs, **scenario)
     elif scenario_name in bm.AVAIL_STATIC_BENCHMARKS:
         scenario_file = bm.AVAIL_STATIC_BENCHMARKS[scenario_name]["file"]
-        env = load(scenario_file, **env_kwargs)
+        env = load(scenario_file, name=scenario_name, **env_kwargs)
     else:
         raise NotImplementedError(
             f"Benchmark scenario '{scenario_name}' not available."
@@ -63,9 +63,10 @@ def get_scenario_max(scenario_name):
 
 
 def load(path,
-         fully_obs=True,
+         fully_obs=False,
          flat_actions=True,
-         flat_obs=True):
+         flat_obs=True,
+         name=None):
     """Load NASim Environment from a .yaml scenario file.
 
     Parameters
@@ -74,13 +75,16 @@ def load(path,
         path to the .yaml scenario file
     fully_obs : bool, optional
         The observability mode of environment, if True then uses fully
-        observable mode, otherwise partially observable (default=True)
+        observable mode, otherwise partially observable (default=False)
     flat_actions : bool, optional
         if true then uses a flat action space, otherwise will use
         parameterised action space (default=True).
     flat_obs : bool, optional
         if true then uses a 1D observation space. If False
         will use a 2D observation space (default=True)
+    name : str, optional
+        the scenarios name, if None name will be generated from path
+        (default=None)
 
     Returns
     -------
@@ -91,13 +95,13 @@ def load(path,
                   "flat_actions": flat_actions,
                   "flat_obs": flat_obs}
     loader = ScenarioLoader()
-    scenario = loader.load(path)
+    scenario = loader.load(path, name=name)
     return NASimEnv(scenario, **env_kwargs)
 
 
 def generate(num_hosts,
              num_services,
-             fully_obs=True,
+             fully_obs=False,
              flat_actions=True,
              flat_obs=True,
              **params):
@@ -111,7 +115,7 @@ def generate(num_hosts,
         number of services to use in environment (minimum is 1)
     fully_obs : bool, optional
         The observability mode of environment, if True then uses fully
-        observable mode, otherwise partially observable (default=True)
+        observable mode, otherwise partially observable (default=False)
     flat_actions : bool, optional
         if true then uses a flat action space, otherwise will use
         parameterised action space (default=True).
@@ -119,8 +123,7 @@ def generate(num_hosts,
         if true then uses a 1D observation space. If False
         will use a 2D observation space (default=True)
     params : dict, optional
-        generator params (see scenarios.generator.ScenarioGenertor
-        for full list)
+        generator params (see :class:`ScenarioGenertor` for full list)
 
     Returns
     -------

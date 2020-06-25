@@ -34,13 +34,16 @@ HOST_CONFIG_KEYS = {u.HOST_SERVICES: list,
 
 class ScenarioLoader:
 
-    def load(self, file_path):
+    def load(self, file_path, name=None):
         """Load the scenario from file
 
         Arguments
         ---------
         file_path : str
             path to scenario file
+        name : str, optional
+            the scenarios name, if None name will be generated from file path
+            (default=None)
 
         Returns
         -------
@@ -53,6 +56,9 @@ class ScenarioLoader:
             If file unable to load or scenario file is invalid.
         """
         self.yaml_dict = futils.load_yaml(file_path)
+        if name is None:
+            name = futils.get_file_name(file_path)
+        self.name = name
         self._check_scenario_sections_valid()
 
         self._parse_subnets()
@@ -80,7 +86,7 @@ class ScenarioLoader:
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
-        return Scenario(scenario_dict)
+        return Scenario(scenario_dict, name=self.name)
 
     def _check_scenario_sections_valid(self):
         """Checks if a scenario dictionary contains all required section is valid. """

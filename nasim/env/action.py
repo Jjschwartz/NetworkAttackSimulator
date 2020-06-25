@@ -1,21 +1,32 @@
 """Action related classes for the NASim environment.
 
 This module contains the different action classes that are used
-to define implement actions within a NASim environment.
+to implement actions within a NASim environment, along within the
+different ActionSpace classes, and the ActionResult class.
 
-Every action inherits from the base Action class, which defines
+Notes
+-----
+
+**Actions:**
+
+Every action inherits from the base :class:`Action` class, which defines
 some common attributes and functions. Different types of actions
 are implemented as subclasses of the Action class.
 
 Action types implemented:
 
-- Exploit
-- ServiceScan
-- OSScan
-- SubnetScan
+- :class:`Exploit`
+- :class:`ServiceScan`
+- :class:`OSScan`
+- :class:`SubnetScan`
 
-Additionally, it also contains the ActionResult dataclass for storing
-the results of performing an action.
+**Action Spaces:**
+
+There are two types of action spaces, depending on if you are using flat actions or not:
+
+- :class:`FlatActionSpace`
+- :class:`ParameterisedActionSpace`
+
 """
 
 import math
@@ -174,7 +185,6 @@ class Exploit(Action):
     and adds some additional attributes.
 
     ...
-
 
     Attributes
     ----------
@@ -385,6 +395,15 @@ class FlatActionSpace(spaces.Discrete):
     """Flat Action space for NASim environment.
 
     Inherits and implements the gym.spaces.Discrete action space
+
+    ...
+
+    Attributes
+    ----------
+    n : int
+        the number of actions in the action space
+    actions : list of Actions
+        the list of the Actions in the action space
     """
 
     def __init__(self, scenario):
@@ -423,16 +442,26 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     each dimension corresponds to a different action parameter.
 
     The action parameters (in order) are:
-        0. Action Type = [0, 3]
-           where 0=Exploit, 1=ServiceScan, 2=OSScan, 3=SubnetScan
-        1. Subnet = [0, #subnets-1]
-           -1 since we don't include the internet subnet
-        2. Host = [0, max subnets size-1]
-        3. Service = [0, #services]
-           Note, this is only important for exploits
-        4. OS = [0, #OS+1]
-           Where 0=None.
-           Note, this is only important for exploits.
+
+    0. Action Type = [0, 3]
+       where 0=Exploit, 1=ServiceScan, 2=OSScan, 3=SubnetScan
+    1. Subnet = [0, #subnets-1]
+       -1 since we don't include the internet subnet
+    2. Host = [0, max subnets size-1]
+    3. Service = [0, #services]
+       Note, this is only important for exploits
+    4. OS = [0, #OS+1]
+       Where 0=None.
+       Note, this is only important for exploits.
+
+    ...
+
+    Attributes
+    ----------
+    nvec : Numpy.Array
+        vector of the of the size of each parameter
+    actions : list of Actions
+        the list of all the Actions in the action space
     """
 
     _action_types = [Exploit, ServiceScan, OSScan, SubnetScan]
@@ -462,7 +491,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
         Parameters
         ----------
-        action_vector : list, tuple, Numpy.Array
+        action_vector : list of ints or tuple of ints or Numpy.Array
             the action vector
 
         Returns

@@ -18,38 +18,38 @@ USER = 3
 
 
 class ScenarioGenerator:
-    """Generates a scenario based on standard formula.
+    """Generates a scenario based on standard formula
 
-    Host Configuration distribution:
-        1. if uniform=True
-            => host configurations are chosen uniformly at random from set of
-               all valid possible configurations
-        2. if uniform=False
-            => host configurations are chosen to be corelated (see below)
+    For explanation of the details of how scenarios are generated see
+    :ref:`scenario_generation_explanation`.
 
-    CORRELATED CONFIGURATIONS:
-    The distribution of configurations of each host in the network are
-    generated using a Nested Dirichlet Process, so that across the network
-    hosts will have corelated configurations (i.e. certain
-    services/configurations will be more common across hosts on the network),
-    the degree of corelation is controlled by alpha_H and alpha_V, with lower
-    values leading to greater corelation.
+    Notes
+    -----
 
-    lambda_V controls the average number of services running per host. Higher
-    values will mean more services (so more vulnerable) hosts on average.
+    **Exploit Probabilities**:
 
-    EXPLOIT PROBABILITIES
-    Success probabilities of each exploit are determined as follows:
-        - None - probabilities generated randomly from uniform distribution
-        - "mixed" - probabilities randomly chosen from distribution of
-            low: 0.2, med: 0.5 and high: 0.8 with probability of level based
-            on attack complexity distribution of top 10 vulnerabilities in
-            2017.
-        - single-float - probability of each exploit is set to value
-        - list of float - probability of each exploit is set to
-            corresponding value in list
+    Success probabilities of each exploit are determined based on the value of
+    the ``exploit_probs`` argument, as follows:
 
-    For deterministic exploits set exploit_probs=1.0
+    - ``exploit_probs=None`` - probabilities generated randomly from uniform
+      distribution
+    - ``exploit_probs="mixed"`` - probabilities are chosen from [0.3, 0.6, 0.9]
+      with probability [0.2, 0.4, 0.4] (see :ref:`generated_exploit_probs` for
+      explanation).
+    - ``exploit_probs=float`` - probability of each exploit is set to value
+    - ``exploit_probs=list[float]`` - probability of each exploit is set to
+      corresponding value in list
+
+    For deterministic exploits set ``exploit_probs=1.0``.
+
+    **Host Configuration distribution**:
+
+    1. if ``uniform=True`` then host configurations are chosen uniformly at
+       random from set of all valid possible configurations
+    2. if ``uniform=False`` host configurations are chosen to be correlated
+       (see :ref:`correlated_configurations` for explanation)
+
+
     """
 
     def generate(self,
@@ -72,11 +72,13 @@ class ScenarioGenerator:
                  random_goal=False,
                  base_host_value=1,
                  host_discovery_value=1,
-                 seed=None):
+                 seed=None,
+                 name=None,
+                 **kwargs):
         """Generate the network configuration based on standard formula.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         num_hosts : int
             number of hosts to include in network (minimum is 3)
         num_services : int
@@ -90,9 +92,9 @@ class ScenarioGenerator:
             reward for sensitive subnet documents (default=10)
         r_user : float, optional
             reward for user subnet documents (default=10)
-        exploit_cost : (int, float), optional
+        exploit_cost : int or float, optional
             cost for an exploit (default=1)
-        exploit_probs : mixed, optional
+        exploit_probs : None, float, list of floats or "mixed", optional
             success probability of exploits (default=1.0)
         service_scan_cost : int or float, optional
             cost for a service scan (default=1)
@@ -101,7 +103,7 @@ class ScenarioGenerator:
         subnet_scan_cost : int or float, optional
             cost for an subnet scan (default=1)
         uniform : bool, optional
-            whether to use uniform distribution or correlatted of host configs
+            whether to use uniform distribution or correlated host configs
             (default=False)
         alpha_H : float, optional
             (only used when uniform=False) Scaling/concentration parameter for
@@ -127,6 +129,8 @@ class ScenarioGenerator:
             value of discovering a host for the first time (default=1)
         seed : int, optional
             random number generator seed (default=None)
+        name : str, optional
+            name of the scenario, if None one will be generated (default=None)
 
         Returns
         -------
@@ -164,6 +168,11 @@ class ScenarioGenerator:
         self.service_scan_cost = service_scan_cost
         self.os_scan_cost = os_scan_cost
         self.subnet_scan_cost = subnet_scan_cost
+
+        if name is None:
+            name = f"gen_H{num_hosts}_E{num_exploits}_S{num_services}"
+        self.name = name
+
         return self._construct_scenario()
 
     def _construct_scenario(self):
@@ -179,7 +188,7 @@ class ScenarioGenerator:
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
-        scenario = Scenario(scenario_dict)
+        scenario = Scenario(scenario_dict, name=self.name)
         return scenario
 
     def _generate_subnets(self, num_hosts):
@@ -293,8 +302,8 @@ class ScenarioGenerator:
         perms[1] = [True, ..., True]
         perms[-1] = [False, ..., False]
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         n : int
             bool list length
 

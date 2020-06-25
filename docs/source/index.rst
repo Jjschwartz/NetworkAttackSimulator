@@ -25,6 +25,7 @@ Future extensions
 
    tutorials/index
    reference/index
+   explanations/index
    community/index
 
 

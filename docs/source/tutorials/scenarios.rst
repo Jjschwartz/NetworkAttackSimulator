@@ -46,7 +46,7 @@ And you are done.
 
 You can also pass in a a random seed using the `seed` argument, which will have an effect when using a generated scenario.
 
-.. note::  This method only works with the benchmark scenarios that come with NASim (for the full list see the :ref:`benchmark_scenarios` section below).
+.. note::  This method only works with the benchmark scenarios that come with NASim (for the full list see the :ref:`benchmark_scenarios`).
 
 
 Loading a scenario from a YAML file
@@ -63,7 +63,7 @@ And once again, you are done (given your file is in a valid format)!
 Generating a scenario
 ^^^^^^^^^^^^^^^^^^^^^
 
-The final method for loading a new environment is to generate it using the NASim scenario generator. There are quite a number of parameters that can be used to control the what scenario is generated (for a full list see the `nasim.scenarios.ScenarioGenerator` class), but the two key parameters are the number of hosts in the network and the number of services running (which also controls number of exploits, unless otherwise specified).
+The final method for loading a new environment is to generate it using the NASim scenario generator. There are quite a number of parameters that can be used to control the what scenario is generated (for a full list see the :ref:`scenario_generator` class), but the two key parameters are the number of hosts in the network and the number of services running (which also controls number of exploits, unless otherwise specified).
 
 To generate a new environment with 5 hosts running a possible 3 services::
 
@@ -75,4 +75,4 @@ And your done! If you want to pass in some other parameters (say the number of p
   env = nasim.generate(5, 3, num_os=3)
 
 
-Once again, for a full list of available parameters refer to the `nasim.scenarios.ScenarioGenerator` documentation.
+Once again, for a full list of available parameters refer to the :ref:`scenario_generator` documentation.

@@ -6,11 +6,7 @@ Reference
 Technical reference material.
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    actions
-    benchmark_scenarios
-    environment
-    host_vector
-    observation
-    state
+    env/index
+    scenarios/index

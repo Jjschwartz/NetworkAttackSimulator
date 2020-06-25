@@ -5,8 +5,9 @@ import nasim.scenarios.utils as u
 
 class Scenario:
 
-    def __init__(self, scenario_dict):
+    def __init__(self, scenario_dict, name=None):
         self.scenario_dict = scenario_dict
+        self.name = name
         self._e_map = None
 
         # this is used for consistent positioning of

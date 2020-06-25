@@ -21,6 +21,10 @@ class NASimEnv(gym.Env):
 
     Attributes
     ----------
+    name : str
+        the environment scenario name
+    scenario : Scenario
+        Scenario object, defining the properties of the environment
     action_space : FlatActionSpace or ParameterisedActionSpace
         Action space for environment.
         If *flat_action=True* then this is a discrete action space (which
@@ -48,7 +52,7 @@ class NASimEnv(gym.Env):
 
     def __init__(self,
                  scenario,
-                 fully_obs=True,
+                 fully_obs=False,
                  flat_actions=True,
                  flat_obs=True):
         """
@@ -58,7 +62,7 @@ class NASimEnv(gym.Env):
             Scenario object, defining the properties of the environment
         fully_obs : bool, optional
             The observability mode of environment, if True then uses fully
-            observable mode, otherwise is partially observable (default=True)
+            observable mode, otherwise is partially observable (default=False)
         flat_actions : bool, optional
             If true then uses a flat action space, otherwise will uses a
             parameterised action space (default=True).
@@ -66,6 +70,7 @@ class NASimEnv(gym.Env):
             If true then uses a 1D observation space, otherwise uses a 2D
             observation space (default=True)
         """
+        self.name = scenario.name
         self.scenario = scenario
         self.fully_obs = fully_obs
         self.flat_actions = flat_actions
@@ -94,14 +99,17 @@ class NASimEnv(gym.Env):
 
         Returns
         -------
-        Observation
+        numpy.Array
             the initial observation of the environment
         """
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
             self.fully_obs
         )
-        return self.last_obs
+
+        if self.flat_obs:
+            return self.last_obs.numpy_flat()
+        return self.last_obs.numpy()
 
     def step(self, action):
         """Run one step of the environment using action.
@@ -110,14 +118,14 @@ class NASimEnv(gym.Env):
 
         Parameters
         ----------
-        action : Action, int, list, NumpyArray
+        action : Action or int or list or NumpyArray
             Action to perform. If not Action object, then if using
             flat actions this should be an int and if using non-flat actions
             this should be an indexable array.
 
         Returns
         -------
-        Observation
+        numpy.Array
             observation from performing action
         float
             reward from performing action
@@ -133,6 +141,12 @@ class NASimEnv(gym.Env):
         )
         self.current_state = next_state
         self.last_obs = obs
+
+        if self.flat_obs:
+            obs = obs.numpy_flat()
+        else:
+            obs = obs.numpy()
+
         return obs, reward, done, info
 
     def generative_step(self, state, action):

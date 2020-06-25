@@ -1,12 +1,22 @@
 # A tiny standard (one public network) network configuration
+#
+# 3 hosts
+# 3 subnets
+# 1 service
+# 1 os
+# 1 exploit
+#
+# Optimal path:
+# (e_ssh, (1, 0)) -> (e_ssh, (3, 0)) -> (e_ssh, (2, 0))
+# Score = 197
 subnets: [1, 1, 1]
 topology: [[ 1, 1, 0, 0],
            [ 1, 1, 1, 1],
            [ 0, 1, 1, 1],
            [ 0, 1, 1, 1]]
 sensitive_hosts:
-  (2, 0): 10
-  (3, 0): 10
+  (2, 0): 100
+  (3, 0): 100
 services:
   - ssh
 os:

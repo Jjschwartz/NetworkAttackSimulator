@@ -10,6 +10,7 @@ def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
         print(line_break)
         print("STARTING EPISODE")
         print(line_break)
+        print(f"t: Reward")
 
     env.reset()
     total_reward = 0
@@ -22,7 +23,6 @@ def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
     else:
         a_iter = product(*[range(n) for n in env.action_space.nvec])
 
-    print(f"t: Reward")
     while not done and t < step_limit:
         if flat_actions:
             a = (a + 1) % env.action_space.n
@@ -47,6 +47,7 @@ def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
         print(line_break)
         print("EPISODE FINISHED")
         print(line_break)
+        print(f"Total steps = {t}")
         print(f"Total reward = {total_reward}")
     elif verbose:
         print(line_break)
@@ -74,4 +75,5 @@ if __name__ == "__main__":
                                not args.partially_obs,
                                not args.param_actions,
                                not args.box_obs)
+    print(env.action_space.n)
     run_bruteforce_agent(env, flat_actions=not args.param_actions)

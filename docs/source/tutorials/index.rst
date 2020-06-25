@@ -9,3 +9,4 @@ Tutorials
     installation
     scenarios
     environment
+    creating_scenarios

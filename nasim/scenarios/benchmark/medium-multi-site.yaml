@@ -1,6 +1,8 @@
 # A WAN which has multiple 3 remote sites (subnets) connected to the main site
-# sensitive hosts are located on a server on server subnet on main site and on
-# a host in user subnet in main site
+# sensitive hosts:
+# 1) a server in server subnet on the main site,
+# 2) a host in user subnet in main site
+#
 # main site has 3 subnets (1 server, 1 DMZ, 1 user)
 # subnet 1 = main site DMZ (exposed, but not vulnerable) - contains 2 webservers
 # subnet 2 = main site server (not exposed) - contains 2 data servers
@@ -9,17 +11,30 @@
 # subnet 5 = remote site 2 (exposed) - contains 2 user hosts
 # subnet 6 = remote site 3 (exposed) - contains 2 user hosts
 # each remote site is connected to main site server subnet
+#
+# 16 hosts
+# 6 subnets
+# 2 OS
+# 5 services
+# 5 exploits
+#
+# |A| = 16 * (5 + 3) = 128
+#
+# Optimal path:
+#  (e_samba, (6, 1)) -> (e_smtp, (2, 1)) -> (e_http, (3, 1)) -> (e_ssh, (3, 4))
+#  Score = 200 - (2 + 3 + 2 + 3) = 190
+#
 subnets: [2, 2, 6, 2, 2, 2]
-topology: [[ 1, 1, 0, 0, 1, 1, 1], # 0 - internet
-           [ 1, 1, 1, 1, 0, 0, 0], # 1 - MS-DMZ
-           [ 0, 1, 1, 1, 1, 1, 1], # 2 - MS-Server
-           [ 0, 1, 1, 1, 0, 0, 0], # 3 - MS-User
-           [ 1, 0, 1, 0, 1, 0, 0], # 4 - RS-1
-           [ 1, 0, 1, 0, 0, 1, 0], # 5 - RS-2
-           [ 1, 0, 1, 0, 0, 0, 1]] # 6 - RS-3
+topology: [[ 1, 1, 0, 0, 1, 1, 1],    # 0 - internet
+           [ 1, 1, 1, 1, 0, 0, 0],    # 1 - MS-DMZ
+           [ 0, 1, 1, 1, 1, 1, 1],    # 2 - MS-Server
+           [ 0, 1, 1, 1, 0, 0, 0],    # 3 - MS-User
+           [ 1, 0, 1, 0, 1, 0, 0],    # 4 - RS-1
+           [ 1, 0, 1, 0, 0, 1, 0],    # 5 - RS-2
+           [ 1, 0, 1, 0, 0, 0, 1]]    # 6 - RS-3
 sensitive_hosts:
-  (2, 1): 10
-  (3, 4): 10
+  (2, 1): 100
+  (3, 4): 100
 services:
   - ssh
   - ftp
@@ -33,28 +48,28 @@ exploits:
   e_ssh:
     service: ssh
     os: linux
-    prob: 0.7
-    cost: 1
+    prob: 0.9
+    cost: 3
   e_ftp:
     service: ftp
     os: windows
-    prob: 0.7
+    prob: 0.6
     cost: 1
   e_http:
     service: http
     os: None
-    prob: 0.7
-    cost: 1
+    prob: 0.9
+    cost: 2
   e_samba:
     service: samba
     os: windows
-    prob: 0.7
-    cost: 1
+    prob: 0.3
+    cost: 2
   e_smtp:
     service: smtp
     os: windows
-    prob: 0.7
-    cost: 1
+    prob: 0.6
+    cost: 3
 service_scan_cost: 1
 os_scan_cost: 1
 subnet_scan_cost: 1

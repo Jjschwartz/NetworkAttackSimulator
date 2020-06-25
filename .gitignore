@@ -38,3 +38,6 @@ docs/_build/
 
 # mkdocs documentation
 /site
+
+# data storage from tensorboard
+nasim/agents/runs

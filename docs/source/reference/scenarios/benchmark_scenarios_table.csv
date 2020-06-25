@@ -1,0 +1,14 @@
+Name,Type,Subnets,Hosts,OS,Services,Exploits,Actions,States
+tiny,static,3,3,1,1,1,12,96
+small,static,4,8,2,3,3,48,2048
+small-linear,static,6,8,2,3,3,48,2048
+medium,static,5,16,2,5,5,128,16384
+medium-single-site,static,1,16,2,5,5,128,16384
+medium-multi-site,static,6,16,2,5,5,128,16384
+tiny-gen,generated,3,3,1,1,1,12,96
+small-gen,generated,4,8,2,3,3,48,2048
+medium-gen,generated,5,16,2,5,5,128,16384
+large-gen,generated,7,23,3,7,7,230,188416
+huge-gen,generated,10,38,4,10,10,494,4980736
+pocp-1-gen,generated,9,35,2,50,60,2205,1.26101E+18
+pocp-2-gen,generated,21,95,3,10,30,3135,6225920

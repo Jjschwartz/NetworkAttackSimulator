@@ -5,24 +5,36 @@ from .generated import AVAIL_GEN_BENCHMARKS
 BENCHMARK_DIR = osp.dirname(osp.abspath(__file__))
 
 AVAIL_STATIC_BENCHMARKS = {
-    "multi-site": {
-        "file": osp.join(BENCHMARK_DIR, "multi-site.yaml"),
-        "max_score": 17},
-    "single-site": {
-        "file": osp.join(BENCHMARK_DIR, "single-site.yaml"),
-        "max_score": 17},
-    "small-linear-two": {
-        "file": osp.join(BENCHMARK_DIR, "small-linear-two.yaml"),
-        "max_score": 17},
-    "small": {
-        "file": osp.join(BENCHMARK_DIR, "small.yaml"),
-        "max_score": 16},
-    "standard": {
-        "file": osp.join(BENCHMARK_DIR, "standard.yaml"),
-        "max_score": 17},
     "tiny": {
         "file": osp.join(BENCHMARK_DIR, "tiny.yaml"),
-        "max_score": 17}
+        "name": "tiny",
+        "step_limit": 1000,
+        "max_score": 197},
+    "small": {
+        "file": osp.join(BENCHMARK_DIR, "small.yaml"),
+        "name": "",
+        "step_limit": 1000,
+        "max_score": 190},
+    "small-linear": {
+        "file": osp.join(BENCHMARK_DIR, "small-linear.yaml"),
+        "name": "small-linear",
+        "step_limit": 1000,
+        "max_score": 187},
+    "medium": {
+        "file": osp.join(BENCHMARK_DIR, "medium.yaml"),
+        "name": "medium",
+        "step_limit": 2000,
+        "max_score": 190},
+    "medium-single-site": {
+        "file": osp.join(BENCHMARK_DIR, "medium-single-site.yaml"),
+        "name": "medium-single-site",
+        "step_limit": 2000,
+        "max_score": 195},
+    "medium-multi-site": {
+        "file": osp.join(BENCHMARK_DIR, "medium-multi-site.yaml"),
+        "name": "medium-multi-site",
+        "step_limit": 2000,
+        "max_score": 190},
 }
 
 AVAIL_BENCHMARKS = list(AVAIL_STATIC_BENCHMARKS.keys()) \

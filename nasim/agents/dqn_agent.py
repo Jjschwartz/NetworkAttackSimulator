@@ -157,7 +157,7 @@ class DQNAgent:
         self.dqn = DQN(self.obs_dim,
                        hidden_sizes,
                        self.num_actions).to(self.device)
-        print("Using Neural Network:")
+        print("\nUsing Neural Network:")
         print(self.dqn)
 
         self.target_dqn = DQN(self.obs_dim,
@@ -214,7 +214,7 @@ class DQNAgent:
         return loss.item(), mean_v
 
     def train(self):
-        print("Starting training")
+        print("\nStarting training")
         num_episodes = 0
         training_steps_remaining = self.training_steps
 
@@ -234,7 +234,7 @@ class DQNAgent:
                                    ep_steps,
                                    self.steps_done)
 
-            if num_episodes % 100 == 0:
+            if num_episodes % 10 == 0:
                 print(f"\nEpisode {num_episodes}:")
                 print(f"\tsteps done = {self.steps_done} / "
                       f"{self.training_steps}")
@@ -242,6 +242,10 @@ class DQNAgent:
 
         self.logger.close()
         print("Training complete")
+        print(f"\nEpisode {num_episodes}:")
+        print(f"\tsteps done = {self.steps_done} / "
+              f"{self.training_steps}")
+        print(f"\treturn = {ep_return}")
 
     def run_episode(self, step_limit):
         o = self.env.reset()
@@ -278,7 +282,7 @@ if __name__ == "__main__":
                         help="(default=[64. 64])")
     parser.add_argument("--lr", type=float, default=0.001,
                         help="Learning rate (default=0.001)")
-    parser.add_argument("--training_steps", type=int, default=100000,
+    parser.add_argument("--training_steps", type=int, default=10000,
                         help="training steps (default=10000)")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="(default=32)")

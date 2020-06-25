@@ -3,7 +3,10 @@ Network Attack Simulator
 
 |docs|
 
-A simulated computer network complete with vulnerabilities, scans and exploits designed to be used as a testing environment for AI agents and planning techniques applied to network penetration testing.
+Network Attack Simulator (NASim) is a simulated computer network complete with vulnerabilities, scans and exploits designed to be used as a testing environment for AI agents and planning techniques applied to network penetration testing.
+
+**Note**: NASim is currently under active development so there will be small changes still occuring that may affect some functionallity. However, I'm hoping for a stable release soon.
+
 
 Documentation
 -------------

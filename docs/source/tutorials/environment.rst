@@ -3,13 +3,13 @@
 Interacting with NASim Environment
 ==================================
 
-Assuming you understand scenarios and are comfortable loading an environment from a scenario (see :ref:`scenarios_tute` if not), then interacting with a NASim Environment is very easy and follows the same interface as `OpenAI gym <https://github.com/openai/gym>`_.
+Assuming you are comfortable loading an environment from a scenario (see :ref:`loading_tute` if not), then interacting with a NASim Environment is very easy and follows the same interface as `OpenAI gym <https://github.com/openai/gym>`_.
 
 
 Starting the environment
 ------------------------
 
-First things is loading the environment::
+First thing is simply loading the environment::
 
   import nasim
   # load my environment in the desired way (make_benchmark, load, generate)

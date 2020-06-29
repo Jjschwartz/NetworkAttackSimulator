@@ -7,6 +7,7 @@ Tutorials
     :maxdepth: 1
 
     installation
-    scenarios
+    loading
     environment
+    scenarios
     creating_scenarios

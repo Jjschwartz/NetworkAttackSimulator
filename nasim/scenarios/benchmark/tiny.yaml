@@ -52,3 +52,4 @@ firewall:
   (3, 1): [ssh]
   (2, 3): [ssh]
   (3, 2): [ssh]
+step_limit: 1000

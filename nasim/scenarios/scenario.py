@@ -17,6 +17,10 @@ class Scenario:
             self.host_num_map[host_addr] = host_num
 
     @property
+    def step_limit(self):
+        return self.scenario_dict.get(u.STEP_LIMIT, None)
+
+    @property
     def services(self):
         return self.scenario_dict[u.SERVICES]
 

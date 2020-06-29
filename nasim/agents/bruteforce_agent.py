@@ -47,12 +47,17 @@ def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
         print(line_break)
         print("EPISODE FINISHED")
         print(line_break)
+        print(f"Goal reached = {env.goal_reached()}")
         print(f"Total steps = {t}")
         print(f"Total reward = {total_reward}")
     elif verbose:
         print(line_break)
         print("STEP LIMIT REACHED")
         print(line_break)
+
+    if done:
+        done = env.goal_reached()
+
     return t, total_reward, done
 
 

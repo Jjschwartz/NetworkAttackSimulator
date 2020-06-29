@@ -84,3 +84,4 @@ firewall:
   (3, 2): [ftp]
   (3, 4): [ssh]
   (4, 3): [ftp]
+step_limit: 1000

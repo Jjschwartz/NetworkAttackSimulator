@@ -19,6 +19,7 @@ SUBNET_SCAN_COST = "subnet_scan_cost"
 HOST_CONFIGS = "host_configurations"
 FIREWALL = "firewall"
 HOSTS = "host"
+STEP_LIMIT = "step_limit"
 
 # scenario exploit keys
 EXPLOIT_SERVICE = "service"

@@ -36,6 +36,10 @@ def run_random_agent(env, step_limit=1e6, verbose=True):
         print(line_break)
         print("STEP LIMIT REACHED")
         print(line_break)
+
+    if done:
+        done = env.goal_reached()
+
     return t, total_reward, done
 
 

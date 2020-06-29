@@ -219,7 +219,8 @@ class DQNAgent:
         training_steps_remaining = self.training_steps
 
         while self.steps_done < self.training_steps:
-            ep_return, ep_steps = self.run_episode(training_steps_remaining)
+            ep_results = self.run_episode(training_steps_remaining)
+            ep_return, ep_steps, goal = ep_results
             num_episodes += 1
             training_steps_remaining -= ep_steps
 
@@ -233,19 +234,23 @@ class DQNAgent:
             self.logger.add_scalar("episode_steps",
                                    ep_steps,
                                    self.steps_done)
+            self.logger.add_scalar("episode_goal_reached",
+                                   int(goal),
+                                   self.steps_done)
 
             if num_episodes % 10 == 0:
                 print(f"\nEpisode {num_episodes}:")
                 print(f"\tsteps done = {self.steps_done} / "
                       f"{self.training_steps}")
                 print(f"\treturn = {ep_return}")
+                print(f"\tgoal = {goal}")
 
         self.logger.close()
         print("Training complete")
         print(f"\nEpisode {num_episodes}:")
-        print(f"\tsteps done = {self.steps_done} / "
-              f"{self.training_steps}")
+        print(f"\tsteps done = {self.steps_done} / {self.training_steps}")
         print(f"\treturn = {ep_return}")
+        print(f"\tgoal = {goal}")
 
     def run_episode(self, step_limit):
         o = self.env.reset()
@@ -268,7 +273,7 @@ class DQNAgent:
             episode_return += r
             steps += 1
 
-        return episode_return, steps
+        return episode_return, steps, self.env.goal_reached()
 
 
 if __name__ == "__main__":

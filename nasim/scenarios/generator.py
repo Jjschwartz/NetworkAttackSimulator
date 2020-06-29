@@ -74,6 +74,7 @@ class ScenarioGenerator:
                  host_discovery_value=1,
                  seed=None,
                  name=None,
+                 step_limit=None,
                  **kwargs):
         """Generate the network configuration based on standard formula.
 
@@ -131,6 +132,9 @@ class ScenarioGenerator:
             random number generator seed (default=None)
         name : str, optional
             name of the scenario, if None one will be generated (default=None)
+        step_limit : int, optional
+            max number of steps permitted in a single episode, if None there is
+            no limit (default=None)
 
         Returns
         -------
@@ -173,6 +177,8 @@ class ScenarioGenerator:
             name = f"gen_H{num_hosts}_E{num_exploits}_S{num_services}"
         self.name = name
 
+        self.step_limit = step_limit
+
         return self._construct_scenario()
 
     def _construct_scenario(self):
@@ -188,6 +194,7 @@ class ScenarioGenerator:
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
+        scenario_dict[u.STEP_LIMIT] = self.step_limit
         scenario = Scenario(scenario_dict, name=self.name)
         return scenario
 

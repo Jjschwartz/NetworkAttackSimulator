@@ -123,3 +123,4 @@ firewall:
   (4, 3): [ftp]
   (3, 5): [ssh]
   (5, 3): [ftp]
+step_limit: 2000

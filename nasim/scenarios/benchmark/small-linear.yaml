@@ -96,3 +96,4 @@ firewall:
   (6, 5): [ssh]
   (6, 0): []
   (0, 6): [http]
+step_limit: 1000

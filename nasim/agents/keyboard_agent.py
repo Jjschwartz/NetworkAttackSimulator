@@ -44,9 +44,13 @@ def run_keyboard_agent(env):
         env.render("readable")
         print(f"r={r}, done={done}")
 
+    if done:
+        done = env.goal_reached()
+
     print(line_break)
     print("EPISODE FINISHED")
     print(line_break)
+    print(f"Goal reached = {done}")
     print(f"Total reward = {total_reward}")
 
 
@@ -73,9 +77,13 @@ def run_generative_keyboard_agent(env):
         pprint(info)
         s = ns
 
+    if done:
+        done = env.goal_reached()
+
     print(line_break)
     print("EPISODE FINISHED")
     print(line_break)
+    print(f"Goal reached = {done}")
     print(f"Total reward = {total_reward}")
 
 

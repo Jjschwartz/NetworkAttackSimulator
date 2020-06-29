@@ -143,3 +143,4 @@ firewall:
   (5, 2): [smtp]
   (2, 6): [ftp, ssh]
   (6, 2): [smtp]
+step_limit: 2000

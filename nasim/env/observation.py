@@ -51,6 +51,14 @@ class Observation:
         self.aux_row = self.obs_shape[0]-1
         self.tensor = np.zeros(self.obs_shape, dtype=np.float32)
 
+    @classmethod
+    def from_numpy(cls, o_array, state_shape):
+        obs = cls(state_shape)
+        if o_array.shape != (state_shape[0]+1, state_shape[1]):
+            o_array = o_array.reshape(state_shape[0]+1, state_shape[1])
+        obs.tensor = o_array
+        return obs
+
     def from_state(self, state):
         self.tensor[:self.aux_row] = state.tensor
 

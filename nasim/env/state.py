@@ -68,6 +68,12 @@ class State:
         # ensure host state set correctly
         return network.reset(state)
 
+    @classmethod
+    def from_numpy(cls, s_array, state_shape, host_num_map):
+        if s_array.shape != state_shape:
+            s_array = s_array.reshape(state_shape)
+        return State(s_array, host_num_map)
+
     @property
     def hosts(self):
         hosts = []

@@ -156,8 +156,9 @@ class Action:
         return isinstance(self, NoOp)
 
     def __str__(self):
-        return (f"{self.__class__.__name__}: name={self.name}, "
-                f"target={self.target}, cost={self.cost:.2f}, "
+        return (f"{self.__class__.__name__}: "
+                f"target={self.target}, "
+                f"cost={self.cost:.2f}, "
                 f"prob={self.prob:.2f}")
 
     def __hash__(self):
@@ -222,7 +223,9 @@ class Exploit(Action):
         self.service = service
 
     def __str__(self):
-        return super().__str__() + f", os={self.os}, service={self.service}"
+        return (f"{self.__class__.__name__}: name={self.name}, "
+                f"target={self.target}, cost={self.cost:.2f}, "
+                f"prob={self.prob:.2f}, os={self.os}, service={self.service}")
 
     def __eq__(self, other):
         if not super().__eq__(other):
@@ -464,7 +467,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         the list of all the Actions in the action space
     """
 
-    _action_types = [Exploit, ServiceScan, OSScan, SubnetScan]
+    action_types = [Exploit, ServiceScan, OSScan, SubnetScan]
 
     def __init__(self, scenario):
         """
@@ -477,7 +480,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         self.actions = load_action_list(scenario)
 
         nvec = [
-            len(self._action_types),
+            len(self.action_types),
             len(self.scenario.subnets)-1,
             max(self.scenario.subnets),
             self.scenario.num_services,
@@ -511,7 +514,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         assert isinstance(action_vec, (list, tuple, np.ndarray)), \
             ("When using parameterised action space, action must be an Action"
              f" object, a list or a numpy array: {action_vec} is invalid")
-        a_class = self._action_types[action_vec[0]]
+        a_class = self.action_types[action_vec[0]]
         # need to add one to subnet to account for Internet subnet
         subnet = action_vec[1]+1
         host = action_vec[2] % self.scenario.subnets[subnet]

@@ -9,6 +9,7 @@ from gym import spaces
 from nasim.env.state import State
 from nasim.env.render import Viewer
 from nasim.env.network import Network
+from nasim.env.observation import Observation
 from nasim.env.action import Action, FlatActionSpace, ParameterisedActionSpace
 
 
@@ -238,16 +239,22 @@ class NASimEnv(gym.Env):
         ----------
         mode : str
             rendering mode
-        obs : Observation, optional
-            the observation to render, if None will render last observation
-            (default=None)
+        obs : Observation or numpy.ndarray, optional
+            the observation to render, if None will render last observation.
+            If numpy.ndarray it must be in format that matches Observation
+            (i.e. ndarray returned by step method) (default=None)
         """
         if obs is None:
             obs = self.last_obs
+
+        if not isinstance(obs, Observation):
+            obs = Observation.from_numpy(obs, self.current_state.shape())
+
         if self._renderer is None:
             self._renderer = Viewer(self.network)
 
         if mode == "readable":
+
             self._renderer.render_readable(obs)
         else:
             print("Please choose correct render mode from :"
@@ -266,12 +273,19 @@ class NASimEnv(gym.Env):
         ----------
         mode : str
             rendering mode
-        state : State, optional
+        state : State or numpy.ndarray, optional
             the State to render, if None will render current state
-            (default=None)
+            If numpy.ndarray it must be in format that matches State
+            (i.e. ndarray returned by generative_step method) (default=None)
         """
         if state is None:
             state = self.current_state
+
+        if not isinstance(state, State):
+            state = State.from_numpy(state,
+                                     self.current_state.shape(),
+                                     self.current_state.host_num_map)
+
         if self._renderer is None:
             self._renderer = Viewer(self.network)
 

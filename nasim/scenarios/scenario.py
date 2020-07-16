@@ -1,3 +1,4 @@
+import math
 from pprint import pprint
 
 import nasim.scenarios.utils as u
@@ -111,6 +112,38 @@ class Scenario:
     @property
     def subnet_scan_cost(self):
         return self.scenario_dict[u.SUBNET_SCAN_COST]
+
+    @property
+    def host_value_bounds(self):
+        """The min and max values of host in scenario
+
+        Returns
+        -------
+        (float, float)
+            (min, max) tuple of host values
+        """
+        min_value = math.inf
+        max_value = -math.inf
+        for host in self.hosts.values():
+            min_value = min(min_value, host.value)
+            max_value = max(max_value, host.value)
+        return (min_value, max_value)
+
+    @property
+    def host_discovery_value_bounds(self):
+        """The min and max discovery values of hosts in scenario
+
+        Returns
+        -------
+        (float, float)
+            (min, max) tuple of host values
+        """
+        min_value = math.inf
+        max_value = -math.inf
+        for host in self.hosts.values():
+            min_value = min(min_value, host.discovery_value)
+            max_value = max(max_value, host.discovery_value)
+        return (min_value, max_value)
 
     def display(self):
         pprint(self.scenario_dict)

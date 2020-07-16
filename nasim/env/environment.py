@@ -94,7 +94,10 @@ class NASimEnv(gym.Env):
             obs_shape = self.last_obs.shape_flat()
         else:
             obs_shape = self.last_obs.shape()
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=obs_shape)
+        obs_low, obs_high = Observation.get_space_bounds(self.scenario)
+        self.observation_space = spaces.Box(
+            low=obs_low, high=obs_high, shape=obs_shape
+        )
 
         self.steps = 0
 

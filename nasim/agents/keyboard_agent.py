@@ -1,5 +1,4 @@
 """Play and scenario using key board """
-from pprint import pprint
 
 import nasim
 from nasim.env.action import Exploit

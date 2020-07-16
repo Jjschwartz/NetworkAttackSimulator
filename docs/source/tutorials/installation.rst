@@ -46,7 +46,7 @@ And you can install the framework as a package with:
 
 .. code-block:: bash
 
-    python install -e .
+    pip install -e .
 
 
 .. _user-install:

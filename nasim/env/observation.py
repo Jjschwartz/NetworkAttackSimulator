@@ -51,6 +51,18 @@ class Observation:
         self.aux_row = self.obs_shape[0]-1
         self.tensor = np.zeros(self.obs_shape, dtype=np.float32)
 
+    @staticmethod
+    def get_space_bounds(scenario):
+        value_bounds = scenario.host_value_bounds
+        discovery_bounds = scenario.host_discovery_value_bounds
+        obs_low = min(0, value_bounds[0], discovery_bounds[0])
+        obs_high = max(0,
+                       value_bounds[1],
+                       discovery_bounds[1],
+                       len(scenario.subnets),
+                       max(scenario.subnets))
+        return (obs_low, obs_high)
+
     @classmethod
     def from_numpy(cls, o_array, state_shape):
         obs = cls(state_shape)

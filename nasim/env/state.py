@@ -38,14 +38,16 @@ class State:
     @classmethod
     def tensorize(cls, network):
         h0 = network.hosts[(1, 0)]
-        h0_vector = HostVector.vectorize(h0)
-        tensor = np.zeros((len(network.hosts),
-                          h0_vector.state_size),
-                          dtype=np.float32)
-
+        h0_vector = HostVector.vectorize(h0, network.address_space_bounds)
+        tensor = np.zeros(
+            (len(network.hosts), h0_vector.state_size),
+            dtype=np.float32
+        )
         for host_addr, host in network.hosts.items():
             host_num = network.host_num_map[host_addr]
-            HostVector.vectorize(host, tensor[host_num])
+            HostVector.vectorize(
+                host, network.address_space_bounds, tensor[host_num]
+            )
         return cls(tensor, network.host_num_map)
 
     @classmethod
@@ -56,14 +58,18 @@ class State:
     @classmethod
     def generate_random_initial_state(cls, network):
         h0 = network.hosts[(1, 0)]
-        h0_vector = HostVector.vectorize_random(h0)
-        tensor = np.zeros((len(network.hosts),
-                          h0_vector.state_size),
-                          dtype=np.float32)
-
+        h0_vector = HostVector.vectorize_random(
+            h0, network.address_space_bounds
+        )
+        tensor = np.zeros(
+            (len(network.hosts), h0_vector.state_size),
+            dtype=np.float32
+        )
         for host_addr, host in network.hosts.items():
             host_num = network.host_num_map[host_addr]
-            HostVector.vectorize_random(host, tensor[host_num])
+            HostVector.vectorize_random(
+                host, network.address_space_bounds, tensor[host_num]
+            )
         state = cls(tensor, network.host_num_map)
         # ensure host state set correctly
         return network.reset(state)

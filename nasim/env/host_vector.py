@@ -18,8 +18,10 @@ class HostVector:
 
     Features in the vector, listed in order, are:
 
-    1. subnet address - int
-    2. host address - int
+    1. subnet address - one-hot encoding with length equal to the number
+                        of subnets
+    2. host address - one-hot encoding with length equal to the maximum number
+                      of hosts in any subnet
     3. compromised - bool
     4. reachable - bool
     5. discovered - bool
@@ -30,8 +32,10 @@ class HostVector:
 
     Notes
     -----
+    - The size of the vector is equal to:
 
-    - The size of the vector is equal to 7 + #services + #OS.
+        #subnets + max #hosts in any subnet + 5 + #services + #OS.
+
     - The vector is a float vector so True/False is actually represented as
       1.0/0.0.
 
@@ -39,6 +43,8 @@ class HostVector:
 
     # class properties that are the same for all hosts
     # these are set when calling vectorize method
+    # the bounds on address space (used for one hot encoding of host address)
+    address_space_bounds = None
     # number of OS in scenario
     num_os = None
     # map from OS name to its index in host vector
@@ -51,51 +57,45 @@ class HostVector:
     state_size = None
 
     # vector position constants
-    _subnet_address_idx = 0
-    _host_address_idx = _subnet_address_idx+1
-    _compromised_idx = _host_address_idx+1
-    _reachable_idx = _compromised_idx+1
-    _discovered_idx = _reachable_idx+1
-    _value_idx = _discovered_idx+1
-    _discovery_value_idx = _value_idx+1
-    _service_start_idx = _discovery_value_idx+1
     # to be initialized
+    _subnet_address_idx = 0
+    _host_address_idx = None
+    _compromised_idx = None
+    _reachable_idx = None
+    _discovered_idx = None
+    _value_idx = None
+    _discovery_value_idx = None
+    _service_start_idx = None
     _os_start_idx = None
 
     def __init__(self, vector):
         self.vector = vector
 
     @classmethod
-    def vectorize(cls, host, vector=None):
-        cls.os_idx_map = {}
-        cls.service_idx_map = {}
-        cls.num_os = len(host.os)
-        cls.num_services = len(host.services)
-        cls.state_size = cls._service_start_idx + cls.num_os + cls.num_services
-        cls._os_start_idx = cls._service_start_idx + cls.num_services
+    def vectorize(cls, host, address_space_bounds, vector=None):
+        if cls.address_space_bounds is None:
+            cls._initialize(address_space_bounds, host.services, host.os)
 
         if vector is None:
             vector = np.zeros(cls.state_size, dtype=np.float32)
         else:
             assert len(vector) == cls.state_size
 
-        vector[cls._subnet_address_idx] = host.address[0]
-        vector[cls._host_address_idx] = host.address[1]
+        vector[cls._subnet_address_idx + host.address[0]] = 1
+        vector[cls._host_address_idx + host.address[1]] = 1
         vector[cls._compromised_idx] = int(host.compromised)
         vector[cls._reachable_idx] = int(host.reachable)
         vector[cls._discovered_idx] = int(host.discovered)
         vector[cls._value_idx] = host.value
         vector[cls._discovery_value_idx] = host.discovery_value
         for srv_num, (srv_key, srv_val) in enumerate(host.services.items()):
-            cls.service_idx_map[srv_key] = srv_num
             vector[cls._get_service_idx(srv_num)] = int(srv_val)
         for os_num, (os_key, os_val) in enumerate(host.os.items()):
-            cls.os_idx_map[os_key] = os_num
             vector[cls._get_os_idx(os_num)] = int(os_val)
         return cls(vector)
 
     @classmethod
-    def vectorize_random(cls, host, vector=None):
+    def vectorize_random(cls, host, address_space_bounds, vector=None):
         hvec = cls.vectorize(host, vector)
         # random variables
         for srv_num in cls.service_idx_map.values():
@@ -133,8 +133,10 @@ class HostVector:
 
     @property
     def address(self):
-        return (self.vector[self._subnet_address_idx],
-                self.vector[self._host_address_idx])
+        return (
+            self.vector[self._subnet_address_idx_slice()].argmax(),
+            self.vector[self._host_address_idx_slice()].argmax()
+        )
 
     @property
     def value(self):
@@ -160,11 +162,11 @@ class HostVector:
 
     def is_running_service(self, srv):
         srv_num = self.service_idx_map[srv]
-        return self.vector[self._get_service_idx(srv_num)]
+        return bool(self.vector[self._get_service_idx(srv_num)])
 
     def is_running_os(self, os):
         os_num = self.os_idx_map[os]
-        return self.vector[self._get_os_idx(os_num)]
+        return bool(self.vector[self._get_os_idx(os_num)])
 
     def perform_action(self, action):
         """Perform given action against this host
@@ -216,9 +218,10 @@ class HostVector:
                 os=False):
         obs = np.zeros(self.state_size, dtype=np.float32)
         if address:
-            i = self._subnet_address_idx
-            obs[i] = self.vector[i]
-            obs[self._host_address_idx] = self.vector[self._host_address_idx]
+            subnet_slice = self._subnet_address_idx_slice()
+            host_slice = self._host_address_idx_slice()
+            obs[subnet_slice] = self.vector[subnet_slice]
+            obs[host_slice] = self.vector[host_slice]
         if compromised:
             obs[self._compromised_idx] = self.vector[self._compromised_idx]
         if reachable:
@@ -249,6 +252,41 @@ class HostVector:
         return self.vector
 
     @classmethod
+    def _initialize(cls, address_space_bounds, services, os_info):
+        cls.os_idx_map = {}
+        cls.service_idx_map = {}
+        cls.address_space_bounds = address_space_bounds
+        cls.num_os = len(os_info)
+        cls.num_services = len(services)
+        cls._update_vector_idxs()
+        for srv_num, (srv_key, srv_val) in enumerate(services.items()):
+            cls.service_idx_map[srv_key] = srv_num
+        for os_num, (os_key, os_val) in enumerate(os_info.items()):
+            cls.os_idx_map[os_key] = os_num
+
+    @classmethod
+    def _update_vector_idxs(cls):
+        cls._subnet_address_idx = 0
+        cls._host_address_idx = cls.address_space_bounds[0]
+        cls._compromised_idx = (cls._host_address_idx
+                                + cls.address_space_bounds[1])
+        cls._reachable_idx = cls._compromised_idx + 1
+        cls._discovered_idx = cls._reachable_idx + 1
+        cls._value_idx = cls._discovered_idx + 1
+        cls._discovery_value_idx = cls._value_idx + 1
+        cls._service_start_idx = cls._discovery_value_idx + 1
+        cls._os_start_idx = cls._service_start_idx + cls.num_services
+        cls.state_size = cls._os_start_idx + cls.num_os
+
+    @classmethod
+    def _subnet_address_idx_slice(cls):
+        return slice(cls._subnet_address_idx, cls._host_address_idx)
+
+    @classmethod
+    def _host_address_idx_slice(cls):
+        return slice(cls._host_address_idx, cls._compromised_idx)
+
+    @classmethod
     def _get_service_idx(cls, srv_num):
         return cls._service_start_idx+srv_num
 
@@ -267,19 +305,17 @@ class HostVector:
     @classmethod
     def get_readable(cls, vector):
         readable_dict = dict()
-        readable_dict["Address"] = (int(vector[cls._subnet_address_idx]),
-                                    int(vector[cls._host_address_idx]))
-        readable_dict["Compromised"] = bool(vector[cls._compromised_idx])
-        readable_dict["Reachable"] = bool(vector[cls._reachable_idx])
-        readable_dict["Discovered"] = bool(vector[cls._discovered_idx])
-        readable_dict["Value"] = vector[cls._value_idx]
-        readable_dict["Discovery Value"] = vector[cls._discovery_value_idx]
-        for srv_name, srv_num in cls.service_idx_map.items():
-            v = bool(vector[cls._get_service_idx(srv_num)])
-            readable_dict[f"{srv_name}"] = v
-        for os_name, os_num in cls.os_idx_map.items():
-            v = bool(vector[cls._get_os_idx(os_num)])
-            readable_dict[f"{os_name}"] = v
+        hvec = cls(vector)
+        readable_dict["Address"] = hvec.address
+        readable_dict["Compromised"] = bool(hvec.compromised)
+        readable_dict["Reachable"] = bool(hvec.reachable)
+        readable_dict["Discovered"] = bool(hvec.discovered)
+        readable_dict["Value"] = hvec.value
+        readable_dict["Discovery Value"] = hvec.discovery_value
+        for srv_name in cls.service_idx_map:
+            readable_dict[f"{srv_name}"] = hvec.is_running_service(srv_name)
+        for os_name in cls.os_idx_map:
+            readable_dict[f"{os_name}"] = hvec.is_running_os(os_name)
         return readable_dict
 
     def __repr__(self):

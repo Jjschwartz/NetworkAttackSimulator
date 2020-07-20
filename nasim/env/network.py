@@ -17,6 +17,7 @@ class Network:
         self.topology = scenario.topology
         self.firewall = scenario.firewall
         self.address_space = scenario.address_space
+        self.address_space_bounds = scenario.address_space_bounds
         self.sensitive_addresses = scenario.sensitive_addresses
         self.sensitive_hosts = scenario.sensitive_hosts
 

@@ -114,6 +114,10 @@ class Scenario:
         return self.scenario_dict[u.SUBNET_SCAN_COST]
 
     @property
+    def address_space_bounds(self):
+        return len(self.subnets), max(self.subnets)
+
+    @property
     def host_value_bounds(self):
         """The min and max values of host in scenario
 

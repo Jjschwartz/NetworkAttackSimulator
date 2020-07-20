@@ -39,10 +39,15 @@ class HostVector:
 
     # class properties that are the same for all hosts
     # these are set when calling vectorize method
+    # number of OS in scenario
     num_os = None
+    # map from OS name to its index in host vector
     os_idx_map = {}
+    # number of services in scenario
     num_services = None
+    # map from service name to its index in host vector
     service_idx_map = {}
+    # size of state for host vector (i.e. len of vector)
     state_size = None
 
     # vector position constants
@@ -269,12 +274,12 @@ class HostVector:
         readable_dict["Discovered"] = bool(vector[cls._discovered_idx])
         readable_dict["Value"] = vector[cls._value_idx]
         readable_dict["Discovery Value"] = vector[cls._discovery_value_idx]
-        for srv_num in range(cls.num_services):
+        for srv_name, srv_num in cls.service_idx_map.items():
             v = bool(vector[cls._get_service_idx(srv_num)])
-            readable_dict[f"srv_{srv_num}"] = v
-        for os_num in range(cls.num_os):
+            readable_dict[f"{srv_name}"] = v
+        for os_name, os_num in cls.os_idx_map.items():
             v = bool(vector[cls._get_os_idx(os_num)])
-            readable_dict[f"os_{os_num}"] = v
+            readable_dict[f"{os_name}"] = v
         return readable_dict
 
     def __repr__(self):

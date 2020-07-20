@@ -442,7 +442,7 @@ class ScenarioLoader:
         services_cfg = {}
         for service in self.services:
             services_cfg[service] = service in host_cfg[u.HOST_SERVICES]
-        os_cfg = {None: False}
+        os_cfg = {}
         for os_name in self.os:
             os_cfg[os_name] = os_name == host_cfg[u.HOST_OS]
         return services_cfg, os_cfg

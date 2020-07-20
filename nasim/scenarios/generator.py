@@ -425,7 +425,7 @@ class ScenarioGenerator:
         vectorizing and checking if an exploit will work (since exploits can
         have os=None)
         """
-        os_map = {None: False}
+        os_map = {}
         for os_name in self.os:
             os_map[os_name] = os_name == os
         return os_map

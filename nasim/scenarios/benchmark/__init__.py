@@ -10,11 +10,21 @@ AVAIL_STATIC_BENCHMARKS = {
         "name": "tiny",
         "step_limit": 1000,
         "max_score": 197},
+    "tiny-hard": {
+        "file": osp.join(BENCHMARK_DIR, "tiny-hard.yaml"),
+        "name": "tiny-hard",
+        "step_limit": 1000,
+        "max_score": 194},
+    "tiny-small": {
+        "file": osp.join(BENCHMARK_DIR, "tiny-small.yaml"),
+        "name": "tiny-small",
+        "step_limit": 1000,
+        "max_score": 188},
     "small": {
         "file": osp.join(BENCHMARK_DIR, "small.yaml"),
         "name": "",
         "step_limit": 1000,
-        "max_score": 190},
+        "max_score": 188},
     "small-linear": {
         "file": osp.join(BENCHMARK_DIR, "small-linear.yaml"),
         "name": "small-linear",

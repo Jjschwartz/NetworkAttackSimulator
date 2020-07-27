@@ -419,3 +419,13 @@ class NASimEnv(gym.Env):
         if state is None:
             state = self.current_state
         return self.network.all_sensitive_hosts_compromised(state)
+
+    def __str__(self):
+        output = [
+            "NASimEnv:",
+            f"name={self.name}",
+            f"fully_obs={self.fully_obs}",
+            f"flat_actions={self.flat_actions}",
+            f"flat_obs={self.flat_obs}"
+        ]
+        return "\n  ".join(output)

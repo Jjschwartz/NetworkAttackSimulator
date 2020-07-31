@@ -1,5 +1,21 @@
 from setuptools import setup, find_packages
 
+extras = {
+    'dqn': [
+        'torch>=1.5',
+        'tensorboard>=2.2'
+    ],
+    'docs': [
+        'sphinx>=3.0',
+        'sphinx-rtd-theme>=0.4'
+    ],
+    'test': [
+        'pytest>=5.4'
+    ]
+}
+
+extras['all'] = [item for group in extras.values() for item in group]
+
 setup(
     name='nasim',
     version='0.5.0',
@@ -15,25 +31,14 @@ setup(
         if package.startswith('nasim')
     ],
     install_requires=[
-        'gym>=0.17.2',
-        'numpy>=1.18.0',
+        'gym>=0.17',
+        'numpy>=1.18',
         'networkx>=2.4',
-        'matplotlib>=3.1.3',
+        'matplotlib>=3.1',
         'pyyaml>=5.3',
-        'prettytable>=0.7.2'
+        'prettytable>=0.7'
     ],
-    extras_require={
-        'dqn': [
-            'torch>=1.5.0',
-            'tensorboard>=2.2.2'
-        ],
-        'docs': [
-            'sphinx>=3.0.4'
-        ],
-        'test': [
-            'pytest>=5.4.3'
-        ]
-    },
+    extras_require=extras,
     python_requires='>=3.7',
     package_data={
         'nasim': ['nasim/scenarios/benchmark/*.yaml']

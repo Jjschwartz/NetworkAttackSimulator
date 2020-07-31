@@ -4,7 +4,7 @@ This script allows the user to visualize the network graph for a chosen
 benchmark scenario.
 """
 
-from nasim.env import make_benchmark_env
+import nasim
 
 
 if __name__ == "__main__":
@@ -16,6 +16,5 @@ if __name__ == "__main__":
                         help="random seed (default=0)")
     args = parser.parse_args()
 
-    env = make_benchmark_env(args.scenario_name, args.seed)
-    print("Max score:", env.get_best_possible_score())
+    env = nasim.make_benchmark(args.scenario_name, args.seed)
     env.render_network_graph(show=True)

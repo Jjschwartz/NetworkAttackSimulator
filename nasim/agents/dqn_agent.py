@@ -1,11 +1,7 @@
 """An example DQN Agent.
 
-It uses pytorch 1.4+ and tensorboard libraries.
-
-See:
-
-- https://pytorch.org/
-- https://www.tensorflow.org/tensorboard/
+It uses pytorch 1.5+ and tensorboard libraries (HINT: these dependencies can
+be installed by running pip install nasim[dqn])
 
 To run 'tiny' benchmark scenario with default settings, run the following from
 the nasim/agents dir:
@@ -20,28 +16,32 @@ To see available hyperparameters:
 
 $ python --help
 
-
 Notes
 -----
 
 This is by no means a state of the art implementation of DQN, but is designed
 to be an example implementation that can be used as a reference for building
 your own agents.
-
 """
-
 import random
 import numpy as np
+from gym import error
 from pprint import pprint
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
 
 import nasim
 from nasim.env.action import FlatActionSpace
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    import torch.nn.functional as F
+    from torch.utils.tensorboard import SummaryWriter
+except ImportError as e:
+    raise error.DependencyNotInstalled(
+        f"{e}. (HINT: you can install dqn_agent dependencies by running "
+        "'pip install nasim[dqn]'.)"
+    )
 
 
 class ReplayMemory:

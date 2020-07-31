@@ -2,7 +2,6 @@
 files.
 """
 import nasim.scenarios.utils as u
-import nasim.utils.futils as futils
 from nasim.scenarios import Scenario
 from nasim.scenarios.host import Host
 
@@ -57,9 +56,9 @@ class ScenarioLoader:
         Exception
             If file unable to load or scenario file is invalid.
         """
-        self.yaml_dict = futils.load_yaml(file_path)
+        self.yaml_dict = u.load_yaml(file_path)
         if name is None:
-            name = futils.get_file_name(file_path)
+            name = u.get_file_name(file_path)
         self.name = name
         self._check_scenario_sections_valid()
 

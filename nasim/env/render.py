@@ -392,8 +392,12 @@ class EpisodeViewer:
 
         # clear window and redraw graph
         self.axes.cla()
-        nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=1500, ax=self.axes)
-        nx.draw_networkx_labels(G, pos, labels, font_size=12, font_weight="bold")
+        nx.draw_networkx_nodes(
+            G, pos, node_color=colors, node_size=1500, ax=self.axes
+        )
+        nx.draw_networkx_labels(
+            G, pos, labels, font_size=12, font_weight="bold"
+        )
         nx.draw_networkx_edges(G, pos)
         plt.axis('off')
         # generate and plot legend
@@ -402,9 +406,11 @@ class EpisodeViewer:
         # add title
         state, action, reward, done = self.episode[self.timestep]
         if done:
-            title = "t = {0}\nGoal reached\ntotal reward = {1}".format(self.timestep, reward)
+            title = (
+                f"t={self.timestep}\nGoal reached\ntotal reward={reward}"
+            )
         else:
-            title = "t = {0}\n{1}\nReward = {2}".format(self.timestep, action, reward)
+            title = "t={self.timestep}\n{action}\nreward={reward}"
         ax_title = self.axes.set_title(title, fontsize=16, pad=10)
         ax_title.set_y(1.05)
 
@@ -462,8 +468,8 @@ def get_host_representation(state, sensitive_hosts, m, representation):
     # agent not in state so return straight away
     if m == AGENT:
         return representation[6]
-    compromised = state.compromised(m)
-    reachable = state.reachable(m)
+    compromised = state.host_compromised(m)
+    reachable = state.host_reachable(m)
     sensitive = m in sensitive_hosts
     if sensitive:
         if compromised:

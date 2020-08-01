@@ -52,6 +52,7 @@ class State:
 
     @classmethod
     def generate_initial_state(cls, network):
+        cls.reset()
         state = cls.tensorize(network)
         return network.reset(state)
 
@@ -79,6 +80,11 @@ class State:
         if s_array.shape != state_shape:
             s_array = s_array.reshape(state_shape)
         return State(s_array, host_num_map)
+
+    @classmethod
+    def reset(cls):
+        """Reset any class attributes for state """
+        HostVector.reset()
 
     @property
     def hosts(self):

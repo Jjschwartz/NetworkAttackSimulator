@@ -28,11 +28,6 @@ Authors
 
 **Jonathon Schwartz** - Jonathon.schwartz@anu.edu.au
 
-.. |docs| image:: https://readthedocs.org/projects/networkattacksimulator/badge/?version=latest
-    :target: https://networkattacksimulator.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-    :scale: 100%
-
 License
 -------
 
@@ -54,3 +49,9 @@ What's new
 - 2020-07-31 (v 0.5.0)
   + First official release on PyPi
   + Cleaned up dependencies, setup.py, etc and some small fixes
+
+
+.. |docs| image:: https://readthedocs.org/projects/networkattacksimulator/badge/?version=latest
+    :target: https://networkattacksimulator.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+    :scale: 100%

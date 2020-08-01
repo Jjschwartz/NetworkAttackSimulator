@@ -23,4 +23,4 @@ def test_bruteforce(scenario, seed, fully_obs, flat_actions, flat_obs):
                                fully_obs=fully_obs,
                                flat_actions=flat_actions,
                                flat_obs=flat_obs)
-    run_bruteforce_agent(env, flat_actions=flat_actions, verbose=False)
+    run_bruteforce_agent(env, verbose=False)

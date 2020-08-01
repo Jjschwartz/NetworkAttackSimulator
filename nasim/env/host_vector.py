@@ -318,6 +318,15 @@ class HostVector:
             readable_dict[f"{os_name}"] = hvec.is_running_os(os_name)
         return readable_dict
 
+    @classmethod
+    def reset(cls):
+        """Resets any class variables.
+
+        This is used to avoid errors when changing scenarios within a single
+        python session
+        """
+        cls.address_space_bounds = None
+
     def __repr__(self):
         return f"Host: {self.address}"
 

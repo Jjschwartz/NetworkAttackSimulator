@@ -1,6 +1,6 @@
 from nasim.env import NASimEnv
-import nasim.scenarios.benchmark as bm
-from nasim.scenarios import ScenarioLoader, ScenarioGenerator
+from nasim.scenarios import \
+    make_benchmark_scenario, load_scenario, generate_scenario
 
 
 def make_benchmark(scenario_name,
@@ -39,27 +39,8 @@ def make_benchmark(scenario_name,
     env_kwargs = {"fully_obs": fully_obs,
                   "flat_actions": flat_actions,
                   "flat_obs": flat_obs}
-    if scenario_name in bm.AVAIL_GEN_BENCHMARKS:
-        scenario = bm.AVAIL_GEN_BENCHMARKS[scenario_name]
-        scenario['seed'] = seed
-        env = generate(**env_kwargs, **scenario)
-    elif scenario_name in bm.AVAIL_STATIC_BENCHMARKS:
-        scenario_file = bm.AVAIL_STATIC_BENCHMARKS[scenario_name]["file"]
-        env = load(scenario_file, name=scenario_name, **env_kwargs)
-    else:
-        raise NotImplementedError(
-            f"Benchmark scenario '{scenario_name}' not available."
-            f"Available scenarios are: {bm.AVAIL_BENCHMARKS}"
-        )
-    return env
-
-
-def get_scenario_max(scenario_name):
-    if scenario_name in bm.AVAIL_GEN_BENCHMARKS:
-        return bm.AVAIL_GEN_BENCHMARKS[scenario_name]["max_score"]
-    elif scenario_name in bm.AVAIL_STATIC_BENCHMARKS:
-        return bm.AVAIL_STATIC_BENCHMARKS[scenario_name]["max_score"]
-    return None
+    scenario = make_benchmark_scenario(scenario_name, seed)
+    return NASimEnv(scenario, **env_kwargs)
 
 
 def load(path,
@@ -94,8 +75,7 @@ def load(path,
     env_kwargs = {"fully_obs": fully_obs,
                   "flat_actions": flat_actions,
                   "flat_obs": flat_obs}
-    loader = ScenarioLoader()
-    scenario = loader.load(path, name=name)
+    scenario = load_scenario(path, name=name)
     return NASimEnv(scenario, **env_kwargs)
 
 
@@ -133,6 +113,5 @@ def generate(num_hosts,
     env_kwargs = {"fully_obs": fully_obs,
                   "flat_actions": flat_actions,
                   "flat_obs": flat_obs}
-    generator = ScenarioGenerator()
-    scenario = generator.generate(num_hosts, num_services, **params)
+    scenario = generate_scenario(num_hosts, num_services, **params)
     return NASimEnv(scenario, **env_kwargs)

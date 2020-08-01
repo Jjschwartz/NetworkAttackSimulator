@@ -5,7 +5,7 @@ import nasim
 line_break = "-"*60
 
 
-def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
+def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
     if verbose:
         print(line_break)
         print("STARTING EPISODE")
@@ -18,13 +18,13 @@ def run_bruteforce_agent(env, step_limit=1e6, flat_actions=True, verbose=True):
     t = 0
     cycle_complete = False
 
-    if flat_actions:
+    if env.flat_actions:
         a = 0
     else:
         a_iter = product(*[range(n) for n in env.action_space.nvec])
 
     while not done and t < step_limit:
-        if flat_actions:
+        if env.flat_actions:
             a = (a + 1) % env.action_space.n
             cycle_complete = (t > 0 and a == 0)
         else:
@@ -81,4 +81,4 @@ if __name__ == "__main__":
                                not args.param_actions,
                                not args.box_obs)
     print(env.action_space.n)
-    run_bruteforce_agent(env, flat_actions=not args.param_actions)
+    run_bruteforce_agent(env)

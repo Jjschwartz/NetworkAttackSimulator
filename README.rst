@@ -56,12 +56,15 @@ What's new
 ----------
 
 - 2020-08-02 (v 0.6.0) (MINOR release)
+
   + Implemented compatibility with gym.make()
   + Updated docs for loading and interactive with NASimEnv
   + Added extra functions to nasim.scenarios to make it easier to load scenarios seperately to a NASimEnv
   + Fixed bug to do with class attributes and creating different scenarios in same python session
   + Fixed up bruteforce agent and tests
+
 - 2020-07-31 (v 0.5.0) (MINOR release)
+
   + First official release on PyPi
   + Cleaned up dependencies, setup.py, etc and some small fixes
 

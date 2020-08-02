@@ -3,5 +3,5 @@
 HostVector
 ==========
 
-.. automodule:: nasim.env.host_vector
+.. automodule:: nasim.envs.host_vector
    :members:

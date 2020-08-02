@@ -29,7 +29,6 @@ from gym import error
 from pprint import pprint
 
 import nasim
-from nasim.env.action import FlatActionSpace
 
 try:
     import torch
@@ -120,7 +119,7 @@ class DQNAgent:
                  **kwargs):
 
         # This DQN implementation only works for flat actions
-        assert isinstance(env.action_space, FlatActionSpace)
+        assert env.flat_actions
         print(f"\nRunning DQN with config:")
         pprint(locals())
 

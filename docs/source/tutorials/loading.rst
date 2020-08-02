@@ -1,17 +1,38 @@
 .. _`loading_tute`:
 
 Starting a NASim Environment
-==============================
+============================
 
-Interaction with NASim is done primarily via the :class:`~nasim.env.environment.NASimEnv` class, which handles a simulated network environment as defined by the chosen scenario.
+Interaction with NASim is done primarily via the :class:`~nasim.envs.environment.NASimEnv` class, which handles a simulated network environment as defined by the chosen scenario.
 
-For initialization the NASimEnv class takes a scenario definition and three optional arguments:
+There are two ways to start a new environment: (i) via the nasim library directly, or (ii) using the `gym.make()` function of the Open AI gym library.
+
+In this tutorial we will be covering the first method. For the second method check out :ref:`gym_load_tute`.
+
+
+.. _`env_params`:
+
+Environment Settings
+--------------------
+
+For initialization the NASimEnv class takes a scenario definition and three optional arguments.
+
+The scenario defines the network properties and the pen-tester specific information (e.g. exploits available, etc). For this tutorial we are going to stick to how to start a new environment, details on scenarios is covered in :ref:`scenarios_tute`.
+
+The three optional arguments control the environment modes:
 
 - ``fully_obs`` : The observability mode of environment, if True then uses fully observable mode, otherwise is partially observable (default=False)
 - ``flat_actions`` : If true then uses a flat action space, otherwise will uses a parameterised action space (default=True).
 - ``flat_obs`` :  If true then uses a 1D observation space, otherwise uses a 2D observation space (default=True)
 
-The scenario defines the network properties and the pen-tester specific information (e.g. exploits available, etc). For this tutorial we are going to stick to how to start a new environment, details on scenarios is covered in :ref:`scenarios_tute`.
+
+If using fully observable mode (``fully_obs=True``) then the entire state of the network and the attack is observed after each step. This is 'easy' mode and does not reflect the reality of pen-testing, but it is useful for getting started and sanity checking algorithms and environments. When using partially observable mode (``fully_obs=False``) the agent starts with no knowledge of the location, configuration and value of every host on the network and recieves only observations of features of the directly related to the action performed at each step. This is 'hard' mode and reflects the reality of pen-testing more accurately.
+
+Whether the environment is fully or partially observable has no effect on the size and shape of the action and observation spaces or how the agent interacts with the environment. It will have significant implications for the algorithms used to solve the environment, but that is beyond the scope of this tutorial.
+
+Using ``flat_actions=True`` means our action space is made up of N discrete actions, where N is based on the number of hosts in the network and the number of exploits and scans available. For our example there are 3 hosts, 1 exploit and 3 scans (OS, Service, and Subnet), for a total of 3 * (1 + 3) = 12 actions. If ``flat_actions=False`` then each action is a vector with each element of the vector specifying a parameter of the action. For more info see :ref:`actions`.
+
+Using ``flat_obs=True`` means the observations returned will be a 1D vector. Otherwise if ``flat_obs=False`` observations will be a 2D matrix. For explanation of the features of this vector see :ref:`observation`.
 
 
 .. _`loading_env`:

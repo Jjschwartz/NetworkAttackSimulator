@@ -3,5 +3,5 @@
 Observation
 ===========
 
-.. automodule:: nasim.env.observation
+.. automodule:: nasim.envs.observation
    :members:

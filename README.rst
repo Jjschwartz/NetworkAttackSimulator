@@ -7,15 +7,24 @@ Network Attack Simulator
 
 Network Attack Simulator (NASim) is a simulated computer network complete with vulnerabilities, scans and exploits designed to be used as a testing environment for AI agents and planning techniques applied to network penetration testing.
 
-**Note**: NASim is currently under active development so there will be small changes still occuring that may affect some functionallity. However, I'm hoping for a stable release soon.
-
 
 Installation
 ------------
 
-The easiest way to install the latest version of NASim is via pip::
+The easiest way to install the latest version of NASim hosted on PyPi is via pip::
 
   $ pip install nasim
+
+
+To get the latest bleeding edge version and install in development mode see the `Install docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/installation.html>`_
+
+
+Using with OpenAI gym
+---------------------
+
+NASim implements the `Open AI Gym <https://github.com/openai/gym>`_ environment interface and so can be used with any algorithm that is developed for that interface.
+
+See `Starting NASim using OpenAI gym <file:///home/jonathon/Documents/rl_pentesting/NetworkAttackSimulator/docs/build/html/tutorials/gym_load.html#gym-load-tute>`_.
 
 
 Documentation
@@ -46,7 +55,13 @@ Future Features
 What's new
 ----------
 
-- 2020-07-31 (v 0.5.0)
+- 2020-08-02 (v 0.6.0) (MINOR release)
+  + Implemented compatibility with gym.make()
+  + Updated docs for loading and interactive with NASimEnv
+  + Added extra functions to nasim.scenarios to make it easier to load scenarios seperately to a NASimEnv
+  + Fixed bug to do with class attributes and creating different scenarios in same python session
+  + Fixed up bruteforce agent and tests
+- 2020-07-31 (v 0.5.0) (MINOR release)
   + First official release on PyPi
   + Cleaned up dependencies, setup.py, etc and some small fixes
 

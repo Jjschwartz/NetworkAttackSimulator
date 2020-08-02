@@ -3,5 +3,5 @@
 Actions
 =======
 
-.. automodule:: nasim.env.action
+.. automodule:: nasim.envs.action
    :members:

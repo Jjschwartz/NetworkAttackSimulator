@@ -8,5 +8,5 @@ Technical reference material.
 .. toctree::
     :maxdepth: 2
 
-    env/index
+    envs/index
     scenarios/index

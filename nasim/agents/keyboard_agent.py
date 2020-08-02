@@ -1,7 +1,7 @@
 """Play and scenario using key board """
 
 import nasim
-from nasim.env.action import Exploit
+from nasim.envs.action import Exploit
 
 
 line_break = "-"*60

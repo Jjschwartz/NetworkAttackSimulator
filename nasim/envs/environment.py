@@ -6,11 +6,11 @@ import gym
 import numpy as np
 from gym import spaces
 
-from nasim.env.state import State
-from nasim.env.render import Viewer
-from nasim.env.network import Network
-from nasim.env.observation import Observation
-from nasim.env.action import Action, FlatActionSpace, ParameterisedActionSpace
+from .state import State
+from .render import Viewer
+from .network import Network
+from .observation import Observation
+from .action import Action, FlatActionSpace, ParameterisedActionSpace
 
 
 class NASimEnv(gym.Env):
@@ -260,8 +260,10 @@ class NASimEnv(gym.Env):
 
             self._renderer.render_readable(obs)
         else:
-            print("Please choose correct render mode from :"
-                  f"{self.rendering_modes}")
+            print(
+                "Please choose correct render mode from :"
+                f"{self.rendering_modes}"
+            )
 
     def render_state(self, mode="readable", state=None):
         """Render state.

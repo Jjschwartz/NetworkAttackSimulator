@@ -8,6 +8,7 @@ Tutorials
 
     installation
     loading
+    gym_load
     environment
     scenarios
     creating_scenarios

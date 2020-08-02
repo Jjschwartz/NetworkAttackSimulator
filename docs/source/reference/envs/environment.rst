@@ -3,5 +3,5 @@
 Environment
 ===========
 
-.. automodule:: nasim.env.environment
+.. automodule:: nasim.envs.environment
    :members:

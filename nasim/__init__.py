@@ -1,4 +1,6 @@
-from nasim.env import NASimEnv
+from nasim.envs import NASimEnv
+from gym.envs.registration import register
+from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
 
@@ -115,3 +117,64 @@ def generate(num_hosts,
                   "flat_obs": flat_obs}
     scenario = generate_scenario(num_hosts, num_services, **params)
     return NASimEnv(scenario, **env_kwargs)
+
+
+# Register NASimEnv with OpenAI gym
+for benchmark in AVAIL_BENCHMARKS:
+    # v0 - flat_actions, flat_obs
+    # v1 - flat_actions, 2D_obs
+    # v2 - param_actions, flat obs
+    # v3 - param_actions, 2D obs
+    # tiny should yield Tiny and tiny-small should yield TinySmall
+    for fully_obs in [True, False]:
+        name = ''.join([g.capitalize() for g in benchmark.split("-")])
+        if not fully_obs:
+            name = f"{name}-PO"
+
+        register(
+            id=f"{name}-v0",
+            entry_point='nasim.envs:NASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": True,
+                "flat_obs": True
+            },
+            nondeterministic=True
+        )
+
+        register(
+            id=f"{name}-v1",
+            entry_point='nasim.envs:NASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": True,
+                "flat_obs": False
+            },
+            nondeterministic=True
+        )
+
+        register(
+            id=f"{name}-v2",
+            entry_point='nasim.envs:NASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": False,
+                "flat_obs": True
+            },
+            nondeterministic=True
+        )
+
+        register(
+            id=f"{name}-v3",
+            entry_point='nasim.envs:NASimGymEnv',
+            kwargs={
+                "scenario": benchmark,
+                "fully_obs": fully_obs,
+                "flat_actions": False,
+                "flat_obs": False
+            },
+            nondeterministic=True
+        )

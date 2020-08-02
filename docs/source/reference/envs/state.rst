@@ -3,5 +3,5 @@
 State
 =====
 
-.. automodule:: nasim.env.state
+.. automodule:: nasim.envs.state
    :members:

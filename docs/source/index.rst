@@ -9,16 +9,33 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
-Version 0.1 (Coming Soon)
-*************************
+Version 0.6
+***********
+
+- Implemented compatibility with gym.make()
+- Updated docs for loading and interactive with NASimEnv
+- Added extra functions to nasim.scenarios to make it easier to load scenarios seperately to a NASimEnv
+- Fixed bug to do with class attributes and creating different scenarios in same python session
+- Fixed up bruteforce agent and tests
+
+
+Version 0.5
+***********
+
+- First official release on PyPi
+- Cleaned up dependencies, setup.py, etc and some small fixes
 - First stable version
-- Documentation
+
 
 Future extensions
 *****************
-- Implement as OpenAI gym environment
-- Add priviledge escalation
 
+- Add priviledge escalation
+- Host based firewalls
+
+
+The Docs
+--------
 
 .. toctree::
    :maxdepth: 2

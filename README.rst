@@ -24,7 +24,7 @@ Using with OpenAI gym
 
 NASim implements the `Open AI Gym <https://github.com/openai/gym>`_ environment interface and so can be used with any algorithm that is developed for that interface.
 
-See `Starting NASim using OpenAI gym <file:///home/jonathon/Documents/rl_pentesting/NetworkAttackSimulator/docs/build/html/tutorials/gym_load.html#gym-load-tute>`_.
+See `Starting NASim using OpenAI gym <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_.
 
 
 Documentation

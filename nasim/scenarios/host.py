@@ -11,11 +11,13 @@ class Host:
                  address,
                  os,
                  services,
+                 processes,
                  value=0.0,
                  discovery_value=0.0,
                  compromised=False,
                  reachable=False,
-                 discovered=False):
+                 discovered=False,
+                 access=0):
         """
         Arguments
         ---------
@@ -23,9 +25,12 @@ class Host:
             address of host as (subnet, id)
         os : dict
             A os_name: bool dictionary indicating which OS the host is runinng
-        services: dict
+        services : dict
             a (service_name, bool) dictionary indicating which services
             are present/absent
+        processes : dict
+            a (process_name, bool) dictionary indicating which processes are
+            running on host or not
         value : float, optional
             value of the host (default=0.0)
         discovery_value : float, optional
@@ -37,15 +42,19 @@ class Host:
         discovered : bool, optional
             whether host has been reachable discovered by attacker or not
             (default=False)
+        access : int, optional
+            access level of attacker on host (default=0)
         """
         self.address = address
         self.os = os
         self.services = services
+        self.processes = processes
         self.value = value
         self.discovery_value = discovery_value
         self.compromised = compromised
         self.reachable = reachable
         self.discovered = discovered
+        self.access = access
 
     def is_running_service(self, service):
         return self.services[service]
@@ -53,20 +62,32 @@ class Host:
     def is_running_os(self, os):
         return self.os[os]
 
+    def is_running_process(self, process):
+        return self.processes[process]
+
     def __str__(self):
         output = ["Host: {"]
         output.append(f"\taddress: {self.address}")
         output.append(f"\tcompromised: {self._compromised}")
         output.append(f"\treachable: {self._reachable}")
         output.append(f"\tvalue: {self.value}")
-        output.append("\tservices: {")
-        for name, val in self.services.items():
-            output.append(f"\t\t{name}: {val}")
-        output.append("\t}")
+        output.append(f"\taccess: {self.access}")
+
         output.append("\tOS: {")
         for os_name, val in self.os.items():
             output.append(f"\t\t{os_name}: {val}")
         output.append("\t}")
+
+        output.append("\tservices: {")
+        for name, val in self.services.items():
+            output.append(f"\t\t{name}: {val}")
+        output.append("\t}")
+
+        output.append("\tprocesses: {")
+        for name, val in self.processes.items():
+            output.append(f"\t\t{name}: {val}")
+        output.append("\t}")
+
         output.append("}")
         return "\n".join(output)
 

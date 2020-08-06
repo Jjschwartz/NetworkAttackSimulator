@@ -37,6 +37,18 @@ class ServiceState(enum.IntEnum):
         return self.name
 
 
+class AccessLevel(enum.IntEnum):
+    NONE = 0
+    USER = 1
+    ROOT = 2
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+
 def get_minimal_steps_to_goal(topology, sensitive_addresses):
     """Get the minimum total number of steps required to reach all sensitive
     hosts in the network starting from outside the network (i.e. can only

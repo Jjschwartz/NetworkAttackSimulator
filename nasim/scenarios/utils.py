@@ -14,23 +14,36 @@ TOPOLOGY = "topology"
 SENSITIVE_HOSTS = "sensitive_hosts"
 SERVICES = "services"
 OS = "os"
+PROCESSES = "processes"
 EXPLOITS = "exploits"
+PRIVESCS = "priviledge_escalation"
 SERVICE_SCAN_COST = "service_scan_cost"
 OS_SCAN_COST = "os_scan_cost"
 SUBNET_SCAN_COST = "subnet_scan_cost"
+PROCESS_SCAN_COST = "process_scan_cost"
 HOST_CONFIGS = "host_configurations"
 FIREWALL = "firewall"
 HOSTS = "host"
 STEP_LIMIT = "step_limit"
+ACCESS_LEVELS = "access_levels"
 
 # scenario exploit keys
 EXPLOIT_SERVICE = "service"
 EXPLOIT_OS = "os"
 EXPLOIT_PROB = "prob"
 EXPLOIT_COST = "cost"
+EXPLOIT_ACCESS = "access"
+
+# scenario priviledge escalation keys
+PRIVESC_PROCESS = "process"
+PRIVESC_OS = "os"
+PRIVESC_PROB = "prob"
+PRIVESC_COST = "cost"
+PRIVESC_ACCESS = "access"
 
 # host configuration keys
 HOST_SERVICES = "services"
+HOST_PROCESSES = "processes"
 HOST_OS = "os"
 
 

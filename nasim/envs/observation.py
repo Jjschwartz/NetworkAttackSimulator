@@ -31,6 +31,8 @@ class Observation:
         indicates whether the action succeeded or failed
     2. Connection error - True (1) or False (0)
         indicates whether there was a connection error or not
+    3. Permission error - True (1) or False (0)
+        indicates whether there was a permission error or not
 
     Since the number of features in the auxiliary row is less than the number
     of features in each host row, the remainder of the row is all zeros.
@@ -39,6 +41,7 @@ class Observation:
     # obs vector positions for auxiliary observations
     _success_idx = 0
     _conn_error_idx = _success_idx+1
+    _perm_error_idx = _conn_error_idx+1
 
     def __init__(self, state_shape):
         """
@@ -55,12 +58,20 @@ class Observation:
     def get_space_bounds(scenario):
         value_bounds = scenario.host_value_bounds
         discovery_bounds = scenario.host_discovery_value_bounds
-        obs_low = min(0, value_bounds[0], discovery_bounds[0])
-        obs_high = max(0,
-                       value_bounds[1],
-                       discovery_bounds[1],
-                       len(scenario.subnets),
-                       max(scenario.subnets))
+        access_levels = scenario.access_levels
+        obs_low = min(
+            0,
+            value_bounds[0],
+            discovery_bounds[0]
+        )
+        obs_high = max(
+            1,
+            value_bounds[1],
+            discovery_bounds[1],
+            access_levels,
+            len(scenario.subnets),
+            max(scenario.subnets)
+        )
         return (obs_low, obs_high)
 
     @classmethod
@@ -79,6 +90,8 @@ class Observation:
         self.tensor[self.aux_row][self._success_idx] = success
         con_err = int(action_result.connection_error)
         self.tensor[self.aux_row][self._conn_error_idx] = con_err
+        perm_err = int(action_result.permission_error)
+        self.tensor[self.aux_row][self._perm_error_idx] = perm_err
 
     def from_state_and_action(self, state, action_result):
         self.from_state(state)
@@ -108,6 +121,17 @@ class Observation:
             True if there was a connection error, otherwise False
         """
         return bool(self.tensor[self.aux_row][self._conn_error_idx])
+
+    @property
+    def permission_error(self):
+        """Whether there was a permission error or not
+
+        Returns
+        -------
+        bool
+            True if there was a permission error, otherwise False
+        """
+        return bool(self.tensor[self.aux_row][self._perm_error_idx])
 
     def shape_flat(self):
         """Get the flat (1D) shape of the Observation.
@@ -158,7 +182,8 @@ class Observation:
 
         aux_obs = {
             "Success": self.success,
-            "Connection Error": self.connection_error
+            "Connection Error": self.connection_error,
+            "Permission Error": self.permission_error
         }
         return host_obs, aux_obs
 

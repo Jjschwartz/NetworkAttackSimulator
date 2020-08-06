@@ -54,40 +54,36 @@ class Network:
         next_state = state.copy()
 
         if action.is_noop():
-            # do nothing
             return next_state, ActionResult(True)
 
         if not state.host_reachable(action.target):
-            # print("target not reachable")
-            return next_state, ActionResult(False,
-                                            0.0,
-                                            connection_error=True)
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
 
         if not state.host_discovered(action.target):
-            # print("target not discovered")
-            return next_state, ActionResult(False,
-                                            0.0,
-                                            connection_error=True)
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
 
-        if action.is_exploit() and not \
-           self.host_service_traffic_permitted(state,
-                                               action.target,
-                                               action.service):
-            # print("traffic not permitted")
-            return next_state, ActionResult(False,
-                                            0.0,
-                                            connection_error=True)
+        if action.is_remote() \
+           and not self.has_required_permission(state, action):
+            result = ActionResult(False, 0.0, permission_error=True)
+            return next_state, result
 
-        if action.is_exploit() and \
-           state.host_compromised(action.target):
+        if action.is_exploit() \
+           and not self.host_service_traffic_permitted(
+               state, action.target, action.service
+           ):
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
+
+        if action.is_exploit() \
+           and state.host_compromised(action.target):
             # host already compromised so exploits don't fail due to randomness
             pass
         elif np.random.rand() > action.prob:
-            # print("random failure")
             return next_state, ActionResult(False, 0.0)
 
         if action.is_subnet_scan():
-            # print("subnet scan")
             return self._perform_subnet_scan(next_state, action)
 
         t_host = state.get_host(action.target)
@@ -98,9 +94,12 @@ class Network:
 
     def _perform_subnet_scan(self, next_state, action):
         if not next_state.host_compromised(action.target):
-            return next_state, ActionResult(False,
-                                            0.0,
-                                            connection_error=True)
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
+
+        if not next_state.host_has_access(action.target, action.req_access):
+            result = ActionResult(False, 0.0, permission_error=True)
+            return next_state, result
 
         discovered = {}
         discovery_reward = 0
@@ -149,6 +148,26 @@ class Network:
             return False
         return service in self.firewall[(src_subnet, dest_subnet)]
 
+    def has_required_remote_permission(self, state, action):
+        """Checks attacker has necessary permissions for remote action """
+        if self.subnet_public(action.target[0]):
+            return True
+
+        for src_addr in self.address_space:
+            if not state.host_compromised(src_addr):
+                continue
+            if action.is_scan() and \
+               not self.subnets_connected(src_addr[0], action.target[0]):
+                continue
+            if action.is_exploit() and \
+               not self.subnet_traffic_permitted(
+                   src_addr[0], action.target[0], action.service
+               ):
+                continue
+            if state.host_has_access(src_addr, action.req_access):
+                return True
+        return False
+
     def host_service_traffic_permitted(self, state, host_addr, service):
         """Checks whether the firewall permits traffic to a given host and service,
         based on current set of compromised hosts on network.
@@ -157,9 +176,9 @@ class Network:
             if not state.host_compromised(src_addr) and \
                not self.subnet_public(src_addr[0]):
                 continue
-            if self.subnet_traffic_permitted(src_addr[0],
-                                             host_addr[0],
-                                             service):
+            if self.subnet_traffic_permitted(
+                    src_addr[0], host_addr[0], service
+            ):
                 return True
         return False
 

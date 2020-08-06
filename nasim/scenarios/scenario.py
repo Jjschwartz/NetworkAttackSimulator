@@ -10,6 +10,7 @@ class Scenario:
         self.scenario_dict = scenario_dict
         self.name = name
         self._e_map = None
+        self._pe_map = None
 
         # this is used for consistent positioning of
         # host state and obs in state and obs matrices
@@ -38,8 +39,24 @@ class Scenario:
         return len(self.os)
 
     @property
+    def processes(self):
+        return self.scenario_dict[u.PROCESSES]
+
+    @property
+    def num_processes(self):
+        return len(self.processes)
+
+    @property
+    def access_levels(self):
+        return self.scenario_dict[u.ACCESS_LEVELS]
+
+    @property
     def exploits(self):
         return self.scenario_dict[u.EXPLOITS]
+
+    @property
+    def privescs(self):
+        return self.scenario_dict[u.PRIVESCS]
 
     @property
     def exploit_map(self):
@@ -49,7 +66,8 @@ class Scenario:
                  os_name: {
                      name: e_name,
                      cost: e_cost,
-                     prob: e_prob
+                     prob: e_prob,
+                     access: e_access
                  }
              }
         """
@@ -68,10 +86,45 @@ class Scenario:
                         u.EXPLOIT_SERVICE: srv_name,
                         u.EXPLOIT_OS: os,
                         u.EXPLOIT_COST: e_def[u.EXPLOIT_COST],
-                        u.EXPLOIT_PROB: e_def[u.EXPLOIT_PROB]
+                        u.EXPLOIT_PROB: e_def[u.EXPLOIT_PROB],
+                        u.EXPLOIT_ACCESS: e_def[u.EXPLOIT_ACCESS]
                     }
             self._e_map = e_map
         return self._e_map
+
+    @property
+    def privesc_map(self):
+        """A nested dictionary for all priviledge escalation actions in scenario.
+
+        I.e. {process_name: {
+                 os_name: {
+                     name: pe_name,
+                     cost: pe_cost,
+                     prob: pe_prob,
+                     access: pe_access
+                 }
+             }
+        """
+        if self._pe_map is None:
+            pe_map = {}
+            for pe_name, pe_def in self.privescs.items():
+                proc_name = pe_def[u.PRIVESC_PROCESS]
+                if proc_name not in pe_map:
+                    pe_map[proc_name] = {}
+                proc_map = pe_map[proc_name]
+
+                os = pe_def[u.PRIVESC_OS]
+                if os not in proc_map:
+                    proc_map[os] = {
+                        "name": pe_name,
+                        u.PRIVESC_PROCESS: proc_name,
+                        u.PRIVESC_OS: os,
+                        u.PRIVESC_COST: pe_def[u.PRIVESC_COST],
+                        u.PRIVESC_PROB: pe_def[u.PRIVESC_PROB],
+                        u.PRIVESC_ACCESS: pe_def[u.PRIVESC_ACCESS]
+                    }
+            self._pe_map = pe_map
+        return self._pe_map
 
     @property
     def subnets(self):
@@ -112,6 +165,10 @@ class Scenario:
     @property
     def subnet_scan_cost(self):
         return self.scenario_dict[u.SUBNET_SCAN_COST]
+
+    @property
+    def process_scan_cost(self):
+        return self.scenario_dict[u.PROCESS_SCAN_COST]
 
     @property
     def address_space_bounds(self):

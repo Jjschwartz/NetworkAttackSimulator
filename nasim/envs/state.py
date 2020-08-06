@@ -153,20 +153,29 @@ class State:
             reachable=True,     # must be true for success
             discovered=True,    # must be true for success
             value=False,
-            # discovery_value=False,    # this is only added as needed
+            discovery_value=False,    # this is only added as needed
             services=False,
-            os=False
+            processes=False,
+            os=False,
+            access=False
         )
-        if not action.is_scan():
+        if action.is_exploit():
             # exploit action, so get all observations for host
             obs_kwargs["compromised"] = True
-            obs_kwargs["value"] = True
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
+            obs_kwargs["access"] = True
+        elif action.is_priviledge_escalation():
+            obs_kwargs["compromised"] = True
+            obs_kwargs["value"] = True
+            obs_kwargs["access"] = True
         elif action.is_service_scan():
             obs_kwargs["services"] = True
         elif action.is_os_scan():
             obs_kwargs["os"] = True
+        elif action.is_process_scan():
+            obs_kwargs["processes"] = True
+            obs_kwargs["access"] = True
         elif action.is_subnet_scan():
             for host_addr, discovered in action_result.discovered.items():
                 if not discovered:
@@ -218,6 +227,9 @@ class State:
 
     def host_discovered(self, host_addr):
         return self.get_host(host_addr).discovered
+
+    def host_has_access(self, host_addr, access_level):
+        return self.get_host(host_addr).access >= access_level
 
     def set_host_compromised(self, host_addr):
         self.get_host(host_addr).compromised = True

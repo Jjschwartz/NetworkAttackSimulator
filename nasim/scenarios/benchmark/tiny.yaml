@@ -3,12 +3,15 @@
 # 3 hosts
 # 3 subnets
 # 1 service
+# 1 process
 # 1 os
 # 1 exploit
+# 1 priviledge escalation
 #
 # Optimal path:
-# (e_ssh, (1, 0)) -> subnet_scan -> (e_ssh, (3, 0)) -> (e_ssh, (2, 0))
-# Score = 200 - (3*1) = 196
+# (e_ssh, (1, 0)) -> subnet_scan -> (e_ssh, (3, 0)) -> (pe_tomcat, (3, 0)) -> (e_ssh, (2, 0))
+#     -> (pe_tomcat, (2, 0))
+# Score = 200 - (6*1) = 195
 #
 subnets: [1, 1, 1]
 topology: [[ 1, 1, 0, 0],
@@ -18,29 +21,43 @@ topology: [[ 1, 1, 0, 0],
 sensitive_hosts:
   (2, 0): 100
   (3, 0): 100
-services:
-  - ssh
 os:
   - linux
+services:
+  - ssh
+processes:
+  - tomcat
 exploits:
   e_ssh:
     service: ssh
     os: linux
     prob: 0.8
     cost: 1
+    access: user
+priviledge_escalation:
+  pe_tomcat:
+    process: tomcat
+    os: linux
+    prob: 1.0
+    cost: 1
+    access: root
 service_scan_cost: 1
 os_scan_cost: 1
 subnet_scan_cost: 1
+process_scan_cost: 1
 host_configurations:
   (1, 0):
-    services: [ssh]
     os: linux
+    services: [ssh]
+    processes: [tomcat]
   (2, 0):
-    services: [ssh]
     os: linux
+    services: [ssh]
+    processes: [tomcat]
   (3, 0):
-    services: [ssh]
     os: linux
+    services: [ssh]
+    processes: [tomcat]
 # two row for each connection between subnets as defined by topology
 # one for each direction of connection
 # list which services to allow

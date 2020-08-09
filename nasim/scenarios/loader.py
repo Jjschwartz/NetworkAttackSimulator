@@ -7,30 +7,56 @@ from nasim.scenarios.host import Host
 
 
 # dictionary of valid key names and value types for config file
-VALID_CONFIG_KEYS = {u.SUBNETS: list,
-                     u.TOPOLOGY: list,
-                     u.SENSITIVE_HOSTS: dict,
-                     u.SERVICES: list,
-                     u.OS: list,
-                     u.EXPLOITS: dict,
-                     u.SERVICE_SCAN_COST: int,
-                     u.SUBNET_SCAN_COST: int,
-                     u.OS_SCAN_COST: int,
-                     u.HOST_CONFIGS: dict,
-                     u.FIREWALL: dict}
+VALID_CONFIG_KEYS = {
+    u.SUBNETS: list,
+    u.TOPOLOGY: list,
+    u.SENSITIVE_HOSTS: dict,
+    u.OS: list,
+    u.SERVICES: list,
+    u.PROCESSES: list,
+    u.EXPLOITS: dict,
+    u.PRIVESCS: dict,
+    u.SERVICE_SCAN_COST: (int, float),
+    u.SUBNET_SCAN_COST: (int, float),
+    u.OS_SCAN_COST: (int, float),
+    u.PROCESS_SCAN_COST: (int, float),
+    u.HOST_CONFIGS: dict,
+    u.FIREWALL: dict
+}
 
 OPTIONAL_CONFIG_KEYS = {u.STEP_LIMIT: int}
 
+VALID_ACCESS_VALUES = ["user", "root", u.USER_ACCESS, u.ROOT_ACCESS]
+ACCESS_LEVEL_MAP = {
+    "user": u.USER_ACCESS,
+    "root": u.ROOT_ACCESS
+}
+
 
 # required keys for exploits
-EXPLOIT_KEYS = {u.EXPLOIT_SERVICE: str,
-                u.EXPLOIT_OS: str,
-                u.EXPLOIT_PROB: float,
-                u.EXPLOIT_COST: (int, float)}
+EXPLOIT_KEYS = {
+    u.EXPLOIT_SERVICE: str,
+    u.EXPLOIT_OS: str,
+    u.EXPLOIT_PROB: (int, float),
+    u.EXPLOIT_COST: (int, float),
+    u.EXPLOIT_ACCESS: (str, int)
+}
+
+# required keys for privesc actions
+PRIVESC_KEYS = {
+    u.PRIVESC_OS: str,
+    u.PRIVESC_PROCESS: str,
+    u.PRIVESC_PROB: (int, float),
+    u.PRIVESC_COST: (int, float),
+    u.PRIVESC_ACCESS: (str, int)
+}
 
 # required keys for host configs
-HOST_CONFIG_KEYS = {u.HOST_SERVICES: list,
-                    u.HOST_OS: (str, None)}
+HOST_CONFIG_KEYS = {
+    u.HOST_OS: (str, None),
+    u.HOST_SERVICES: list,
+    u.HOST_PROCESSES: list
+}
 
 
 class ScenarioLoader:
@@ -64,10 +90,12 @@ class ScenarioLoader:
 
         self._parse_subnets()
         self._parse_topology()
-        self._parse_services()
         self._parse_os()
+        self._parse_services()
+        self._parse_processes()
         self._parse_sensitive_hosts()
         self._parse_exploits()
+        self._parse_privescs()
         self._parse_scan_costs()
         self._parse_host_configs()
         self._parse_firewall()
@@ -79,13 +107,16 @@ class ScenarioLoader:
         scenario_dict = dict()
         scenario_dict[u.SUBNETS] = self.subnets
         scenario_dict[u.TOPOLOGY] = self.topology
-        scenario_dict[u.SERVICES] = self.services
         scenario_dict[u.OS] = self.os
+        scenario_dict[u.SERVICES] = self.services
+        scenario_dict[u.PROCESSES] = self.processes
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
-        scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
+        scenario_dict[u.PRIVESCS] = self.privescs
         scenario_dict[u.OS_SCAN_COST] = self.os_scan_cost
+        scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
+        scenario_dict[u.PROCESS_SCAN_COST] = self.process_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario_dict[u.STEP_LIMIT] = self.step_limit
@@ -96,21 +127,23 @@ class ScenarioLoader:
         they are valid type.
         """
         # 0. check correct number of keys
-        if len(self.yaml_dict) < len(VALID_CONFIG_KEYS):
-            raise KeyError(f"Too few config file keys: "
-                           f"{len(self.yaml_dict)} < {len(VALID_CONFIG_KEYS)}")
+        assert len(self.yaml_dict) >= len(VALID_CONFIG_KEYS), \
+            (f"Too few config file keys: {len(self.yaml_dict)} "
+             f"< {len(VALID_CONFIG_KEYS)}")
 
         # 1. check keys are valid and values are correct type
         for k, v in self.yaml_dict.items():
-            if k not in VALID_CONFIG_KEYS and k not in OPTIONAL_CONFIG_KEYS:
-                raise KeyError(f"{k} not a valid config file key")
+            assert k in VALID_CONFIG_KEYS or k in OPTIONAL_CONFIG_KEYS, \
+                f"{k} not a valid config file key"
+
             if k in VALID_CONFIG_KEYS:
                 expected_type = VALID_CONFIG_KEYS[k]
             else:
                 expected_type = OPTIONAL_CONFIG_KEYS[k]
-            if type(v) is not expected_type:
-                raise TypeError(f"{v} invalid type for config file key '{k}': "
-                                f"{type(v)} != {expected_type}")
+
+            assert isinstance(v, expected_type), \
+                (f"{v} invalid type for config file key '{k}': {type(v)}"
+                 f" != {expected_type}")
 
     def _parse_subnets(self):
         subnets = self.yaml_dict[u.SUBNETS]
@@ -122,13 +155,10 @@ class ScenarioLoader:
 
     def _validate_subnets(self, subnets):
         # check subnets is valid list of positive ints
-        if len(subnets) < 1:
-            raise ValueError("Subnets connot be empty list")
+        assert len(subnets) > 0, "Subnets connot be empty list"
         for subnet_size in subnets:
-            if type(subnet_size) is not int or subnet_size <= 0:
-                raise ValueError(
-                    f"{subnet_size} invalid subnet size, must be positive int"
-                )
+            assert type(subnet_size) is int and subnet_size > 0, \
+                f"{subnet_size} invalid subnet size, must be positive int"
 
     def _parse_topology(self):
         topology = self.yaml_dict[u.TOPOLOGY]
@@ -137,42 +167,20 @@ class ScenarioLoader:
 
     def _validate_topology(self, topology):
         # check topology is valid adjacency matrix
-        if len(topology) != len(self.subnets):
-            raise ValueError(
-                "Number of rows in topology adjacency matrix must equal "
-                f"number of subnets: {len(topology)} != {len(self.subnets)}")
+        assert len(topology) == len(self.subnets), \
+            ("Number of rows in topology adjacency matrix must equal "
+             f"number of subnets: {len(topology)} != {len(self.subnets)}")
+
         for row in topology:
-            if type(row) is not list:
-                raise ValueError(
-                    "topology must be 2D adjacency matrix (i.e. list of lists)"
-                )
-            if len(row) != len(self.subnets):
-                raise ValueError(
-                    "Number of columns in topology matrix must equal number of"
-                    f" subnets: {len(topology)} != {len(self.subnets)}"
-                )
+            assert isinstance(row, list), \
+                "topology must be 2D adjacency matrix (i.e. list of lists)"
+            assert len(row) == len(self.subnets), \
+                ("Number of columns in topology matrix must equal number of"
+                 f" subnets: {len(topology)} != {len(self.subnets)}")
             for col in row:
-                if type(col) is not int or (col != 1 and col != 0):
-                    raise ValueError(
-                        "Subnet_connections adjaceny matrix must contain only"
-                        f" 1 (connected) or 0 (not connected): {col} invalid"
-                    )
-
-    def _parse_services(self):
-        services = self.yaml_dict[u.SERVICES]
-        self._validate_services(services)
-        self.services = services
-
-    def _validate_services(self, services):
-        # check services is postive int
-        if len(services) < 1:
-            raise ValueError(
-                f"{len(services)}. Invalid number of services, must be >= 1"
-            )
-        if len(services) < len(set(services)):
-            raise ValueError(
-                f"{services}. Services must not contain duplicates"
-            )
+                assert isinstance(col, int) and (col == 1 or col == 0), \
+                    ("Subnet_connections adjaceny matrix must contain only"
+                     f" 1 (connected) or 0 (not connected): {col} invalid")
 
     def _parse_os(self):
         os = self.yaml_dict[u.OS]
@@ -180,11 +188,32 @@ class ScenarioLoader:
         self.os = os
 
     def _validate_os(self, os):
-        # check services is postive int
-        if len(os) < 1:
-            raise ValueError(f"{len(os)}. Invalid number of OSs, must be >= 1")
-        if len(os) < len(set(os)):
-            raise ValueError(f"{os}. OSs must not contain duplicates")
+        assert len(os) > 0, \
+            f"{len(os)}. Invalid number of OSs, must be >= 1"
+        assert len(os) == len(set(os)), \
+            f"{os}. OSs must not contain duplicates"
+
+    def _parse_services(self):
+        services = self.yaml_dict[u.SERVICES]
+        self._validate_services(services)
+        self.services = services
+
+    def _validate_services(self, services):
+        assert len(services) > 0, \
+           f"{len(services)}. Invalid number of services, must be > 0"
+        assert len(services) == len(set(services)), \
+            f"{services}. Services must not contain duplicates"
+
+    def _parse_processes(self):
+        processes = self.yaml_dict[u.PROCESSES]
+        self._validate_processes(processes)
+        self.processes = processes
+
+    def _validate_processes(self, processes):
+        assert len(processes) >= 1, \
+            f"{len(processes)}. Invalid number of services, must be > 0"
+        assert len(processes) == len(set(processes)), \
+            f"{processes}. Processes must not contain duplicates"
 
     def _parse_sensitive_hosts(self):
         sensitive_hosts = self.yaml_dict[u.SENSITIVE_HOSTS]
@@ -196,48 +225,41 @@ class ScenarioLoader:
 
     def _validate_sensitive_hosts(self, sensitive_hosts):
         # check sensitive_hosts is valid dict of (subnet, id) : value
-        if len(sensitive_hosts) < 1:
-            raise ValueError(
-                "Number of sensitive hosts must be >= 1: "
-                f"{len(sensitive_hosts)} not >= 1"
-            )
-        if len(sensitive_hosts) > self.num_hosts:
-            raise ValueError(
-                "Number of sensitive hosts must be <= total number of "
-                f"hosts: {len(sensitive_hosts)} not <= {self.num_hosts}"
-            )
+        assert len(sensitive_hosts) > 0, \
+            ("Number of sensitive hosts must be >= 1: "
+             f"{len(sensitive_hosts)} not >= 1")
+
+        assert len(sensitive_hosts) <= self.num_hosts, \
+            ("Number of sensitive hosts must be <= total number of "
+             f"hosts: {len(sensitive_hosts)} not <= {self.num_hosts}")
 
         # sensitive hosts must be valid address
         for address, value in sensitive_hosts.items():
             subnet_id, host_id = eval(address)
-            if not self._is_valid_subnet_ID(subnet_id):
-                raise ValueError(
-                    "Invalid sensitive host tuple: subnet_id must be a valid"
-                    f" subnet: {subnet_id} != non-negative int less than "
-                    f"{len(self.subnets) + 1}"
-                )
-            if not self._is_valid_host_address(subnet_id, host_id):
-                raise ValueError(
-                    "Invalid sensitive host tuple: host_id must be a valid"
-                    f" int: {host_id} != non-negative int less than"
-                    f" {self.subnets[subnet_id]}"
-                )
-            if not isinstance(value, (float, int)) or value <= 0:
-                raise ValueError(
-                    f"Invalid sensitive host tuple: invalid value: {value}"
-                    f" != a positive int or float"
-                )
+            assert self._is_valid_subnet_ID(subnet_id), \
+                ("Invalid sensitive host tuple: subnet_id must be a valid"
+                 f" subnet: {subnet_id} != non-negative int less than "
+                 f"{len(self.subnets) + 1}")
+
+            assert self._is_valid_host_address(subnet_id, host_id), \
+                ("Invalid sensitive host tuple: host_id must be a valid"
+                 f" int: {host_id} != non-negative int less than"
+                 f" {self.subnets[subnet_id]}")
+
+            assert isinstance(value, (float, int)) and value > 0, \
+                (f"Invalid sensitive host tuple: invalid value: {value}"
+                 f" != a positive int or float")
 
         # 5.c sensitive hosts must not contain duplicate addresses
         for i, m in enumerate(sensitive_hosts.keys()):
             h1_addr = eval(m)
             for j, n in enumerate(sensitive_hosts.keys()):
+                if i == j:
+                    continue
                 h2_addr = eval(n)
-                if i != j and h1_addr == h2_addr:
-                    raise ValueError(
-                        "Sensitive hosts list must not contain duplicate host "
-                        f"addresses: {m} == {n}"
-                    )
+                assert h1_addr != h2_addr, \
+                    ("Sensitive hosts list must not contain duplicate host "
+                     f"addresses: {m} == {n}")
 
     def _is_valid_subnet_ID(self, subnet_ID):
         if type(subnet_ID) is not int \
@@ -265,75 +287,111 @@ class ScenarioLoader:
             self._validate_single_exploit(e_name, e)
 
     def _validate_single_exploit(self, e_name, e):
-        if not isinstance(e, dict):
-            raise ValueError(f"{e_name}. Exploit must be a dict.")
+
+        assert isinstance(e, dict), \
+            f"{e_name}. Exploit must be a dict."
+
         for k, t in EXPLOIT_KEYS.items():
-            if k not in e:
-                raise ValueError(f"{e_name}. Exploit missing key: '{k}'")
-            if not isinstance(e[k], t):
-                raise ValueError(
-                    f"{e_name}. Exploit '{k}' incorrect type. Expected {t}"
-                )
-        if e[u.EXPLOIT_SERVICE] not in self.services:
-            raise ValueError(
-                f"{e_name}. Exploit target service invalid: "
-                f"'{e[u.EXPLOIT_SERVICE]}'"
-            )
+            assert k in e, f"{e_name}. Exploit missing key: '{k}'"
+            assert isinstance(e[k], t), \
+                f"{e_name}. Exploit '{k}' incorrect type. Expected {t}"
+
+        assert e[u.EXPLOIT_SERVICE] in self.services, \
+            (f"{e_name}. Exploit target service invalid: "
+             f"'{e[u.EXPLOIT_SERVICE]}'")
 
         if str(e[u.EXPLOIT_OS]).lower() == "none":
             e[u.EXPLOIT_OS] = None
-        if e[u.EXPLOIT_OS] is not None and e[u.EXPLOIT_OS] not in self.os:
-            raise ValueError(
-                f"{e_name}. Exploit target OS is invalid. "
-                f"'{e[u.EXPLOIT_OS]}'. Should be None or one of the OS in"
-                " the os list."
-            )
-        if e[u.EXPLOIT_PROB] < 0 or 1 < e[u.EXPLOIT_PROB]:
-            raise ValueError(
-                f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
-                "a valid probability"
-            )
-        if e[u.EXPLOIT_COST] < 0:
-            raise ValueError(f"{e_name}. Exploit cost must be > 0.")
+
+        assert e[u.EXPLOIT_OS] is None or e[u.EXPLOIT_OS] in self.os, \
+            (f"{e_name}. Exploit target OS is invalid. '{e[u.EXPLOIT_OS]}'."
+             " Should be None or one of the OS in the os list.")
+
+        assert 0 <= e[u.EXPLOIT_PROB] < 1, \
+            (f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
+             "a valid probability")
+
+        assert e[u.EXPLOIT_COST] > 0, f"{e_name}. Exploit cost must be > 0."
+
+        assert e[u.EXPLOIT_ACCESS] in VALID_ACCESS_VALUES, \
+            (f"{e_name}. Exploit access value '{e[u.EXPLOIT_ACCESS]}' "
+             f"invalid. Must be one of {VALID_ACCESS_VALUES}")
+
+        if isinstance(e[u.EXPLOIT_ACCESS], str):
+            e[u.EXPLOIT_ACCESS] = ACCESS_LEVEL_MAP[e[u.EXPLOIT_ACCESS]]
+
+    def _parse_privescs(self):
+        self.privescs = self.yaml_dict[u.PRIVESCS]
+        self._validate_privescs(self.privescs)
+
+    def _validate_privescs(self, privescs):
+        for pe_name, pe in privescs.items():
+            self._validate_single_privesc(pe_name, pe)
+
+    def _validate_single_privesc(self, pe_name, pe):
+        s_name = "Priviledge Escalation"
+
+        assert isinstance(pe, dict), f"{pe_name}. {s_name} must be a dict."
+
+        for k, t in PRIVESC_KEYS.items():
+            assert k in pe, f"{pe_name}. {s_name} missing key: '{k}'"
+            assert isinstance(pe[k], t), \
+                (f"{pe_name}. {s_name} '{k}' incorrect type. Expected {t}")
+
+        assert pe[u.PRIVESC_PROCESS] in self.processes, \
+            (f"{pe_name}. {s_name} target process invalid: "
+             f"'{pe[u.PRIVESC_PROCESS]}'")
+
+        if str(pe[u.PRIVESC_OS]).lower() == "none":
+            pe[u.PRIVESC_OS] = None
+
+        assert pe[u.PRIVESC_OS] is None or pe[u.PRIVESC_OS] in self.os, \
+            (f"{pe_name}. {s_name} target OS is invalid. '{pe[u.PRIVESC_OS]}'."
+             f" Should be None or one of the OS in the os list.")
+
+        assert 0 <= pe[u.PRIVESC_PROB] <= 1.0, \
+            (f"{pe_name}. {s_name} probability, '{pe[u.PRIVESC_PROB]}' not "
+                "a valid probability")
+
+        assert pe[u.PRIVESC_COST] > 0, \
+            f"{pe_name}. {s_name} cost must be > 0."
+
+        assert pe[u.PRIVESC_ACCESS] in VALID_ACCESS_VALUES, \
+            (f"{pe_name}. {s_name} access value '{pe[u.PRIVESC_ACCESS]}' "
+             f"invalid. Must be one of {VALID_ACCESS_VALUES}")
+
+        if isinstance(pe[u.PRIVESC_ACCESS], str):
+            pe[u.PRIVESC_ACCESS] = ACCESS_LEVEL_MAP[pe[u.PRIVESC_ACCESS]]
 
     def _parse_scan_costs(self):
-        service_scan_cost = self.yaml_dict[u.SERVICE_SCAN_COST]
-        os_scan_cost = self.yaml_dict[u.OS_SCAN_COST]
-        subnet_scan_cost = self.yaml_dict[u.SUBNET_SCAN_COST]
-        self._validate_scan_cost(
-            service_scan_cost, os_scan_cost, subnet_scan_cost
-        )
-        self.service_scan_cost = service_scan_cost
-        self.os_scan_cost = os_scan_cost
-        self.subnet_scan_cost = subnet_scan_cost
+        self.os_scan_cost = self.yaml_dict[u.OS_SCAN_COST]
+        self.service_scan_cost = self.yaml_dict[u.SERVICE_SCAN_COST]
+        self.subnet_scan_cost = self.yaml_dict[u.SUBNET_SCAN_COST]
+        self.process_scan_cost = self.yaml_dict[u.PROCESS_SCAN_COST]
+        for (n, c) in [
+                ("OS", self.os_scan_cost),
+                ("Service", self.service_scan_cost),
+                ("Subnet", self.subnet_scan_cost),
+                ("Process", self.process_scan_cost)
+        ]:
+            self._validate_scan_cost(n, c)
 
-    def _validate_scan_cost(self,
-                            service_scan_cost,
-                            os_scan_cost,
-                            subnet_scan_cost):
-        if service_scan_cost < 0:
-            raise ValueError("Service Scan Cost must be >= 0.")
-        if os_scan_cost < 0:
-            raise ValueError("OS Scan Cost must be >= 0.")
-        if subnet_scan_cost < 0:
-            raise ValueError("Subnet Scan Cost must be >= 0.")
+    def _validate_scan_cost(self, scan_name, scan_cost):
+        assert scan_cost >= 0, f"{scan_name} Scan Cost must be >= 0."
 
     def _parse_host_configs(self):
-        host_configs = self.yaml_dict[u.HOST_CONFIGS]
-        self._validate_host_configs(host_configs)
-        self.host_configs = host_configs
+        self.host_configs = self.yaml_dict[u.HOST_CONFIGS]
+        self._validate_host_configs(self.host_configs)
 
     def _validate_host_configs(self, host_configs):
-        if len(host_configs) != self.num_hosts:
-            raise ValueError(
-                "Number of host configurations must match the number of hosts "
-                f"in network: {len(host_configs)} != {self.num_hosts}"
-            )
-        if not self._has_all_host_addresses(host_configs.keys()):
-            raise ValueError(
-                "Host configurations must have no duplicates and have an"
-                " address for each host on network."
-            )
+        assert len(host_configs) == self.num_hosts, \
+            ("Number of host configurations must match the number of hosts "
+             f"in network: {len(host_configs)} != {self.num_hosts}")
+
+        assert self._has_all_host_addresses(host_configs.keys()), \
+            ("Host configurations must have no duplicates and have an"
+             " address for each host on network.")
+
         for cfg in host_configs.values():
             self._validate_host_config(cfg)
 
@@ -352,31 +410,34 @@ class ScenarioLoader:
         """Check if a host config is valid or not given the list of exploits available
         N.B. each host config must contain at least one service
         """
-        if not isinstance(cfg, dict) or len(cfg) != 2:
-            raise ValueError(
-                f"Host configurations must be at dict of length 2 {cfg} is"
-                " invalid"
-            )
+        assert isinstance(cfg, dict) and len(cfg) == len(HOST_CONFIG_KEYS), \
+            (f"Host configurations must be at dict of length "
+             "{len(HOST_CONFIG_KEYS)} {cfg} is invalid")
 
         for k in HOST_CONFIG_KEYS:
-            if k not in cfg:
-                raise ValueError(f"Host configuation missing key: {k}")
+            assert k in cfg, f"Host configuation missing key: {k}"
 
         host_services = cfg[u.HOST_SERVICES]
         for service in host_services:
-            if service not in self.services:
-                raise ValueError(
-                    "Invalid service in host configuration services list:"
-                    f" {service}"
-                )
-        if len(host_services) < len(set(host_services)):
-            raise ValueError(
-                f"Host configuation services list cannot contain duplicates"
-            )
+            assert service in self.services, \
+                ("Invalid service in host configuration services list:"
+                 f" {service}")
+
+        assert len(host_services) == len(set(host_services)), \
+            f"Host configuation services list cannot contain duplicates"
+
+        host_processes = cfg[u.HOST_PROCESSES]
+        for process in host_processes:
+            assert process in self.processes, \
+                ("Invalid process in host configuration processes list:"
+                 f" {process}")
+
+        assert len(host_processes) == len(set(host_processes)), \
+            f"Host configuation processes list cannot contain duplicates"
 
         host_os = cfg[u.HOST_OS]
-        if host_os not in self.os:
-            raise ValueError(f"Invalid os in host configuration: {host_os}")
+        assert host_os in self.os, \
+            f"Invalid os in host configuration: {host_os}"
 
     def _parse_firewall(self):
         firewall = self.yaml_dict[u.FIREWALL]
@@ -387,18 +448,15 @@ class ScenarioLoader:
             self.firewall[eval(connect)] = v
 
     def _validate_firewall(self, firewall):
-        if not self._contains_all_required_firewalls(firewall):
-            raise ValueError(
-                "Firewall dictionary must contain two entries for each subnet "
-                "connection in network (including from outside) as defined by "
-                "network topology matrix"
-            )
+        assert self._contains_all_required_firewalls(firewall), \
+            ("Firewall dictionary must contain two entries for each subnet "
+             "connection in network (including from outside) as defined by "
+             "network topology matrix")
+
         for f in firewall.values():
-            if not self._is_valid_firewall_setting(f):
-                raise ValueError(
-                    "Firewall setting must be a list, contain only valid "
-                    "services and contain no duplicates: {f} is not valid"
-                )
+            assert self._is_valid_firewall_setting(f), \
+                ("Firewall setting must be a list, contain only valid "
+                 "services and contain no duplicates: {f} is not valid")
 
     def _contains_all_required_firewalls(self, firewall):
         for src, row in enumerate(self.topology):
@@ -429,22 +487,24 @@ class ScenarioLoader:
         hosts = dict()
         for address, h_cfg in self.host_configs.items():
             formatted_address = eval(address)
-            services_cfg, os_cfg = self._construct_host_config(h_cfg)
+            os_cfg, srv_cfg, proc_cfg = self._construct_host_config(h_cfg)
             value = self._get_host_value(formatted_address)
-            hosts[formatted_address] = Host(formatted_address,
-                                            os_cfg,
-                                            services_cfg,
-                                            value)
+            hosts[formatted_address] = Host(
+                formatted_address, os_cfg, srv_cfg, proc_cfg, value
+            )
         self.hosts = hosts
 
     def _construct_host_config(self, host_cfg):
-        services_cfg = {}
-        for service in self.services:
-            services_cfg[service] = service in host_cfg[u.HOST_SERVICES]
         os_cfg = {}
         for os_name in self.os:
             os_cfg[os_name] = os_name == host_cfg[u.HOST_OS]
-        return services_cfg, os_cfg
+        services_cfg = {}
+        for service in self.services:
+            services_cfg[service] = service in host_cfg[u.HOST_SERVICES]
+        processes_cfg = {}
+        for process in self.processes:
+            processes_cfg[process] = process in host_cfg[u.HOST_PROCESSES]
+        return os_cfg, services_cfg, processes_cfg
 
     def _get_host_value(self, address):
         return float(self.sensitive_hosts.get(address, 0.0))
@@ -454,8 +514,7 @@ class ScenarioLoader:
             step_limit = None
         else:
             step_limit = self.yaml_dict[u.STEP_LIMIT]
-            if step_limit <= 0:
-                raise ValueError(
-                    f"Step limit must be positive int: {step_limit} is invalid"
-                )
+            assert step_limit > 0, \
+                f"Step limit must be positive int: {step_limit} is invalid"
+
         self.step_limit = step_limit

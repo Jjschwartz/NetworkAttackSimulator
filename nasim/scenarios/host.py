@@ -68,8 +68,8 @@ class Host:
     def __str__(self):
         output = ["Host: {"]
         output.append(f"\taddress: {self.address}")
-        output.append(f"\tcompromised: {self._compromised}")
-        output.append(f"\treachable: {self._reachable}")
+        output.append(f"\tcompromised: {self.compromised}")
+        output.append(f"\treachable: {self.reachable}")
         output.append(f"\tvalue: {self.value}")
         output.append(f"\taccess: {self.access}")
 

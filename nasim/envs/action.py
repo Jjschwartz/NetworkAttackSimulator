@@ -747,7 +747,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
             max(self.scenario.subnets),
             self.scenario.num_os+1,
             self.scenario.num_services,
-            self.scenario.num_procs+1
+            self.scenario.num_processes
         ]
 
         super().__init__(nvec)

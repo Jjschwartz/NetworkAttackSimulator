@@ -168,6 +168,10 @@ class HostVector:
     def access(self):
         return self.vector[self._access_idx]
 
+    @access.setter
+    def access(self, val):
+        self.vector[self._access_idx] = int(val)
+
     @property
     def services(self):
         services = {}

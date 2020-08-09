@@ -142,6 +142,9 @@ class State:
             obs.from_state(self)
             return obs
 
+        if action.is_noop():
+            return obs
+
         if not action_result.success:
             # action failed so no observation
             return obs
@@ -153,7 +156,7 @@ class State:
             reachable=True,     # must be true for success
             discovered=True,    # must be true for success
             value=False,
-            discovery_value=False,    # this is only added as needed
+            # discovery_value=False,    # this is only added as needed
             services=False,
             processes=False,
             os=False,

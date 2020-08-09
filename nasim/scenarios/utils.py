@@ -8,6 +8,12 @@ SCENARIO_DIR = osp.dirname(osp.abspath(__file__))
 # default subnet address for internet
 INTERNET = 0
 
+# Constants
+NUM_ACCESS_LEVELS = 2
+NO_ACCESS = 0
+USER_ACCESS = 1
+ROOT_ACCESS = 2
+
 # scenario property keys
 SUBNETS = "subnets"
 TOPOLOGY = "topology"

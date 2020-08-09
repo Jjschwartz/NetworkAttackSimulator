@@ -80,5 +80,8 @@ if __name__ == "__main__":
                                not args.partially_obs,
                                not args.param_actions,
                                not args.box_obs)
-    print(env.action_space.n)
+    if not args.param_actions:
+        print(env.action_space.n)
+    else:
+        print(env.action_space.nvec)
     run_bruteforce_agent(env)

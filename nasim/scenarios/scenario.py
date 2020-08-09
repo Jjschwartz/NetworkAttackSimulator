@@ -48,7 +48,7 @@ class Scenario:
 
     @property
     def access_levels(self):
-        return self.scenario_dict[u.ACCESS_LEVELS]
+        return u.ROOT_ACCESS
 
     @property
     def exploits(self):

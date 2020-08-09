@@ -3,20 +3,24 @@
 Each generated scenario is defined by the a number of parameters that
 control the size of the problem (see scenario.generator for more info):
 
-There are also some parameters, where default values are used for all scenarios,
-see DEFAULTS dict.
+There are also some parameters, where default values are used for all
+scenarios, see DEFAULTS dict.
 """
 
 # generated environment constants
 DEFAULTS = dict(
     num_exploits=None,
+    num_privescs=None,
     r_sensitive=100,
     r_user=100,
     exploit_cost=1,
     exploit_probs='mixed',
+    privesc_cost=1,
+    privesc_probs=1.0,
     service_scan_cost=1,
     os_scan_cost=1,
     subnet_scan_cost=1,
+    process_scan_cost=1,
     uniform=False,
     alpha_H=2.0,
     alpha_V=2.0,
@@ -33,12 +37,14 @@ TINY_GEN = {**DEFAULTS,
             "num_hosts": 3,
             "num_os": 1,
             "num_services": 1,
+            "num_processes": 1,
             "restrictiveness": 1}
 TINY_GEN_RGOAL = {**DEFAULTS,
                   "name": "tiny-gen-rangoal",
                   "num_hosts": 3,
                   "num_os": 1,
                   "num_services": 1,
+                  "num_processes": 1,
                   "restrictiveness": 1,
                   "random_goal": True}
 SMALL_GEN = {**DEFAULTS,
@@ -46,12 +52,14 @@ SMALL_GEN = {**DEFAULTS,
              "num_hosts": 8,
              "num_os": 2,
              "num_services": 3,
+             "num_processes": 2,
              "restrictiveness": 2}
 SMALL_GEN_RGOAL = {**DEFAULTS,
                    "name": "small-gen-rangoal",
                    "num_hosts": 8,
                    "num_os": 2,
                    "num_services": 3,
+                   "num_processes": 2,
                    "restrictiveness": 2,
                    "random_goal": True}
 MEDIUM_GEN = {**DEFAULTS,
@@ -59,6 +67,7 @@ MEDIUM_GEN = {**DEFAULTS,
               "num_hosts": 16,
               "num_os": 2,
               "num_services": 5,
+              "num_processes": 2,
               "restrictiveness": 3,
               "step_limit": 2000}
 LARGE_GEN = {**DEFAULTS,
@@ -66,6 +75,7 @@ LARGE_GEN = {**DEFAULTS,
              "num_hosts": 23,
              "num_os": 3,
              "num_services": 7,
+             "num_processes": 3,
              "restrictiveness": 3,
              "step_limit": 5000}
 HUGE_GEN = {**DEFAULTS,
@@ -73,6 +83,7 @@ HUGE_GEN = {**DEFAULTS,
             "num_hosts": 38,
             "num_os": 4,
             "num_services": 10,
+            "num_processes": 4,
             "restrictiveness": 3,
             "step_limit": 10000}
 POCP_1_GEN = {**DEFAULTS,
@@ -81,6 +92,7 @@ POCP_1_GEN = {**DEFAULTS,
               "num_os": 2,
               "num_services": 50,
               "num_exploits": 60,
+              "num_processes": 2,
               "restrictiveness": 5,
               "step_limit": 30000}
 POCP_2_GEN = {**DEFAULTS,
@@ -89,6 +101,7 @@ POCP_2_GEN = {**DEFAULTS,
               "num_os": 3,
               "num_services": 10,
               "num_exploits": 30,
+              "num_processes": 3,
               "restrictiveness": 5,
               "step_limit": 30000}
 

@@ -4,6 +4,7 @@ Specifically, it generates network configurations and action space
 configurations based on number of hosts and services in network using standard
 formula.
 """
+import math
 import numpy as np
 
 import nasim.scenarios.utils as u
@@ -12,9 +13,13 @@ from nasim.scenarios.host import Host
 
 # Constants for generating network
 USER_SUBNET_SIZE = 5
+HOST_ASSIGNMENT_PERIOD = 40
 DMZ = 1
 SENSITIVE = 2
 USER = 3
+
+# Number of time to attempt to find valid vulnerable config
+VUL_RETRIES = 5
 
 
 class ScenarioGenerator:
@@ -42,6 +47,12 @@ class ScenarioGenerator:
 
     For deterministic exploits set ``exploit_probs=1.0``.
 
+    **Priviledge Escalation Probabilities**:
+
+    Success probabilities of each priviledge escalation are determined based
+    on the value of the ``privesc_probs`` argument, and are determined the same
+    as for exploits with the exclusion of the "mixed" option.
+
     **Host Configuration distribution**:
 
     1. if ``uniform=True`` then host configurations are chosen uniformly at
@@ -56,14 +67,19 @@ class ScenarioGenerator:
                  num_hosts,
                  num_services,
                  num_os=2,
+                 num_processes=2,
                  num_exploits=None,
+                 num_privescs=None,
                  r_sensitive=10,
                  r_user=10,
                  exploit_cost=1,
                  exploit_probs=1.0,
+                 privesc_cost=1,
+                 privesc_probs=1.0,
                  service_scan_cost=1,
                  os_scan_cost=1,
                  subnet_scan_cost=1,
+                 process_scan_cost=1,
                  uniform=False,
                  alpha_H=2.0,
                  alpha_V=2.0,
@@ -86,9 +102,15 @@ class ScenarioGenerator:
             number of services running on network (minimum is 1)
         num_os : int, optional
             number of OS running on network (minimum is 1) (default=2)
+        num_processes : int, optional
+            number of processes running on hosts on network (minimum is 1)
+            (default=2)
         num_exploits : int, optional
             number of exploits to use. minimum is 1. If None will use
             num_services (default=None)
+        num_privescs : int, optional
+            number of priviledge escalation actions to use. minimum is 1.
+            If None will use num_processes (default=None)
         r_sensitive : float, optional
             reward for sensitive subnet documents (default=10)
         r_user : float, optional
@@ -97,12 +119,18 @@ class ScenarioGenerator:
             cost for an exploit (default=1)
         exploit_probs : None, float, list of floats or "mixed", optional
             success probability of exploits (default=1.0)
+        privesc_cost : int or float, optional
+            cost for an priviledge escalation action (default=1)
+        privesc_probs : None, float, list of floats, optional
+            success probability of priviledge escalation actions (default=1.0)
         service_scan_cost : int or float, optional
             cost for a service scan (default=1)
         os_scan_cost : int or float, optional
             cost for an os scan (default=1)
         subnet_scan_cost : int or float, optional
-            cost for an subnet scan (default=1)
+            cost for a subnet scan (default=1)
+        process_scan_cost : int or float, optional
+            cost for a process scan (default=1)
         uniform : bool, optional
             whether to use uniform distribution or correlated host configs
             (default=False)
@@ -143,7 +171,9 @@ class ScenarioGenerator:
         """
         assert 0 < num_services
         assert 2 < num_hosts
+        assert 0 < num_processes
         assert num_exploits is None or 0 < num_exploits
+        assert num_privescs is None or 0 < num_privescs
         assert 0 < num_os
         assert 0 < r_sensitive and 0 < r_user
         assert 0 < alpha_H and 0 < alpha_V and 0 < lambda_V
@@ -155,11 +185,16 @@ class ScenarioGenerator:
         if num_exploits is None:
             num_exploits = num_services
 
+        if num_privescs is None:
+            num_privescs = num_processes
+
         self._generate_subnets(num_hosts)
         self._generate_topology()
-        self._generate_services(num_services)
         self._generate_os(num_os)
+        self._generate_services(num_services)
+        self._generate_processes(num_processes)
         self._generate_exploits(num_exploits, exploit_cost, exploit_probs)
+        self._generate_privescs(num_privescs, privesc_cost, privesc_probs)
         self._generate_sensitive_hosts(r_sensitive, r_user, random_goal)
         self.base_host_value = base_host_value
         self.host_discovery_value = host_discovery_value
@@ -172,6 +207,7 @@ class ScenarioGenerator:
         self.service_scan_cost = service_scan_cost
         self.os_scan_cost = os_scan_cost
         self.subnet_scan_cost = subnet_scan_cost
+        self.process_scan_cost = process_scan_cost
 
         if name is None:
             name = f"gen_H{num_hosts}_E{num_exploits}_S{num_services}"
@@ -186,12 +222,15 @@ class ScenarioGenerator:
         scenario_dict[u.SUBNETS] = self.subnets
         scenario_dict[u.TOPOLOGY] = self.topology
         scenario_dict[u.SERVICES] = self.services
+        scenario_dict[u.PROCESSES] = self.processes
         scenario_dict[u.OS] = self.os
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
+        scenario_dict[u.PRIVESCS] = self.privescs
         scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
         scenario_dict[u.OS_SCAN_COST] = self.os_scan_cost
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
+        scenario_dict[u.PROCESS_SCAN_COST] = self.process_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario_dict[u.STEP_LIMIT] = self.step_limit
@@ -199,13 +238,23 @@ class ScenarioGenerator:
         return scenario
 
     def _generate_subnets(self, num_hosts):
-        # Internet (0), DMZ (1) and sensitive (2) subnets both contain 1 host
-        subnets = [1, 1, 1]
+        # Internet (0) and sensitive (2) subnets both start with 1 host
+        subnets = [1]
+        # For every HOST_ASSIGNMENT_PERIOD hosts we have:
+        # first host assigned to DMZ (1),
+        dmz_hosts = math.ceil(num_hosts / HOST_ASSIGNMENT_PERIOD)
+        subnets.append(dmz_hosts)
+
+        # second host assigned sensitive (2)
+        sensitive_hosts = math.ceil(num_hosts / (HOST_ASSIGNMENT_PERIOD+1))
+        subnets.append(sensitive_hosts)
+
         # remainder of hosts go into user subnet tree
-        num_full_user_subnets = ((num_hosts - 2) // USER_SUBNET_SIZE)
+        num_user_hosts = num_hosts - dmz_hosts - sensitive_hosts
+        num_full_user_subnets = num_user_hosts // USER_SUBNET_SIZE
         subnets += [USER_SUBNET_SIZE] * num_full_user_subnets
-        if ((num_hosts - 2) % USER_SUBNET_SIZE) != 0:
-            subnets.append((num_hosts - 2) % USER_SUBNET_SIZE)
+        if (num_user_hosts % USER_SUBNET_SIZE) != 0:
+            subnets.append(num_user_hosts % USER_SUBNET_SIZE)
         self.subnets = subnets
 
     def _generate_topology(self):
@@ -241,11 +290,94 @@ class ScenarioGenerator:
                 topology[row][child_right] = 1
         self.topology = topology
 
+    def _generate_os(self, num_os):
+        self.os = [f"os_{i}" for i in range(num_os)]
+
     def _generate_services(self, num_services):
         self.services = [f"srv_{s}" for s in range(num_services)]
 
-    def _generate_os(self, num_os):
-        self.os = [f"os_{i}" for i in range(num_os)]
+    def _generate_processes(self, num_processes):
+        self.processes = [f"proc_{s}" for s in range(num_processes)]
+
+    def _generate_exploits(self, num_exploits, exploit_cost, exploit_probs):
+        exploits = {}
+        exploit_probs = self._get_action_probs(num_exploits, exploit_probs)
+        # add None since some exploits might work for all OS
+        possible_os = self.os + [None]
+        # we create one exploit per service
+        exploits_added = 0
+        while exploits_added < num_exploits:
+            srv = np.random.choice(self.services)
+            os = np.random.choice(possible_os)
+            al = np.random.randint(u.USER_ACCESS, u.ROOT_ACCESS+1)
+            e_name = f"e_{srv}"
+            if os is not None:
+                e_name += f"_{os}"
+            if e_name not in exploits:
+                exploits[e_name] = {
+                    u.EXPLOIT_SERVICE: srv,
+                    u.EXPLOIT_OS: os,
+                    u.EXPLOIT_PROB: exploit_probs[exploits_added],
+                    u.EXPLOIT_COST: exploit_cost,
+                    u.EXPLOIT_ACCESS: al
+                }
+                exploits_added += 1
+        self.exploits = exploits
+
+    def _generate_privescs(self, num_privesc, privesc_cost, privesc_probs):
+        privescs = {}
+        privesc_probs = self._get_action_probs(num_privesc, privesc_probs)
+        # add None since some privesc might work for all OS
+        possible_os = self.os + [None]
+        # we create one exploit per service
+        privescs_added = 0
+        while privescs_added < num_privesc:
+            proc = np.random.choice(self.processes)
+            os = np.random.choice(possible_os)
+            pe_name = f"pe_{proc}"
+            if os is not None:
+                pe_name += f"_{os}"
+            if pe_name not in privescs:
+                privescs[pe_name] = {
+                    u.PRIVESC_PROCESS: proc,
+                    u.PRIVESC_OS: os,
+                    u.PRIVESC_PROB: privesc_probs[privescs_added],
+                    u.PRIVESC_COST: privesc_cost,
+                    u.PRIVESC_ACCESS: u.ROOT_ACCESS
+                }
+                privescs_added += 1
+        self.privescs = privescs
+
+    def _get_action_probs(self, num_actions, action_probs):
+        if action_probs is None:
+            action_probs = np.random.random_sample(num_actions)
+        elif action_probs == 'mixed':
+            # success probability of low, med, high attack complexity
+            if num_actions == 1:
+                # for case where only 1 service ignore low probability actions
+                # since could lead to unnecessarily long attack paths
+                levels = [0.6, 0.9]
+                probs = [0.5, 0.5]
+            else:
+                levels = [0.3, 0.6, 0.9]
+                probs = [0.2, 0.4, 0.4]
+            action_probs = np.random.choice(levels, num_actions, p=probs)
+        elif type(action_probs) is list:
+            assert len(action_probs) == num_actions, \
+                ("Length of action probability list must equal number of"
+                 " exploits")
+            for a in action_probs:
+                assert 0.0 < a <= 1.0, \
+                    "Action probabilities in list must be in (0.0, 1.0]"
+        else:
+            assert isinstance(action_probs, float), \
+                ("Action probabilities must be float, list of floats or "
+                 "'mixed' (exploit only)")
+            assert 0.0 < action_probs <= 1.0, \
+                "Action probability float must be in (0.0, 1.0]"
+            action_probs = [action_probs] * num_actions
+
+        return action_probs
 
     def _generate_sensitive_hosts(self, r_sensitive, r_user, random_goal):
         sensitive_hosts = {}
@@ -265,40 +397,58 @@ class ScenarioGenerator:
 
     def _generate_uniform_hosts(self):
         hosts = dict()
-        host_config_set = self._possible_host_configs()
-        num_configs = len(host_config_set)
+        srv_config_set, proc_config_set = self._possible_host_configs()
+        num_srv_configs = len(srv_config_set)
+        num_proc_configs = len(proc_config_set)
 
         for subnet, size in enumerate(self.subnets):
             if subnet == u.INTERNET:
                 continue
             for h in range(size):
-                service_cfg = host_config_set[np.random.choice(num_configs)]
-                service_cfg = self._convert_to_service_map(service_cfg)
+                srv_cfg = srv_config_set[np.random.choice(num_srv_configs)]
+                srv_cfg = self._convert_to_service_map(srv_cfg)
+
+                proc_cfg = proc_config_set[np.random.choice(num_proc_configs)]
+                proc_cfg = self._convert_to_process_map(proc_cfg)
+
                 os = np.random.choice(self.os)
                 os_cfg = self._convert_to_os_map(os)
+
                 address = (subnet, h)
                 value = self._get_host_value(address)
-                host = Host(address, os_cfg.copy(), service_cfg.copy(), value,
-                            self.host_discovery_value)
+                host = Host(
+                    address,
+                    os_cfg.copy(),
+                    srv_cfg.copy(),
+                    proc_cfg.copy(),
+                    value,
+                    self.host_discovery_value
+                )
                 hosts[address] = host
         self.hosts = hosts
 
     def _possible_host_configs(self):
-        """Generate set of all possible host service configurations based
-        on number of exploits/services in environment.
+        """Generate set of all possible host service and process configurations
+        based on number of services and processes in environment.
 
-        Note: Each host is vulnerable to at least one exploit, so there is
-        no configuration where all services are absent.
+        Note: Each host is vulnerable to at least one exploit and one privesc,
+        so there is no configuration where all services and processes are
+        absent.
 
         Returns
         -------
-        configs : ndarray
-            all possible configurations, where each configuration is a list of
-            bools corresponding to the presence or absence of a service
+        list[list]
+            all possible service configurations, where each configuration is
+            a list of bools corresponding to the presence or absence of a
+            service
+        list[list]
+            all possible process configurations, same as above except for
+            processes
         """
         # remove last permutation which is all False
-        configs = self._permutations(len(self.services))[:-1]
-        return configs
+        srv_configs = self._permutations(len(self.services))[:-1]
+        proc_configs = self._permutations(len(self.processes))[:-1]
+        return srv_configs, proc_configs
 
     def _permutations(self, n):
         """Generate list of all possible permutations of n bools
@@ -334,32 +484,50 @@ class ScenarioGenerator:
     def _generate_correlated_hosts(self, alpha_H, alpha_V, lambda_V):
         hosts = dict()
         prev_configs = []
-        prev_vuls = []
         prev_os = []
+        prev_srvs = []
+        prev_procs = []
         host_num = 0
         for subnet, size in enumerate(self.subnets):
             if subnet == u.INTERNET:
                 continue
             for m in range(size):
-                services, os = self._get_host_config(host_num,
-                                                     alpha_H,
-                                                     prev_configs,
-                                                     alpha_V,
-                                                     prev_vuls,
-                                                     lambda_V,
-                                                     prev_os)
-                service_cfg = self._convert_to_service_map(services)
+                os, services, processes = self._get_host_config(
+                    host_num,
+                    alpha_H,
+                    prev_configs,
+                    alpha_V,
+                    lambda_V,
+                    prev_os,
+                    prev_srvs,
+                    prev_procs
+                )
                 os_cfg = self._convert_to_os_map(os)
+                service_cfg = self._convert_to_service_map(services)
+                process_cfg = self._convert_to_process_map(processes)
                 host_num += 1
                 address = (subnet, m)
                 value = self._get_host_value(address)
-                host = Host(address, os_cfg.copy(), service_cfg.copy(), value,
-                            self.host_discovery_value)
+                host = Host(
+                    address,
+                    os_cfg.copy(),
+                    service_cfg.copy(),
+                    process_cfg.copy(),
+                    value,
+                    self.host_discovery_value
+                )
                 hosts[address] = host
         self.hosts = hosts
 
-    def _get_host_config(self, host_num, alpha_H, prev_configs, alpha_V,
-                         prev_vuls, lambda_V, prev_os):
+    def _get_host_config(self,
+                         host_num,
+                         alpha_H,
+                         prev_configs,
+                         alpha_V,
+                         lambda_V,
+                         prev_os,
+                         prev_srvs,
+                         prev_procs):
         """Select a host configuration from all possible configurations based
         using a Nested Dirichlet Process
         """
@@ -368,7 +536,7 @@ class ScenarioGenerator:
             # if first host or with prob proportional to alpha_H
             # choose new config
             new_config = self._sample_config(
-                alpha_V, prev_vuls, lambda_V, prev_os
+                alpha_V, prev_srvs, lambda_V, prev_os, prev_procs
             )
         else:
             # sample uniformly from previous sampled configs
@@ -376,37 +544,67 @@ class ScenarioGenerator:
         prev_configs.append(new_config)
         return new_config
 
-    def _sample_config(self, alpha_V, prev_vuls, lambda_V, prev_os):
+    def _sample_config(self,
+                       alpha_V,
+                       prev_srvs,
+                       lambda_V,
+                       prev_os,
+                       prev_procs):
         """Sample a host configuration from all possible configurations based
         using a Dirichlet Process
         """
-        num_services = len(self.services)
-        # no services present by default
-        new_services_cfg = [False for i in range(num_services)]
-        # randomly get number of times to sample using poission dist in range
-        # (0, num_services) minimum 1 service running
+        os = self._dirichlet_sample(
+            alpha_V, self.os, prev_os
+        )
+
+        new_services_cfg = self._dirichlet_process(
+            alpha_V, lambda_V, len(self.services), prev_srvs
+        )
+
+        new_process_cfg = self._dirichlet_process(
+            alpha_V, lambda_V, len(self.processes), prev_procs
+        )
+
+        return os, new_services_cfg, new_process_cfg
+
+    def _dirichlet_process(self,
+                           alpha_V,
+                           lambda_V,
+                           num_options,
+                           prev_vals):
+        """Sample from all possible configurations using Dirichlet Process """
+        # no options present by default
+        new_cfg = [False for i in range(num_options)]
+
+        # randomly get number of times to sample using poission dist with
+        # minimum 1 option choice
         n = max(np.random.poisson(lambda_V), 1)
+
         # draw n samples from Dirichlet Process
         # (alpha_V, uniform dist of services)
         for i in range(n):
             if i == 0 or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
                 # draw randomly from uniform dist over services
-                x = np.random.randint(0, num_services)
+                x = np.random.randint(0, num_options)
             else:
                 # draw uniformly at random from previous choices
-                x = np.random.choice(prev_vuls)
-            new_services_cfg[x] = True
-            prev_vuls.append(x)
+                x = np.random.choice(prev_vals)
+            new_cfg[x] = True
+            prev_vals.append(x)
+        return new_cfg
+
+    def _dirichlet_sample(self, alpha_V, choices, prev_vals):
+        """Sample single choice using dirichlet process """
         # sample an os from Dirichlet Process (alpha_V, uniform dist of OSs)
-        if len(prev_os) == 0 \
-           or np.random.rand() < (alpha_V / (alpha_V + i - 1)):
+        if len(prev_vals) == 0 \
+           or np.random.rand() < (alpha_V / (alpha_V - 1)):
             # draw randomly from uniform dist over services
-            os = np.random.choice(self.os)
+            choice = np.random.choice(choices)
         else:
             # draw uniformly at random from previous choices
-            os = np.random.choice(prev_os)
-            prev_os.append(os)
-        return (new_services_cfg, os)
+            choice = np.random.choice(prev_vals)
+        prev_vals.append(choice)
+        return choice
 
     def _is_sensitive_host(self, addr):
         return addr in self.sensitive_hosts
@@ -417,6 +615,13 @@ class ScenarioGenerator:
         for srv, val in zip(self.services, config):
             service_map[srv] = val
         return service_map
+
+    def _convert_to_process_map(self, config):
+        """Converts list of bools to a map from process name -> bool """
+        process_map = {}
+        for proc, val in zip(self.processes, config):
+            process_map[proc] = val
+        return process_map
 
     def _convert_to_os_map(self, os):
         """Converts an OS string to a map from os name -> bool
@@ -431,7 +636,7 @@ class ScenarioGenerator:
         return os_map
 
     def _ensure_host_vulnerability(self):
-        """Ensures each subnet has atleast one vulnerable host and all sensitive hosts
+        """Ensures each subnet has at least one vulnerable host and all sensitive hosts
         are vulnerable
         """
         vulnerable_subnets = set()
@@ -439,10 +644,12 @@ class ScenarioGenerator:
             if not self._is_sensitive_host(host_addr) \
                and host_addr[0] in vulnerable_subnets:
                 continue
-            if self._host_is_vulnerable(host):
+
+            if self._is_sensitive_host(host_addr):
+                if not self._host_is_vulnerable(host, u.ROOT_ACCESS):
+                    self._update_host_to_vulnerable(host, u.ROOT_ACCESS)
                 vulnerable_subnets.add(host_addr[0])
-            elif self._is_sensitive_host(host_addr):
-                self._update_host_to_vulnerable(host)
+            elif self._host_is_vulnerable(host):
                 vulnerable_subnets.add(host_addr[0])
 
         for subnet, size in enumerate(self.subnets):
@@ -453,10 +660,14 @@ class ScenarioGenerator:
             self._update_host_to_vulnerable(host)
             vulnerable_subnets.add(subnet)
 
-    def _host_is_vulnerable(self, host):
+    def _host_is_vulnerable(self, host, access_level=u.USER_ACCESS):
         for e_def in self.exploits.values():
             if self._host_is_vulnerable_to_exploit(host, e_def):
-                return True
+                if e_def[u.EXPLOIT_ACCESS] >= access_level:
+                    return True
+                for pe_def in self.privescs.values():
+                    if self._host_is_vulnerable_to_privesc(host, pe_def):
+                        return True
         return False
 
     def _host_is_vulnerable_to_exploit(self, host, exploit_def):
@@ -466,16 +677,87 @@ class ScenarioGenerator:
             return False
         return e_os is None or host.os[e_os]
 
-    def _update_host_to_vulnerable(self, host):
+    def _host_is_vulnerable_to_privesc(self, host, privesc_def):
+        pe_proc = privesc_def[u.PRIVESC_PROCESS]
+        pe_os = privesc_def[u.PRIVESC_OS]
+        if not host.processes[pe_proc]:
+            return False
+        return pe_os is None or host.os[pe_os]
+
+    def _update_host_to_vulnerable(self, host, access_level=u.USER_ACCESS):
         """Update host config so it's vulnerable to at least one exploit """
         # choose an exploit randomly and make host vulnerable to it
-        e_def = np.random.choice(list(self.exploits.values()))
+        # will retry X times before giving up
+        # If vulnerable config is not found in X tries then the scenario
+        # probably needs more options (processes, privesc actions)
+        for i in range(VUL_RETRIES):
+            success, e_def = self._update_host_exploit_vulnerability(
+                host, False
+            )
+            # this should always succeed
+            if e_def[u.EXPLOIT_ACCESS] >= access_level:
+                return
+            # Need to ensure host is now vulnerable to >= 1 privesc action
+            success, pe_def = self._update_host_privesc_vulnerability(
+                host, True
+            )
+            if success:
+                return
+
+        raise AssertionError(
+            "Unable to find priviledge escalation action for target OS, "
+            "when looking for vulnerable host configuration, try again "
+            "using more priviledge escalation actions or processes"
+        )
+
+    def _update_host_exploit_vulnerability(self, host, os_constraint):
+        # choose an exploit randomly and make host vulnerable to it
+        if not os_constraint:
+            valid_e = list(self.exploits.values())
+        else:
+            valid_e = []
+            for e_def in self.exploits.values():
+                e_os = e_def[u.EXPLOIT_OS]
+                if e_os is None or host.os[e_os]:
+                    valid_e.append(e_def)
+
+        if len(valid_e) == 0:
+            return False, None
+
+        e_def = np.random.choice(valid_e)
         host.services[e_def[u.EXPLOIT_SERVICE]] = True
-        if e_def[u.EXPLOIT_OS] is not None:
-            # must set all to false first, so only one host OS is true
-            for os_name in host.os.keys():
-                host.os[os_name] = False
-            host.os[e_def[u.EXPLOIT_OS]] = True
+        if e_def[u.EXPLOIT_OS] is not None and not os_constraint:
+            self._update_host_os(host, e_def[u.EXPLOIT_OS])
+
+        return True, e_def
+
+    def _update_host_privesc_vulnerability(self, host, os_constraint):
+        # choose an exploit randomly and make host vulnerable to it
+        if not os_constraint:
+            # no OS constraint
+            valid_pe = list(self.privescs.values())
+        else:
+            valid_pe = []
+            for pe_def in self.privescs.values():
+                pe_os = pe_def[u.PRIVESC_OS]
+                if pe_os is None or host.os[pe_os]:
+                    valid_pe.append(pe_def)
+
+        if len(valid_pe) == 0:
+            return False, None
+
+        pe_def = np.random.choice(valid_pe)
+        host.processes[pe_def[u.PRIVESC_PROCESS]] = True
+        if pe_def[u.PRIVESC_OS] is not None and not os_constraint:
+            self._update_host_os(host, pe_def[u.PRIVESC_OS])
+
+        return True, pe_def
+
+    def _update_host_os(self, host, os):
+        # must set all to false first, so only one host OS is true
+        for os_name in host.os.keys():
+            host.os[os_name] = False
+        host.os[os] = True
 
     def _get_host_value(self, address):
         return float(self.sensitive_hosts.get(address, self.base_host_value))
@@ -549,56 +831,3 @@ class ScenarioGenerator:
                         dest_avail.remove(dest_allowed)
                 firewall[(src, dest)] = allowed
         self.firewall = firewall
-
-    def _generate_exploits(self, num_exploits, exploit_cost, exploit_probs):
-        exploits = {}
-        exploit_probs = self._get_exploit_probs(num_exploits, exploit_probs)
-        # add None since some exploits might work for all OS
-        possible_os = self.os + [None]
-        # we create one exploit per service
-        exploits_added = 0
-        while exploits_added < num_exploits:
-            srv = np.random.choice(self.services)
-            os = np.random.choice(possible_os)
-            e_name = f"e_{srv}"
-            if os is not None:
-                e_name += f"_{os}"
-            if e_name not in exploits:
-                exploits[e_name] = {
-                    u.EXPLOIT_SERVICE: srv,
-                    u.EXPLOIT_OS: os,
-                    u.EXPLOIT_PROB: exploit_probs[exploits_added],
-                    u.EXPLOIT_COST: exploit_cost}
-                exploits_added += 1
-        self.exploits = exploits
-
-    def _get_exploit_probs(self, num_exploits, exploit_probs):
-        if exploit_probs is None:
-            exploit_probs = np.random.random_sample(num_exploits)
-
-        elif exploit_probs == 'mixed':
-            # success probability of low, med, high attack complexity
-            if num_exploits == 1:
-                # for case where only 1 service ignore low probability actions
-                # since could lead to unnecessarily long attack paths
-                levels = [0.6, 0.9]
-                probs = [0.5, 0.5]
-            else:
-                levels = [0.3, 0.6, 0.9]
-                probs = [0.2, 0.4, 0.4]
-            exploit_probs = np.random.choice(levels, num_exploits, p=probs)
-
-        elif type(exploit_probs) is list:
-            if len(exploit_probs) == num_exploits:
-                raise ValueError("Length of exploit probability list must "
-                                 "equal number of exploits")
-            for e in exploit_probs:
-                if e <= 0.0 or e > 1.0:
-                    raise ValueError("Exploit probs must be in (0.0, 1.0]")
-
-        else:
-            if exploit_probs <= 0.0 or exploit_probs > 1.0:
-                raise ValueError("Exploit probs must be in (0.0, 1.0]")
-            exploit_probs = [exploit_probs] * num_exploits
-
-        return exploit_probs

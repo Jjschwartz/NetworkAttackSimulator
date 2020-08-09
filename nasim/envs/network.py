@@ -1,7 +1,7 @@
 import numpy as np
 
 from .action import ActionResult
-from .utils import get_minimal_steps_to_goal, min_subnet_depth
+from .utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
 
 # column in topology adjacency matrix that represents connection between
 # subnet and public
@@ -65,7 +65,7 @@ class Network:
             return next_state, result
 
         if action.is_remote() \
-           and not self.has_required_permission(state, action):
+           and not self.has_required_remote_permission(state, action):
             result = ActionResult(False, 0.0, permission_error=True)
             return next_state, result
 
@@ -190,7 +190,7 @@ class Network:
 
     def all_sensitive_hosts_compromised(self, state):
         for host_addr in self.sensitive_addresses:
-            if not state.host_compromised(host_addr):
+            if not state.host_has_access(host_addr, AccessLevel.ROOT):
                 return False
         return True
 

@@ -1,5 +1,6 @@
 import numpy as np
 
+from .utils import AccessLevel
 from .host_vector import HostVector
 
 
@@ -58,7 +59,6 @@ class Observation:
     def get_space_bounds(scenario):
         value_bounds = scenario.host_value_bounds
         discovery_bounds = scenario.host_discovery_value_bounds
-        access_levels = scenario.access_levels
         obs_low = min(
             0,
             value_bounds[0],
@@ -68,7 +68,7 @@ class Observation:
             1,
             value_bounds[1],
             discovery_bounds[1],
-            access_levels,
+            AccessLevel.ROOT,
             len(scenario.subnets),
             max(scenario.subnets)
         )

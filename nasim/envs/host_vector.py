@@ -258,7 +258,7 @@ class HostVector:
             )
             return next_state, result
 
-        if action.is_priviledge_escalation():
+        if action.is_privilege_escalation():
             has_proc = (
                 action.process is None
                 or self.is_running_process(action.process)

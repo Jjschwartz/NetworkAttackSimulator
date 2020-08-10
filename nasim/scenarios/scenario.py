@@ -94,7 +94,7 @@ class Scenario:
 
     @property
     def privesc_map(self):
-        """A nested dictionary for all priviledge escalation actions in scenario.
+        """A nested dictionary for all privilege escalation actions in scenario.
 
         I.e. {process_name: {
                  os_name: {

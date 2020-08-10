@@ -22,7 +22,7 @@ SERVICES = "services"
 OS = "os"
 PROCESSES = "processes"
 EXPLOITS = "exploits"
-PRIVESCS = "priviledge_escalation"
+PRIVESCS = "privilege_escalation"
 SERVICE_SCAN_COST = "service_scan_cost"
 OS_SCAN_COST = "os_scan_cost"
 SUBNET_SCAN_COST = "subnet_scan_cost"
@@ -40,7 +40,7 @@ EXPLOIT_PROB = "prob"
 EXPLOIT_COST = "cost"
 EXPLOIT_ACCESS = "access"
 
-# scenario priviledge escalation keys
+# scenario privilege escalation keys
 PRIVESC_PROCESS = "process"
 PRIVESC_OS = "os"
 PRIVESC_PROB = "prob"

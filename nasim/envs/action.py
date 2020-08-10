@@ -16,7 +16,7 @@ are implemented as subclasses of the Action class.
 Action types implemented:
 
 - :class:`Exploit`
-- :class:`PriviledgeEscalation`
+- :class:`PrivilegeEscalation`
 - :class:`ServiceScan`
 - :class:`OSScan`
 - :class:`SubnetScan`
@@ -71,7 +71,7 @@ def load_action_list(scenario):
             exploit = Exploit(e_name, address, **e_def)
             action_list.append(exploit)
         for pe_name, pe_def in scenario.privescs.items():
-            privesc = PriviledgeEscalation(pe_name, address, **pe_def)
+            privesc = PrivilegeEscalation(pe_name, address, **pe_def)
             action_list.append(privesc)
     return action_list
 
@@ -102,7 +102,7 @@ class Action:
         fail. For deterministic actions this will be 1.0.
     req_access : AccessLevel,
         the required access level to perform action. For for on host actions
-        (i.e. subnet scan, process scan, and priviledge escalation) this will
+        (i.e. subnet scan, process scan, and privilege escalation) this will
         be the access on the target. For remote actions (i.e. service scan,
         os scan, and exploits) this will be the access on a pivot host (i.e.
         a compromised host that can reach the target).
@@ -147,15 +147,15 @@ class Action:
         """
         return isinstance(self, Exploit)
 
-    def is_priviledge_escalation(self):
-        """Check if action is priviledge escalation action
+    def is_privilege_escalation(self):
+        """Check if action is privilege escalation action
 
         Returns
         -------
         bool
-            True if action is priviledge escalation action, otherwise False
+            True if action is privilege escalation action, otherwise False
         """
-        return isinstance(self, PriviledgeEscalation)
+        return isinstance(self, PrivilegeEscalation)
 
     def is_scan(self):
         """Check if action is a scan
@@ -321,8 +321,8 @@ class Exploit(Action):
             and self.access == other.access
 
 
-class PriviledgeEscalation(Action):
-    """A Priviledge Escalation action in the environment
+class PrivilegeEscalation(Action):
+    """A privilege escalation action in the environment
 
     Inherits from the base Action Class.
 
@@ -331,13 +331,13 @@ class PriviledgeEscalation(Action):
     Attributes
     ----------
     process : str
-        the process targeted by the priviledge escalation. If None the action
+        the process targeted by the privilege escalation. If None the action
         works independent of a process
     os : str
-        the OS targeted by priviledge escalation. If None then action works
+        the OS targeted by privilege escalation. If None then action works
         for all OSs.
     access : int
-        the access level resulting from priviledge escalation action
+        the access level resulting from privilege escalation action
     """
 
     def __init__(self,
@@ -358,12 +358,12 @@ class PriviledgeEscalation(Action):
         cost : float
             cost of performing action
         access : int
-            the access level resulting from the priviledge escalation
+            the access level resulting from the privilege escalation
         process : str, optional
             the target process, if None the action does not require a process
             to work (default=None)
         os : str, optional
-            the target OS of priviledge escalation action, if None then action
+            the target OS of privilege escalation action, if None then action
             works for all OS (default=None)
         prob : float, optional
             probability of success (default=1.0)
@@ -694,7 +694,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     0. Action Type = [0, 5]
        where:
           0=Exploit,
-          1=PriviledgeEscalation,
+          1=PrivilegeEscalation,
           2=ServiceScan,
           3=OSScan,
           4=SubnetScan,
@@ -704,12 +704,12 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     2. Host = [0, max subnets size-1]
     3. OS = [0, #OS+1]
        Where 0=None.
-       Note, this is only important for exploits and priviledge escalation.
+       Note, this is only important for exploits and privilege escalation.
     4. Service = [0, #services]
        Note, this is only important for exploits
     5. Process = [0, #processes+1]
        Where 0=None
-       Note, this is only important for priviledge escalation
+       Note, this is only important for privilege escalation
 
 
     ...
@@ -724,7 +724,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
     action_types = [
         Exploit,
-        PriviledgeEscalation,
+        PrivilegeEscalation,
         ServiceScan,
         OSScan,
         SubnetScan,
@@ -784,7 +784,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
         target = (subnet, host)
 
-        if not (a_class == Exploit or a_class == PriviledgeEscalation):
+        if not (a_class == Exploit or a_class == PrivilegeEscalation):
             # can ignore other action parameters
             kwargs = self._get_scan_action_def(a_class)
             return a_class(target=target, **kwargs)
@@ -797,7 +797,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
             service = self.scenario.services[action_vec[4]]
             a_def = self._get_exploit_def(service, os)
         else:
-            # priviledge escalation
+            # privilege escalation
             # have to make sure it is valid choice
             # and also get constant params (name, cost, prob, access)
             proc = self.scenario.processes[action_vec[5]]
@@ -830,7 +830,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         return e_map[service][os]
 
     def _get_privesc_def(self, proc, os):
-        """Check if priviledge escalation parameters are valid """
+        """Check if privilege escalation parameters are valid """
         pe_map = self.scenario.privesc_map
         if proc not in pe_map:
             return None

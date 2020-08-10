@@ -6,7 +6,7 @@
 # 1 process
 # 1 os
 # 1 exploit
-# 1 priviledge escalation
+# 1 privilege escalation
 #
 # Optimal path:
 # (e_ssh, (1, 0)) -> subnet_scan -> (e_ssh, (3, 0)) -> (pe_tomcat, (3, 0)) -> (e_ssh, (2, 0))
@@ -34,7 +34,7 @@ exploits:
     prob: 0.8
     cost: 1
     access: user
-priviledge_escalation:
+privilege_escalation:
   pe_tomcat:
     process: tomcat
     os: linux

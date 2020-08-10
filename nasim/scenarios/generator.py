@@ -47,9 +47,9 @@ class ScenarioGenerator:
 
     For deterministic exploits set ``exploit_probs=1.0``.
 
-    **Priviledge Escalation Probabilities**:
+    **Privilege Escalation Probabilities**:
 
-    Success probabilities of each priviledge escalation are determined based
+    Success probabilities of each privilege escalation are determined based
     on the value of the ``privesc_probs`` argument, and are determined the same
     as for exploits with the exclusion of the "mixed" option.
 
@@ -109,7 +109,7 @@ class ScenarioGenerator:
             number of exploits to use. minimum is 1. If None will use
             num_services (default=None)
         num_privescs : int, optional
-            number of priviledge escalation actions to use. minimum is 1.
+            number of privilege escalation actions to use. minimum is 1.
             If None will use num_processes (default=None)
         r_sensitive : float, optional
             reward for sensitive subnet documents (default=10)
@@ -120,9 +120,9 @@ class ScenarioGenerator:
         exploit_probs : None, float, list of floats or "mixed", optional
             success probability of exploits (default=1.0)
         privesc_cost : int or float, optional
-            cost for an priviledge escalation action (default=1)
+            cost for an privilege escalation action (default=1)
         privesc_probs : None, float, list of floats, optional
-            success probability of priviledge escalation actions (default=1.0)
+            success probability of privilege escalation actions (default=1.0)
         service_scan_cost : int or float, optional
             cost for a service scan (default=1)
         os_scan_cost : int or float, optional
@@ -705,9 +705,9 @@ class ScenarioGenerator:
                 return
 
         raise AssertionError(
-            "Unable to find priviledge escalation action for target OS, "
+            "Unable to find privilege escalation action for target OS, "
             "when looking for vulnerable host configuration, try again "
-            "using more priviledge escalation actions or processes"
+            "using more privilege escalation actions or processes"
         )
 
     def _update_host_exploit_vulnerability(self, host, os_constraint):

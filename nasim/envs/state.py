@@ -168,7 +168,7 @@ class State:
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
             obs_kwargs["access"] = True
-        elif action.is_priviledge_escalation():
+        elif action.is_privilege_escalation():
             obs_kwargs["compromised"] = True
             obs_kwargs["value"] = True
             obs_kwargs["access"] = True

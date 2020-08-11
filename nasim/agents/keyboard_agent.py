@@ -1,7 +1,7 @@
 """Play and scenario using key board """
 
 import nasim
-from nasim.envs.action import Exploit
+from nasim.envs.action import Exploit, PrivilegeEscalation
 
 
 line_break = "-"*60
@@ -22,6 +22,24 @@ def choose_flat_action(env):
             action = env.action_space.get_action(idx)
             print(f"Performing: {action}")
             return action
+        except Exception:
+            print("Invalid choice. Try again.")
+
+
+def display_actions(actions):
+    action_names = list(actions)
+    for i, name in enumerate(action_names):
+        a_def = actions[name]
+        output = [f"{i} {name}:"]
+        output.extend([f"{k}={v}" for k, v in a_def.items()])
+        print(" ".join(output))
+
+
+def choose_item(items):
+    while True:
+        try:
+            idx = int(input("Choose index: "))
+            return items[idx]
         except Exception:
             print("Invalid choice. Try again.")
 
@@ -68,35 +86,32 @@ def choose_param_action(env):
 
     # subnet-1, since action_space handles exclusion of internet subnet
     avec = [atype_idx, subnet-1, host, 0, 0]
-    if atype != Exploit:
+    if atype != Exploit and atype != PrivilegeEscalation:
         action = env.action_space.get_action(avec)
         print("----------------")
         print(f"ACTION SELECTED: {action}")
         return action
 
-    print("------------------")
-    print("4. Choose Exploit:")
-    print("------------------")
-    exploits = env.scenario.exploits
-    exploit_names = list(exploits)
-    for i, e_name in enumerate(exploit_names):
-        e_def = exploits[e_name]
-        e_srv = e_def['service']
-        e_os = e_def['os']
-        e_prob = e_def['prob']
-        e_cost = e_def['cost']
-        print(f"{i} {e_name}: service={e_srv} os={e_os} "
-              f"prob={e_prob} cost={e_cost}")
-    while True:
-        try:
-            e_idx = int(input("Choose index: "))
-            e_name = exploit_names[e_idx]
-            break
-        except Exception:
-            print("Invalid choice. Try again.")
-
     target = (subnet, host)
-    action = Exploit(name=e_name, target=target, **exploits[e_name])
+    if atype == Exploit:
+        print("------------------")
+        print("4. Choose Exploit:")
+        print("------------------")
+        exploits = env.scenario.exploits
+        display_actions(exploits)
+        e_name = choose_item(list(exploits))
+        action = Exploit(name=e_name, target=target, **exploits[e_name])
+    else:
+        print("------------------")
+        print("4. Choose Privilege Escalation:")
+        print("------------------")
+        privescs = env.scenario.privescs
+        display_actions(privescs)
+        pe_name = choose_item(list(privescs))
+        action = PrivilegeEscalation(
+            name=pe_name, target=target, **privescs[pe_name]
+        )
+
     print("----------------")
     print(f"ACTION SELECTED: {action}")
     return action

@@ -6,6 +6,7 @@ in the NASim environment.
 
 import numpy as np
 
+from .utils import AccessLevel
 from .action import ActionResult
 
 
@@ -233,14 +234,17 @@ class HostVector:
                (action.os is None or self.is_running_os(action.os)):
                 # service and os is present so exploit is successful
                 value = 0
-                if not self.compromised:
-                    # to ensure a machine is not rewarded twice
-                    value = self.value
-                    next_state.compromised = True
+                next_state.compromised = True
+                if not self.access == AccessLevel.ROOT:
+                    # ensure a machine is not rewarded twice
+                    # and access doesn't decrease
                     next_state.access = action.access
+                    if action.access == AccessLevel.ROOT:
+                        value = self.value
+
                 result = ActionResult(
                     True,
-                    value,
+                    value=value,
                     services=self.services,
                     os=self.os,
                     access=action.access
@@ -269,9 +273,16 @@ class HostVector:
             if has_proc and has_os:
                 # host compromised and proc and os is present
                 # so privesc is successful
-                next_state.access = action.access
+                value = 0.0
+                if not self.access == AccessLevel.ROOT:
+                    # ensure a machine is not rewarded twice
+                    # and access doesn't decrease
+                    next_state.access = action.access
+                    if action.access == AccessLevel.ROOT:
+                        value = self.value
                 result = ActionResult(
                     True,
+                    value=value,
                     processes=self.processes,
                     os=self.os,
                     access=action.access

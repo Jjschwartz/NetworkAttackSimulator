@@ -155,7 +155,7 @@ class ScenarioLoader:
 
     def _validate_subnets(self, subnets):
         # check subnets is valid list of positive ints
-        assert len(subnets) > 0, "Subnets connot be empty list"
+        assert len(subnets) > 0, "Subnets cannot be empty list"
         for subnet_size in subnets:
             assert type(subnet_size) is int and subnet_size > 0, \
                 f"{subnet_size} invalid subnet size, must be positive int"
@@ -392,8 +392,8 @@ class ScenarioLoader:
             ("Host configurations must have no duplicates and have an"
              " address for each host on network.")
 
-        for cfg in host_configs.values():
-            self._validate_host_config(cfg)
+        for addr, cfg in host_configs.items():
+            self._validate_host_config(addr, cfg)
 
     def _has_all_host_addresses(self, addresses):
         """Check that list of (subnet_ID, host_ID) tuples contains all
@@ -406,38 +406,41 @@ class ScenarioLoader:
                     return False
         return True
 
-    def _validate_host_config(self, cfg):
+    def _validate_host_config(self, addr, cfg):
         """Check if a host config is valid or not given the list of exploits available
         N.B. each host config must contain at least one service
         """
+        err_prefix = f"Host {addr}"
         assert isinstance(cfg, dict) and len(cfg) == len(HOST_CONFIG_KEYS), \
-            (f"Host configurations must be at dict of length "
-             "{len(HOST_CONFIG_KEYS)} {cfg} is invalid")
+            (f"{err_prefix} configurations must be a dict of length "
+             f"{len(HOST_CONFIG_KEYS)}. {cfg} is invalid")
 
         for k in HOST_CONFIG_KEYS:
-            assert k in cfg, f"Host configuation missing key: {k}"
+            assert k in cfg, f"{err_prefix} configuration missing key: {k}"
 
         host_services = cfg[u.HOST_SERVICES]
         for service in host_services:
             assert service in self.services, \
-                ("Invalid service in host configuration services list:"
-                 f" {service}")
+                (f"{err_prefix} Invalid service in configuration services "
+                 f"list: {service}")
 
         assert len(host_services) == len(set(host_services)), \
-            f"Host configuation services list cannot contain duplicates"
+            (f"{err_prefix} configuration services list cannot contain "
+             "duplicates")
 
         host_processes = cfg[u.HOST_PROCESSES]
         for process in host_processes:
             assert process in self.processes, \
-                ("Invalid process in host configuration processes list:"
-                 f" {process}")
+                (f"{err_prefix} invalid process in configuration processes"
+                 f" list: {process}")
 
         assert len(host_processes) == len(set(host_processes)), \
-            f"Host configuation processes list cannot contain duplicates"
+            (f"{err_prefix} configuation processes list cannot contain "
+             "duplicates")
 
         host_os = cfg[u.HOST_OS]
         assert host_os in self.os, \
-            f"Invalid os in host configuration: {host_os}"
+            f"{err_prefix} invalid os in configuration: {host_os}"
 
     def _parse_firewall(self):
         firewall = self.yaml_dict[u.FIREWALL]

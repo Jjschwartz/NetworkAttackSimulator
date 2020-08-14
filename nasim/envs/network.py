@@ -26,6 +26,7 @@ class Network:
         for host_addr in self.address_space:
             host = next_state.get_host(host_addr)
             host.compromised = False
+            host.access = AccessLevel.NONE
             host.reachable = self.subnet_public(host_addr[0])
             host.discovered = host.reachable
         return next_state

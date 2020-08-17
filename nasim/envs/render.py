@@ -14,9 +14,9 @@ try:
 except Exception as ex:
     import warnings
     warnings.warn(
-        f"Unable to import Matplotlib with TkAgg backend due to following"
-        f"exception:{type(ex)}: {ex}. NASIM can still run but GUI "
-        f"functionallity may not work as expected"
+        f"Unable to import Matplotlib with TkAgg backend due to following "
+        f"exception: \"{type(ex)} {ex}\". NASIM can still run but GUI "
+        f"functionallity may not work as expected."
     )
 
 # Agent node in graph

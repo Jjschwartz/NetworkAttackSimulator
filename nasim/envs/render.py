@@ -5,11 +5,19 @@ import tkinter as Tk
 from prettytable import PrettyTable
 
 # import order important here
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg     # noqa E402
-import matplotlib.pyplot as plt         # noqa E402
-import matplotlib.patches as mpatches   # noqa E402
+try:
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt         # noqa E402
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg     # noqa E402
+    import matplotlib.patches as mpatches   # noqa E402
+except Exception as ex:
+    import warnings
+    warnings.warn(
+        f"Unable to import Matplotlib with TkAgg backend due to following"
+        f"exception:{type(ex)}: {ex}. NASIM can still run but GUI "
+        f"functionallity may not work as expected"
+    )
 
 # Agent node in graph
 AGENT = (0, 0)
@@ -377,7 +385,9 @@ class EpisodeViewer:
         for m in list(G.nodes):
             if m == AGENT:
                 continue
-            node_color = get_host_representation(state, self.sensitive_hosts, m, COLORS)
+            node_color = get_host_representation(
+                state, self.sensitive_hosts, m, COLORS
+            )
             G.nodes[m]["color"] = node_color
         return G
 

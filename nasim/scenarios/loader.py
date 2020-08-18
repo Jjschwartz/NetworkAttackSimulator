@@ -287,7 +287,6 @@ class ScenarioLoader:
             self._validate_single_exploit(e_name, e)
 
     def _validate_single_exploit(self, e_name, e):
-
         assert isinstance(e, dict), \
             f"{e_name}. Exploit must be a dict."
 
@@ -411,8 +410,8 @@ class ScenarioLoader:
         N.B. each host config must contain at least one service
         """
         err_prefix = f"Host {addr}"
-        assert isinstance(cfg, dict) and len(cfg) == len(HOST_CONFIG_KEYS), \
-            (f"{err_prefix} configurations must be a dict of length "
+        assert isinstance(cfg, dict) and len(cfg) >= len(HOST_CONFIG_KEYS), \
+            (f"{err_prefix} configurations must be a dict of length >= "
              f"{len(HOST_CONFIG_KEYS)}. {cfg} is invalid")
 
         for k in HOST_CONFIG_KEYS:
@@ -442,6 +441,43 @@ class ScenarioLoader:
         assert host_os in self.os, \
             f"{err_prefix} invalid os in configuration: {host_os}"
 
+        err_prefix += f" {u.HOST_FIREWALL}"
+        if u.HOST_FIREWALL in cfg:
+            firewall = cfg[u.HOST_FIREWALL]
+            assert isinstance(firewall, dict), \
+                (f"{err_prefix} must be a dictionary, with host addresses as"
+                 f" keys and a list of denied services as values. {firewall} "
+                 "is invalid.")
+            for addr, srv_list in firewall.items():
+                addr = self._validate_host_address(addr, err_prefix)
+                assert self._is_valid_firewall_setting(srv_list), \
+                    (f"{err_prefix} setting must be a list, contain only "
+                     f"valid services and contain no duplicates: {srv_list}"
+                     " is not valid")
+        else:
+            cfg[u.HOST_FIREWALL] = dict()
+
+    def _validate_host_address(self, addr, err_prefix=""):
+        try:
+            addr = eval(addr)
+        except Exception:
+            raise AssertionError(
+                f"{err_prefix} address invalid. Must be (subnet, host) tuple"
+                f" of integers. {addr} is invalid."
+            )
+        assert isinstance(addr, tuple) \
+            and len(addr) == 2 \
+            and all([isinstance(a, int) for a in addr]), \
+            (f"{err_prefix} address invalid. Must be (subnet, host) tuple"
+             f" of integers. {addr} is invalid.")
+        assert 0 < addr[0] < len(self.subnets), \
+            (f"{err_prefix} address invalid. Subnet address must be in range"
+             f" 0 < subnet addr < {len(self.subnets)}. {addr[0]} is invalid.")
+        assert 0 <= addr[1] < self.subnets[addr[0]], \
+            (f"{err_prefix} address invalid. Host address must be in range "
+             f"0 < host addr < {self.subnets[addr[0]]}. {addr[1]} is invalid.")
+        return True
+
     def _parse_firewall(self):
         firewall = self.yaml_dict[u.FIREWALL]
         self._validate_firewall(firewall)
@@ -459,7 +495,7 @@ class ScenarioLoader:
         for f in firewall.values():
             assert self._is_valid_firewall_setting(f), \
                 ("Firewall setting must be a list, contain only valid "
-                 "services and contain no duplicates: {f} is not valid")
+                 f"services and contain no duplicates: {f} is not valid")
 
     def _contains_all_required_firewalls(self, firewall):
         for src, row in enumerate(self.topology):
@@ -493,7 +529,12 @@ class ScenarioLoader:
             os_cfg, srv_cfg, proc_cfg = self._construct_host_config(h_cfg)
             value = self._get_host_value(formatted_address)
             hosts[formatted_address] = Host(
-                formatted_address, os_cfg, srv_cfg, proc_cfg, value
+                address=formatted_address,
+                os=os_cfg,
+                services=srv_cfg,
+                processes=proc_cfg,
+                firewall=h_cfg[u.HOST_FIREWALL],
+                value=value
             )
         self.hosts = hosts
 

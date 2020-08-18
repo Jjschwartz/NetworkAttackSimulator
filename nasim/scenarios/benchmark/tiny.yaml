@@ -50,10 +50,15 @@ host_configurations:
     os: linux
     services: [ssh]
     processes: [tomcat]
+    # which services to deny between individual hosts
+    firewall:
+      (3, 0): [ssh]
   (2, 0):
     os: linux
     services: [ssh]
     processes: [tomcat]
+    firewall:
+      (1, 0): [ssh]
   (3, 0):
     os: linux
     services: [ssh]

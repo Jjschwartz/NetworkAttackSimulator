@@ -12,6 +12,7 @@ class Host:
                  os,
                  services,
                  processes,
+                 firewall,
                  value=0.0,
                  discovery_value=0.0,
                  compromised=False,
@@ -31,6 +32,10 @@ class Host:
         processes : dict
             a (process_name, bool) dictionary indicating which processes are
             running on host or not
+        firewall : dict
+            a (addr, denied services) dictionary defining which services are
+            blocked from other hosts in the network. If other host not in
+            firewall assumes all services allowed
         value : float, optional
             value of the host (default=0.0)
         discovery_value : float, optional
@@ -49,6 +54,7 @@ class Host:
         self.os = os
         self.services = services
         self.processes = processes
+        self.firewall = firewall
         self.value = value
         self.discovery_value = discovery_value
         self.compromised = compromised
@@ -64,6 +70,9 @@ class Host:
 
     def is_running_process(self, process):
         return self.processes[process]
+
+    def traffic_permitted(self, addr, service):
+        return service not in self.firewall.get(addr, [])
 
     def __str__(self):
         output = ["Host: {"]
@@ -88,7 +97,10 @@ class Host:
             output.append(f"\t\t{name}: {val}")
         output.append("\t}")
 
-        output.append("}")
+        output.append("\tfirewall: {")
+        for addr, val in self.firewall.items():
+            output.append(f"\t\t{addr}: {val}")
+        output.append("\t}")
         return "\n".join(output)
 
     def __repr__(self):

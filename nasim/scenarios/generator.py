@@ -436,12 +436,13 @@ class ScenarioGenerator:
                 address = (subnet, h)
                 value = self._get_host_value(address)
                 host = Host(
-                    address,
-                    os_cfg.copy(),
-                    srv_cfg.copy(),
-                    proc_cfg.copy(),
-                    value,
-                    self.host_discovery_value
+                    address=address,
+                    os=os_cfg.copy(),
+                    services=srv_cfg.copy(),
+                    processes=proc_cfg.copy(),
+                    firewall={},
+                    value=value,
+                    discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host
         self.hosts = hosts
@@ -528,12 +529,13 @@ class ScenarioGenerator:
                 address = (subnet, m)
                 value = self._get_host_value(address)
                 host = Host(
-                    address,
-                    os_cfg.copy(),
-                    service_cfg.copy(),
-                    process_cfg.copy(),
-                    value,
-                    self.host_discovery_value
+                    address=address,
+                    os=os_cfg.copy(),
+                    services=service_cfg.copy(),
+                    processes=process_cfg.copy(),
+                    firewall={},
+                    value=value,
+                    discovery_value=self.host_discovery_value
                 )
                 hosts[address] = host
         self.hosts = hosts

@@ -70,8 +70,7 @@ class Network:
             result = ActionResult(False, 0.0, permission_error=True)
             return next_state, result
 
-        if action.is_exploit() \
-           and not self.host_service_traffic_permitted(
+        if action.is_exploit() and not self.traffic_permitted(
                state, action.target, action.service
            ):
             result = ActionResult(False, 0.0, connection_error=True)
@@ -149,6 +148,10 @@ class Network:
             return False
         return service in self.firewall[(src_subnet, dest_subnet)]
 
+    def host_traffic_permitted(self, src_addr, dest_addr, service):
+        dest_host = self.hosts[dest_addr]
+        return dest_host.traffic_permitted(src_addr, service)
+
     def has_required_remote_permission(self, state, action):
         """Checks attacker has necessary permissions for remote action """
         if self.subnet_public(action.target[0]):
@@ -169,17 +172,20 @@ class Network:
                 return True
         return False
 
-    def host_service_traffic_permitted(self, state, host_addr, service):
-        """Checks whether the firewall permits traffic to a given host and service,
-        based on current set of compromised hosts on network.
+    def traffic_permitted(self, state, host_addr, service):
+        """Checks whether the subnet and host firewalls permits traffic to a
+        given host and service, based on current set of compromised hosts on
+        network.
         """
         for src_addr in self.address_space:
             if not state.host_compromised(src_addr) and \
                not self.subnet_public(src_addr[0]):
                 continue
-            if self.subnet_traffic_permitted(
+            if not self.subnet_traffic_permitted(
                     src_addr[0], host_addr[0], service
             ):
+                continue
+            if self.host_traffic_permitted(src_addr, host_addr, service):
                 return True
         return False
 

@@ -51,6 +51,7 @@ PRIVESC_ACCESS = "access"
 HOST_SERVICES = "services"
 HOST_PROCESSES = "processes"
 HOST_OS = "os"
+HOST_FIREWALL = "firewall"
 
 
 def load_yaml(file_path):

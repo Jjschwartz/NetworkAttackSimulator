@@ -329,11 +329,30 @@ class ScenarioGenerator:
         privesc_probs = self._get_action_probs(num_privesc, privesc_probs)
         # add None since some privesc might work for all OS
         possible_os = self.os + [None]
+
+        # need to ensure there is a privesc for each OS,
+        # or >= 1 OS agnostic privesc
+        # This ensures we can make it possible to get ROOT access on a
+        # host, independendent of the exploit the host is vulnerable too
+        if num_privesc < len(self.os):
+            os_choices = [None]
+            os_choices.extend(
+                list(np.random.choice(possible_os, num_privesc-1))
+            )
+        else:
+            while True:
+                os_choices = list(
+                    np.random.choice(possible_os, num_privesc)
+                )
+                if None in os_choices \
+                   or all([os in os_choices for os in self.os]):
+                    break
+
         # we create one exploit per service
         privescs_added = 0
         while privescs_added < num_privesc:
             proc = np.random.choice(self.processes)
-            os = np.random.choice(possible_os)
+            os = os_choices[privescs_added]
             pe_name = f"pe_{proc}"
             if os is not None:
                 pe_name += f"_{os}"
@@ -694,7 +713,8 @@ class ScenarioGenerator:
             success, e_def = self._update_host_exploit_vulnerability(
                 host, False
             )
-            # this should always succeed
+            # don't need to check success since should always succeed
+            # in finding exploit, when there is no contraint on OS
             if e_def[u.EXPLOIT_ACCESS] >= access_level:
                 return
             # Need to ensure host is now vulnerable to >= 1 privesc action
@@ -705,24 +725,27 @@ class ScenarioGenerator:
                 return
 
         raise AssertionError(
-            "Unable to find privilege escalation action for target OS, "
-            "when looking for vulnerable host configuration, try again "
-            "using more privilege escalation actions or processes"
+            "After {VUL_RETRIES}, unable to find privilege escalation action"
+            " for target OS, when looking for vulnerable host configuration,"
+            " try again using more privilege escalation actions or processes"
         )
 
     def _update_host_exploit_vulnerability(self, host, os_constraint):
         # choose an exploit randomly and make host vulnerable to it
         if not os_constraint:
+            # can change host OS, so all exploits valid
             valid_e = list(self.exploits.values())
         else:
+            # exploits must match OS of host, or be OS agnostic
+            # since cannot change host OS
             valid_e = []
             for e_def in self.exploits.values():
                 e_os = e_def[u.EXPLOIT_OS]
                 if e_os is None or host.os[e_os]:
                     valid_e.append(e_def)
 
-        if len(valid_e) == 0:
-            return False, None
+            if len(valid_e) == 0:
+                return False, None
 
         e_def = np.random.choice(valid_e)
         host.services[e_def[u.EXPLOIT_SERVICE]] = True
@@ -743,8 +766,8 @@ class ScenarioGenerator:
                 if pe_os is None or host.os[pe_os]:
                     valid_pe.append(pe_def)
 
-        if len(valid_pe) == 0:
-            return False, None
+            if len(valid_pe) == 0:
+                return False, None
 
         pe_def = np.random.choice(valid_pe)
         host.processes[pe_def[u.PRIVESC_PROCESS]] = True

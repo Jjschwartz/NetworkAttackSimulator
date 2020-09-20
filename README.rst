@@ -30,9 +30,9 @@ Demo
 
 To see NASim in action, you can run the provided demo to interact with an environment directly or see a pre-trained AI agent in action.
 
-To run the `tiny` benchmark scenario demo in interactive mode, from the `nasim` directory, run::
+To run the `tiny` benchmark scenario demo in interactive mode run::
 
-  $ python demo tiny
+  $ python -m nasim.demo tiny
 
 
 This will then run an interactive console where the user can see the current state and choose the next action to take. The goal of the scenario is to *compromise* every host with a non-zero value.
@@ -41,7 +41,7 @@ See `here <https://networkattacksimulator.readthedocs.io/en/latest/reference/sce
 
 To run the `tiny` benchmark scenario demo using the pre-trained AI agent, first ensure the DQN dependencies are installed (see *Installation* section above), then run::
 
-  $ python demo tiny -ai
+  $ python -m nasim.demo tiny -ai
 
 
 **Note:** Currently you can only run the AI demo for the `tiny` scenario.

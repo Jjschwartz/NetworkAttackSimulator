@@ -46,7 +46,7 @@ class NASimEnv(gym.Env):
         the number of steps performed since last reset (this does not include
         generative steps)
     """
-    metadata = {'rendering.modes': ["readable", "ASCI"]}
+    metadata = {'rendering.modes': ["readable"]}
     reward_range = (-float('inf'), float('inf'))
 
     action_space = None
@@ -194,12 +194,11 @@ class NASimEnv(gym.Env):
             action = self.action_space.get_action(action)
 
         next_state, action_obs = self.network.perform_action(
-            state,
-            action
+            state, action
         )
-        obs = next_state.get_observation(action,
-                                         action_obs,
-                                         self.fully_obs)
+        obs = next_state.get_observation(
+            action, action_obs, self.fully_obs
+        )
         done = self.goal_reached(next_state)
         reward = action_obs.value - action.cost
         return next_state, obs, reward, done, action_obs.info()
@@ -257,7 +256,6 @@ class NASimEnv(gym.Env):
             self._renderer = Viewer(self.network)
 
         if mode == "readable":
-
             self._renderer.render_readable(obs)
         else:
             print(
@@ -399,6 +397,7 @@ class NASimEnv(gym.Env):
             theoretical max score
         """
         max_reward = self.network.get_total_sensitive_host_value()
+        max_reward += self.network.get_total_discovery_value()
         max_reward -= self.network.get_minimal_steps()
         return max_reward
 

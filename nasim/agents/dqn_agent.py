@@ -75,6 +75,7 @@ class ReplayMemory:
 
 
 class DQN(nn.Module):
+    """A simple Deep Q-Network """
 
     def __init__(self, input_dim, layers, num_actions):
         super().__init__()
@@ -103,6 +104,7 @@ class DQN(nn.Module):
 
 
 class DQNAgent:
+    """A simple Deep Q-Network Agent """
 
     def __init__(self,
                  env,
@@ -116,12 +118,15 @@ class DQNAgent:
                  gamma=0.99,
                  hidden_sizes=[64, 64],
                  target_update_freq=1000,
+                 verbose=True,
                  **kwargs):
 
         # This DQN implementation only works for flat actions
         assert env.flat_actions
-        print(f"\nRunning DQN with config:")
-        pprint(locals())
+        self.verbose = verbose
+        if self.verbose:
+            print(f"\nRunning DQN with config:")
+            pprint(locals())
 
         # set seeds
         self.seed = seed
@@ -156,8 +161,9 @@ class DQNAgent:
         self.dqn = DQN(self.obs_dim,
                        hidden_sizes,
                        self.num_actions).to(self.device)
-        print("\nUsing Neural Network:")
-        print(self.dqn)
+        if self.verbose:
+            print("\nUsing Neural Network:")
+            print(self.dqn)
 
         self.target_dqn = DQN(self.obs_dim,
                               hidden_sizes,
@@ -171,6 +177,12 @@ class DQNAgent:
         self.replay = ReplayMemory(replay_size,
                                    self.obs_dim,
                                    self.device)
+
+    def save(self, save_path):
+        self.dqn.save_DQN(save_path)
+
+    def load(self, load_path):
+        self.dqn.load_DQN(load_path)
 
     def get_epsilon(self):
         if self.steps_done < self.exploration_steps:
@@ -213,31 +225,33 @@ class DQNAgent:
         return loss.item(), mean_v
 
     def train(self):
-        print("\nStarting training")
+        if self.verbose:
+            print("\nStarting training")
+
         num_episodes = 0
         training_steps_remaining = self.training_steps
 
         while self.steps_done < self.training_steps:
-            ep_results = self.run_episode(training_steps_remaining)
+            ep_results = self.run_train_episode(training_steps_remaining)
             ep_return, ep_steps, goal = ep_results
             num_episodes += 1
             training_steps_remaining -= ep_steps
 
             self.logger.add_scalar("episode", num_episodes, self.steps_done)
-            self.logger.add_scalar("epsilon",
-                                   self.get_epsilon(),
-                                   self.steps_done)
-            self.logger.add_scalar("episode_return",
-                                   ep_return,
-                                   self.steps_done)
-            self.logger.add_scalar("episode_steps",
-                                   ep_steps,
-                                   self.steps_done)
-            self.logger.add_scalar("episode_goal_reached",
-                                   int(goal),
-                                   self.steps_done)
+            self.logger.add_scalar(
+                "epsilon", self.get_epsilon(), self.steps_done
+            )
+            self.logger.add_scalar(
+                "episode_return", ep_return, self.steps_done
+            )
+            self.logger.add_scalar(
+                "episode_steps", ep_steps, self.steps_done
+            )
+            self.logger.add_scalar(
+                "episode_goal_reached", int(goal), self.steps_done
+            )
 
-            if num_episodes % 10 == 0:
+            if num_episodes % 10 == 0 and self.verbose:
                 print(f"\nEpisode {num_episodes}:")
                 print(f"\tsteps done = {self.steps_done} / "
                       f"{self.training_steps}")
@@ -245,13 +259,14 @@ class DQNAgent:
                 print(f"\tgoal = {goal}")
 
         self.logger.close()
-        print("Training complete")
-        print(f"\nEpisode {num_episodes}:")
-        print(f"\tsteps done = {self.steps_done} / {self.training_steps}")
-        print(f"\treturn = {ep_return}")
-        print(f"\tgoal = {goal}")
+        if self.verbose:
+            print("Training complete")
+            print(f"\nEpisode {num_episodes}:")
+            print(f"\tsteps done = {self.steps_done} / {self.training_steps}")
+            print(f"\treturn = {ep_return}")
+            print(f"\tgoal = {goal}")
 
-    def run_episode(self, step_limit):
+    def run_train_episode(self, step_limit):
         o = self.env.reset()
         done = False
 
@@ -260,10 +275,10 @@ class DQNAgent:
 
         while not done and steps < step_limit:
             a = self.get_egreedy_action(o, self.get_epsilon())
+
             next_o, r, done, _ = self.env.step(a)
             self.replay.store(o, a, next_o, r, done)
             self.steps_done += 1
-
             loss, mean_v = self.optimize()
             self.logger.add_scalar("loss", loss, self.steps_done)
             self.logger.add_scalar("mean_v", mean_v, self.steps_done)
@@ -273,6 +288,42 @@ class DQNAgent:
             steps += 1
 
         return episode_return, steps, self.env.goal_reached()
+
+    def run_eval_episode(self,
+                         env=None,
+                         render=False,
+                         eval_epsilon=0.05,
+                         render_mode="readable"):
+        if env is None:
+            env = self.env
+        o = env.reset()
+        done = False
+
+        steps = 0
+        episode_return = 0
+
+        line_break = "="*60
+        if render:
+            env.render(render_mode)
+            input("Initial state. Press enter to continue..")
+
+        while not done:
+            a = self.get_egreedy_action(o, eval_epsilon)
+            next_o, r, done, _ = env.step(a)
+            o = next_o
+            episode_return += r
+            steps += 1
+            if render:
+                print("\n" + line_break)
+                print(f"Step {steps}")
+                print(line_break)
+                print(f"Action Performed={env.action_space.get_action(a)}")
+                env.render(render_mode)
+                print(f"Reward={r}")
+                print(f"Done={done}")
+                input("Press enter to continue..")
+
+        return episode_return, steps, env.goal_reached()
 
 
 if __name__ == "__main__":
@@ -304,6 +355,8 @@ if __name__ == "__main__":
                         help="(default=10000)")
     parser.add_argument("--gamma", type=float, default=0.99,
                         help="(default=0.99)")
+    parser.add_argument("--quite", action="store_false",
+                        help="Run in Quite mode")
     args = parser.parse_args()
 
     env = nasim.make_benchmark(args.env_name,
@@ -311,5 +364,5 @@ if __name__ == "__main__":
                                fully_obs=not args.partially_obs,
                                flat_actions=True,
                                flat_obs=True)
-    dqn_agent = DQNAgent(env, **vars(args))
+    dqn_agent = DQNAgent(env, verbose=args.quite, **vars(args))
     dqn_agent.train()

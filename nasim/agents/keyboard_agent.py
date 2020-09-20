@@ -18,7 +18,7 @@ def choose_flat_action(env):
     print_actions(env.action_space)
     while True:
         try:
-            idx = int(input("Choose index: "))
+            idx = int(input("Choose action number: "))
             action = env.action_space.get_action(idx)
             print(f"Performing: {action}")
             return action
@@ -38,7 +38,7 @@ def display_actions(actions):
 def choose_item(items):
     while True:
         try:
-            idx = int(input("Choose index: "))
+            idx = int(input("Choose number: "))
             return items[idx]
         except Exception:
             print("Invalid choice. Try again.")
@@ -58,9 +58,9 @@ def choose_param_action(env):
         except Exception:
             print("Invalid choice. Try again.")
 
-    print("-----------------")
-    print("2. Choose Subnet:")
-    print("-----------------")
+    print("------------------------")
+    print("2. Choose Target Subnet:")
+    print("------------------------")
     num_subnets = env.action_space.nvec[1]
     while True:
         try:
@@ -71,9 +71,9 @@ def choose_param_action(env):
         except Exception:
             print("Invalid choice. Try again.")
 
-    print("---------------")
-    print("3. Choose Host:")
-    print("---------------")
+    print("----------------------")
+    print("3. Choose Target Host:")
+    print("----------------------")
     num_hosts = env.scenario.subnets[subnet]
     while True:
         try:
@@ -119,7 +119,7 @@ def choose_param_action(env):
 
 def choose_action(env):
     input("Press enter to choose next action..")
-    print(line_break2)
+    print("\n" + line_break2)
     print("CHOOSE ACTION")
     print(line_break2)
     if env.flat_actions:
@@ -127,30 +127,43 @@ def choose_action(env):
     return choose_param_action(env)
 
 
-def run_keyboard_agent(env):
+def run_keyboard_agent(env, render_mode="readable"):
     """Run Keyboard agent
 
     Parameters
     ----------
     env : NASimEnv
         the environment
+    render_mode : str, optional
+        display mode for environment (default="readable")
+
+    Returns
+    -------
+    int
+        final return
+    int
+        steps taken
+    bool
+        whether goal reached or not
     """
     print(line_break2)
     print("STARTING EPISODE")
     print(line_break2)
 
     o = env.reset()
-    env.render("readable")
+    env.render(render_mode)
     total_reward = 0
+    total_steps = 0
     done = False
     while not done:
         a = choose_action(env)
         o, r, done, _ = env.step(a)
         total_reward += r
-        print(line_break2)
+        total_steps += 1
+        print("\n" + line_break2)
         print("OBSERVATION RECIEVED")
         print(line_break2)
-        env.render("readable")
+        env.render(render_mode)
         print(f"Reward={r}")
         print(f"Done={done}")
         print(line_break)
@@ -158,14 +171,10 @@ def run_keyboard_agent(env):
     if done:
         done = env.goal_reached()
 
-    print(line_break2)
-    print("EPISODE FINISHED")
-    print(line_break)
-    print(f"Goal reached = {done}")
-    print(f"Total reward = {total_reward}")
+    return total_reward, total_steps, done
 
 
-def run_generative_keyboard_agent(env):
+def run_generative_keyboard_agent(env, render_mode="readable"):
     """Run Keyboard agent in generative mode.
 
     The experience is the same as the normal mode, this is mainly useful
@@ -175,6 +184,17 @@ def run_generative_keyboard_agent(env):
     ----------
     env : NASimEnv
         the environment
+    render_mode : str, optional
+        display mode for environment (default="readable")
+
+    Returns
+    -------
+    int
+        final return
+    int
+        steps taken
+    bool
+        whether goal reached or not
     """
     print(line_break2)
     print("STARTING EPISODE")
@@ -182,23 +202,25 @@ def run_generative_keyboard_agent(env):
 
     o = env.reset()
     s = env.current_state
-    env.render_state("readable", s)
-    env.render("readable", o)
+    env.render_state(render_mode, s)
+    env.render(render_mode, o)
 
     total_reward = 0
+    total_steps = 0
     done = False
     while not done:
         a = choose_action(env)
         ns, o, r, done, info = env.generative_step(s, a)
         total_reward += r
+        total_steps += 1
         print(line_break2)
         print("NEXT STATE")
         print(line_break2)
-        env.render_state("readable", ns)
-        print(line_break2)
+        env.render_state(render_mode, ns)
+        print("\n" + line_break2)
         print("OBSERVATION RECIEVED")
         print(line_break2)
-        env.render("readable", o)
+        env.render(render_mode, o)
         print(f"Reward={r}")
         print(f"Done={done}")
         print(line_break)
@@ -207,11 +229,7 @@ def run_generative_keyboard_agent(env):
     if done:
         done = env.goal_reached()
 
-    print(line_break)
-    print("EPISODE FINISHED")
-    print(line_break)
-    print(f"Goal reached = {done}")
-    print(f"Total reward = {total_reward}")
+    return total_reward, total_steps, done
 
 
 if __name__ == "__main__":
@@ -226,7 +244,9 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--param_actions", action="store_true",
                         help="Use Parameterised action space")
     parser.add_argument("-g", "--use_generative", action="store_true",
-                        help="Generative environment mode")
+                        help=("Generative environment mode. This makes no"
+                              " difference for the player, but is useful"
+                              " for testing."))
     args = parser.parse_args()
 
     env = nasim.make_benchmark(args.env_name,
@@ -235,6 +255,13 @@ if __name__ == "__main__":
                                flat_actions=not args.param_actions,
                                flat_obs=True)
     if args.use_generative:
-        run_generative_keyboard_agent(env)
+        total_reward, steps, goal = run_generative_keyboard_agent(env)
     else:
-        run_keyboard_agent(env)
+        total_reward, steps, goal = run_keyboard_agent(env)
+
+    print(line_break2)
+    print("EPISODE FINISHED")
+    print(line_break)
+    print(f"Goal reached = {goal}")
+    print(f"Total reward = {total_reward}")
+    print(f"Steps taken = {steps}")

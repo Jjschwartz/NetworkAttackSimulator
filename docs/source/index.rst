@@ -9,6 +9,15 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.7
+***********
+
+- Implemented host based firewalls
+- Added priviledge escalation
+- Added a demo script, including a pre-trained agent for the 'tiny' scenario
+- Fix to upper bound calculation (factored in reward for discovering a host)
+
+
 Version 0.6
 ***********
 

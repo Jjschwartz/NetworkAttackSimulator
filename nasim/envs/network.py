@@ -57,27 +57,29 @@ class Network:
         if action.is_noop():
             return next_state, ActionResult(True)
 
-        if not state.host_reachable(action.target):
+        if not state.host_reachable(action.target) \
+           or not state.host_discovered(action.target):
             result = ActionResult(False, 0.0, connection_error=True)
             return next_state, result
 
-        if not state.host_discovered(action.target):
-            result = ActionResult(False, 0.0, connection_error=True)
-            return next_state, result
-
-        if action.is_remote() \
-           and not self.has_required_remote_permission(state, action):
+        has_req_permission = self.has_required_remote_permission(state, action)
+        if action.is_remote() and not has_req_permission:
             result = ActionResult(False, 0.0, permission_error=True)
             return next_state, result
 
-        if action.is_exploit() and not self.traffic_permitted(
-               state, action.target, action.service
+        if action.is_exploit() \
+           and not self.traffic_permitted(
+                    state, action.target, action.service
            ):
             result = ActionResult(False, 0.0, connection_error=True)
             return next_state, result
 
-        if action.is_exploit() \
-           and state.host_compromised(action.target):
+        host_compromised = state.host_compromised(action.target)
+        if action.is_privilege_escalation() and not host_compromised:
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
+
+        if action.is_exploit() and host_compromised:
             # host already compromised so exploits don't fail due to randomness
             pass
         elif np.random.rand() > action.prob:
@@ -207,9 +209,16 @@ class Network:
             total += host_value
         return total
 
+    def get_total_discovery_value(self):
+        total = 0
+        for host in self.hosts:
+            total += host.discovery_value
+        return total
+
     def get_minimal_steps(self):
-        return get_minimal_steps_to_goal(self.topology,
-                                         self.sensitive_addresses)
+        return get_minimal_steps_to_goal(
+            self.topology, self.sensitive_addresses
+        )
 
     def get_subnet_depths(self):
         return min_subnet_depth(self.topology)

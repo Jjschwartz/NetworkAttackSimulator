@@ -1,5 +1,6 @@
 **Status**: Still under development, interface is stable but expect some more features and bug fixes
 
+
 Network Attack Simulator
 ========================
 
@@ -16,7 +17,41 @@ The easiest way to install the latest version of NASim hosted on PyPi is via pip
   $ pip install nasim
 
 
+To install dependencies for running the DQN test agent (this is needed to run the demo) run::
+
+  $ pip install nasim[dqn]
+
+
 To get the latest bleeding edge version and install in development mode see the `Install docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/installation.html>`_
+
+
+Demo
+----
+
+To see NASim in action, you can run the provided demo to interact with an environment directly or see a pre-trained AI agent in action.
+
+To run the `tiny` benchmark scenario demo in interactive mode, from the `nasim` directory, run::
+
+  $ python demo tiny
+
+
+This will then run an interactive console where the user can see the current state and choose the next action to take. The goal of the scenario is to *compromise* every host with a non-zero value.
+
+See `here <https://networkattacksimulator.readthedocs.io/en/latest/reference/scenarios/benchmark_scenarios.html>`_ for the full list of scenarios.
+
+To run the `tiny` benchmark scenario demo using the pre-trained AI agent, first ensure the DQN dependencies are installed (see *Installation* section above), then run::
+
+  $ python demo tiny -ai
+
+
+**Note:** Currently you can only run the AI demo for the `tiny` scenario.
+
+
+Documentation
+-------------
+
+The documentation is available at: https://networkattacksimulator.readthedocs.io/
+
 
 
 Using with OpenAI gym
@@ -27,15 +62,11 @@ NASim implements the `Open AI Gym <https://github.com/openai/gym>`_ environment 
 See `Starting NASim using OpenAI gym <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_.
 
 
-Documentation
--------------
-
-The documentation is available at: https://networkattacksimulator.readthedocs.io/
-
 Authors
 -------
 
 **Jonathon Schwartz** - Jonathon.schwartz@anu.edu.au
+
 
 License
 -------
@@ -48,12 +79,18 @@ License
 Future Features
 ---------------
 
-- Priviledge Escalation
-- Host based firewalls
+- A GUI for displaying episodes
 
 
 What's new
 ----------
+
+- 2020-09-20 (v 0.7.0) (MINOR release)
+
+  + Implemented host based firewalls
+  + Added priviledge escalation
+  + Added a demo script, including a pre-trained agent for the 'tiny' scenario
+  + Fix to upper bound calculation (factored in reward for discovering a host)
 
 - 2020-08-02 (v 0.6.0) (MINOR release)
 

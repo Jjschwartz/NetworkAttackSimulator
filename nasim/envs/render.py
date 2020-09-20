@@ -42,8 +42,7 @@ class Viewer:
         self.positions = self._get_host_positions(network)
 
     def render_graph(self, state, ax=None, show=False, width=5, height=6):
-        """Render graph structure representing network that can be then be
-        visualized
+        """Render graph structure represention of network
 
         Arguments
         ---------

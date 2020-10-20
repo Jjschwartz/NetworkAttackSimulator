@@ -120,7 +120,9 @@ class ScenarioLoader:
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario_dict[u.STEP_LIMIT] = self.step_limit
-        return Scenario(scenario_dict, name=self.name)
+        return Scenario(
+            scenario_dict, name=self.name, generated=False
+        )
 
     def _check_scenario_sections_valid(self):
         """Checks if scenario dictionary contains all required sections and

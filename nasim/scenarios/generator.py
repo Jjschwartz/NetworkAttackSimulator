@@ -234,7 +234,9 @@ class ScenarioGenerator:
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario_dict[u.STEP_LIMIT] = self.step_limit
-        scenario = Scenario(scenario_dict, name=self.name)
+        scenario = Scenario(
+            scenario_dict, name=self.name, generated=True
+        )
         return scenario
 
     def _generate_subnets(self, num_hosts):

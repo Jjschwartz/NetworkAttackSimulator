@@ -24,9 +24,9 @@ The following table provides details of each benchmark scenario currently availa
    :header-rows: 1
 
 
-The number of actions is calculated as *Hosts X (Exploits + 3)*. The +3 if for the 3 scans available for each host (OSScan, ServiceScan, and SubnetScan).
+The number of actions is calculated as *Hosts X (Exploits + PrivEscs + 4)*. The +4 is for the 4 scans available for each host (OSScan, ServiceScan, ProcessScan, and SubnetScan).
 
-The number of states is calculated as *Hosts X 2^(3 + OS + Services)*. Here the 3 comes from the *compromised*, *reachable* and *discovered* features of the state. The base of 2 is due to all state features being boolean (present/absent).
+The number of states is calculated as *Hosts X 2^(3 + OS + Services) X 3 *. Here the first 3 comes from the *compromised*, *reachable* and *discovered* features of the state and the base of 2 is due to all state features being boolean (present/absent). The second 3 comes from the number of possible access levels possible on a host.
 
 The table below provides mean steps to reach the goal and reward (+/- stdev) for a uniform random agent, with scores averaged over 100 runs.
 
@@ -43,8 +43,8 @@ The *tiny*, *small*, *medium*, *large*, and *huge* (and their generated versions
 - `Sarraute, Carlos, Olivier Buffet, and Jörg Hoffmann. "POMDPs make better hackers: Accounting for uncertainty in penetration testing." Twenty-Sixth AAAI Conference on Artificial Intelligence. 2012. <https://www.aaai.org/ocs/index.php/AAAI/AAAI12/paper/viewPaper/4996>`_
 - `Speicher, Patrick, et al. "Towards Automated Network Mitigation Analysis (extended)." arXiv preprint arXiv:1705.05088 (2017). <https://arxiv.org/abs/1705.05088>`_
 
-The *small-linear*, *medium-single-site*, and *medium-multi-site* were made up by author after looking at some random google images of network layouts, and thinking of different interesting network topologies.
-
 The *pocp-1-gen* and *pocp-2-gen* scenarios are based on the work by:
 
 - `Shmaryahu, D., Shani, G., Hoffmann, J., & Steinmetz, M. (2018, June). Simulated penetration testing as contingent planning. In Twenty-Eighth International Conference on Automated Planning and Scheduling. <https://www.aaai.org/ocs/index.php/ICAPS/ICAPS18/paper/viewPaper/17766>`_
+
+The other scenarios were made up by author after looking at some random google images of network layouts, and playing around with different interesting network topologies.

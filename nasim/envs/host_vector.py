@@ -39,6 +39,8 @@ class HostVector:
 
         #subnets + max #hosts in any subnet + 6 + #OS + #services + #processes.
 
+    - Where the +6 is for compromised, reachable, discovered, value,
+      discovery_value, and access features
     - The vector is a float vector so True/False is actually represented as
       1.0/0.0.
 

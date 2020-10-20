@@ -1,6 +1,6 @@
 .. _scenario_generator:
 
-ScenarioGenerator
+Scenario Generator
 ===================
 
 .. automodule:: nasim.scenarios.generator

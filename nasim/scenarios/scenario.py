@@ -6,9 +6,10 @@ import nasim.scenarios.utils as u
 
 class Scenario:
 
-    def __init__(self, scenario_dict, name=None):
+    def __init__(self, scenario_dict, name=None, generated=False):
         self.scenario_dict = scenario_dict
         self.name = name
+        self.generated = generated
         self._e_map = None
         self._pe_map = None
 
@@ -208,3 +209,60 @@ class Scenario:
 
     def display(self):
         pprint(self.scenario_dict)
+
+    def get_action_space_size(self):
+        num_exploits = len(self.exploits)
+        num_privescs = len(self.privescs)
+        # OSScan, ServiceScan, SubnetScan, ProcessScan
+        num_scans = 4
+        actions_per_host = num_exploits + num_privescs + num_scans
+        return len(self.hosts) * actions_per_host
+
+    def get_state_space_size(self):
+        # compromised, reachable, discovered
+        host_aux_bin_features = 3
+        num_bin_features = (
+            host_aux_bin_features
+            + self.num_os
+            + self.num_services
+            + self.num_processes
+        )
+        # access
+        num_tri_features = 1
+        host_states = 2**num_bin_features * 3**num_tri_features
+        return len(self.hosts) * host_states
+
+    def get_state_dims(self):
+        # compromised, reachable, discovered, value, discovery_value, access
+        host_aux_features = 6
+        host_state_size = (
+            self.address_space_bounds[0]
+            + self.address_space_bounds[1]
+            + host_aux_features
+            + self.num_os
+            + self.num_services
+            + self.num_processes
+        )
+        return len(self.hosts), host_state_size
+
+    def get_observation_dims(self):
+        state_dims = self.get_state_dims()
+        return state_dims[0]+1, state_dims[1]
+
+    def get_description(self):
+        description = {
+            "Name": self.name,
+            "Type": "generated" if self.generated else "static",
+            "Subnets": len(self.subnets),
+            "Hosts": len(self.hosts),
+            "OS": self.num_os,
+            "Services": self.num_services,
+            "Processes": self.num_processes,
+            "Exploits": len(self.exploits),
+            "PrivEscs": len(self.privescs),
+            "Actions": self.get_action_space_size(),
+            "Observation Dims": self.get_observation_dims(),
+            "States": self.get_state_space_size(),
+            "Step Limit": self.step_limit
+        }
+        return description

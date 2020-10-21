@@ -692,25 +692,37 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     The action parameters (in order) are:
 
     0. Action Type = [0, 5]
-       where:
-          0=Exploit,
-          1=PrivilegeEscalation,
-          2=ServiceScan,
-          3=OSScan,
-          4=SubnetScan,
-          5=ProcessScan,
+
+       Where:
+
+         0=Exploit,
+
+         1=PrivilegeEscalation,
+
+         2=ServiceScan,
+
+         3=OSScan,
+
+         4=SubnetScan,
+
+         5=ProcessScan,
+
     1. Subnet = [0, #subnets-1]
+
        -1 since we don't include the internet subnet
+
     2. Host = [0, max subnets size-1]
     3. OS = [0, #OS+1]
-       Where 0=None.
-       Note, this is only important for exploits and privilege escalation.
-    4. Service = [0, #services]
-       Note, this is only important for exploits
-    5. Process = [0, #processes+1]
-       Where 0=None
-       Note, this is only important for privilege escalation
 
+       Where 0=None.
+
+    4. Service = [0, #services]
+    5. Process = [0, #processes+1]
+
+       Where 0=None.
+
+    Note that OS, Service and Process are only importand for exploits and
+    privilege escalation actions.
 
     ...
 

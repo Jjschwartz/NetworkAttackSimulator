@@ -1,8 +1,12 @@
-from nasim.envs import NASimEnv
 from gym.envs.registration import register
+
+from nasim.envs import NASimEnv
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.scenarios import \
     make_benchmark_scenario, load_scenario, generate_scenario
+
+
+__all__ = ['make_benchmark', 'load', 'generate']
 
 
 def make_benchmark(scenario_name,

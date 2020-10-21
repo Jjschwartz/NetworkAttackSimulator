@@ -1,4 +1,4 @@
-**Status**: Still under development, interface is stable but expect some more features and bug fixes
+**Status**: Stable release. No extra development is planned, but still being maintained (bug fixes, etc).
 
 
 Network Attack Simulator
@@ -76,14 +76,13 @@ License
 .. _MIT: LICENSE
 
 
-Future Features
----------------
-
-- A GUI for displaying episodes
-
-
 What's new
 ----------
+
+- 2020-09-20 (v 0.7.1) (MICRO release)
+
+  + Added some scripts for running random benchmarks and describing benchmark scenarios
+  + Added some more docs (including for creating custom scenarios) and updated other docs
 
 - 2020-09-20 (v 0.7.0) (MINOR release)
 

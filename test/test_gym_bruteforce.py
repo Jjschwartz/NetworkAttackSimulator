@@ -3,14 +3,20 @@ using different parameters to check no exceptions occur.
 
 Tests loading environments using gym.make()
 """
+from importlib import reload
 
 import gym
 import pytest
 
-# import nasim     # noqa
+import nasim
 from nasim.scenarios.benchmark import AVAIL_BENCHMARKS
 from nasim.agents.bruteforce_agent import run_bruteforce_agent
 
+
+def test_gym_reload():
+    """Tests there is no issue when reloading gym """
+    reload(gym)
+    reload(nasim)
 
 @pytest.mark.parametrize("scenario", AVAIL_BENCHMARKS)
 @pytest.mark.parametrize("po", ['', 'PO-'])

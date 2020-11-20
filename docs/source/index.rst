@@ -9,6 +9,21 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.7.1
+*************
+
+- Fixed bug with 're-registering' Gym environments when reloading modules
+- Added example implementations of Tabular Q-Learning: `agents/ql_agent.py` and `agents/ql_replay.py`
+- Added `Agents` section to docs, along with other minor doc updates
+
+
+Version 0.7.1
+*************
+
+- Added some scripts for running random benchmarks and describing benchmark scenarios
+- Added some more docs (including for creating custom scenarios) and updated other docs
+
+
 Version 0.7
 ***********
 
@@ -34,13 +49,6 @@ Version 0.5
 - First official release on PyPi
 - Cleaned up dependencies, setup.py, etc and some small fixes
 - First stable version
-
-
-Future extensions
-*****************
-
-- Add priviledge escalation
-- Host based firewalls
 
 
 The Docs

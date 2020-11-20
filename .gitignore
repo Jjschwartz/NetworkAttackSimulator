@@ -44,3 +44,5 @@ nasim/agents/runs
 runs/
 
 .ipynb_checkpoints/
+
+*.ipynb

@@ -79,6 +79,12 @@ License
 What's new
 ----------
 
+- 2020-09-20 (v 0.7.2) (MICRO release)
+
+  + Fixed bug with 're-registering' Gym environments when reloading modules
+  + Added example implementations of Tabular Q-Learning: `agents/ql_agent.py` and `agents/ql_replay.py`
+  + Added `Agents` section to docs, along with other minor doc updates
+
 - 2020-09-20 (v 0.7.1) (MICRO release)
 
   + Added some scripts for running random benchmarks and describing benchmark scenarios

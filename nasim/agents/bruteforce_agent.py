@@ -1,64 +1,99 @@
+"""An bruteforce agent that repeatedly cycles through all available actions in
+order.
+
+To run 'tiny' benchmark scenario with default settings, run the following from
+the nasim/agents dir:
+
+$ python bruteforce_agent.py tiny
+
+This will run the agent and display progress and final results to stdout.
+
+To see available running arguments:
+
+$ python bruteforce_agent.py --help
+"""
+
 from itertools import product
 
 import nasim
 
-line_break = "-"*60
+LINE_BREAK = "-"*60
 
 
 def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
+    """Run bruteforce agent on nasim environment.
+
+    Parameters
+    ----------
+    env : nasim.NASimEnv
+        the nasim environment to run agent on
+    step_limit : int, optional
+        the maximum number of steps to run agent for (default=1e6)
+    verbose : bool, optional
+        whether to print out progress messages or not (default=True)
+
+    Returns
+    -------
+    int
+        timesteps agent ran for
+    float
+        the total reward recieved by agent
+    bool
+        whether the goal was reached or not
+    """
     if verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("STARTING EPISODE")
-        print(line_break)
-        print(f"t: Reward")
+        print(LINE_BREAK)
+        print("t: Reward")
 
     env.reset()
     total_reward = 0
     done = False
-    t = 0
+    steps = 0
     cycle_complete = False
 
     if env.flat_actions:
-        a = 0
+        act = 0
     else:
-        a_iter = product(*[range(n) for n in env.action_space.nvec])
+        act_iter = product(*[range(n) for n in env.action_space.nvec])
 
-    while not done and t < step_limit:
+    while not done and steps < step_limit:
         if env.flat_actions:
-            a = (a + 1) % env.action_space.n
-            cycle_complete = (t > 0 and a == 0)
+            act = (act + 1) % env.action_space.n
+            cycle_complete = (steps > 0 and act == 0)
         else:
             try:
-                a = next(a_iter)
+                act = next(act_iter)
                 cycle_complete = False
             except StopIteration:
-                a_iter = product(*[range(n) for n in env.action_space.nvec])
-                a = next(a_iter)
+                act_iter = product(*[range(n) for n in env.action_space.nvec])
+                act = next(act_iter)
                 cycle_complete = True
 
-        _, r, done, _ = env.step(a)
-        total_reward += r
+        _, rew, done, _ = env.step(act)
+        total_reward += rew
 
         if cycle_complete and verbose:
-            print(f"{t}: {total_reward}")
-        t += 1
+            print(f"{steps}: {total_reward}")
+        steps += 1
 
     if done and verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("EPISODE FINISHED")
-        print(line_break)
+        print(LINE_BREAK)
         print(f"Goal reached = {env.goal_reached()}")
-        print(f"Total steps = {t}")
+        print(f"Total steps = {steps}")
         print(f"Total reward = {total_reward}")
     elif verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("STEP LIMIT REACHED")
-        print(line_break)
+        print(LINE_BREAK)
 
     if done:
         done = env.goal_reached()
 
-    return t, total_reward, done
+    return steps, total_reward, done
 
 
 if __name__ == "__main__":
@@ -75,13 +110,15 @@ if __name__ == "__main__":
                         help="Use 2D observation space")
     args = parser.parse_args()
 
-    env = nasim.make_benchmark(args.env_name,
-                               args.seed,
-                               not args.partially_obs,
-                               not args.param_actions,
-                               not args.box_obs)
+    nasimenv = nasim.make_benchmark(
+        args.env_name,
+        args.seed,
+        not args.partially_obs,
+        not args.param_actions,
+        not args.box_obs
+    )
     if not args.param_actions:
-        print(env.action_space.n)
+        print(nasimenv.action_space.n)
     else:
-        print(env.action_space.nvec)
-    run_bruteforce_agent(env)
+        print(nasimenv.action_space.nvec)
+    run_bruteforce_agent(nasimenv)

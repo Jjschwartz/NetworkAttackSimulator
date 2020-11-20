@@ -1,17 +1,28 @@
-"""Play and scenario using key board """
+"""An agent that lets the user interact with NASim using the keyboard.
 
+To run 'tiny' benchmark scenario with default settings, run the following from
+the nasim/agents dir:
+
+$ python keyboard_agent.py tiny
+
+This will run the agent and display the game in stdout.
+
+To see available running arguments:
+
+$ python keyboard_agent.py--help
+"""
 import nasim
 from nasim.envs.action import Exploit, PrivilegeEscalation
 
 
-line_break = "-"*60
-line_break2 = "="*60
+LINE_BREAK = "-"*60
+LINE_BREAK2 = "="*60
 
 
 def print_actions(action_space):
     for a in range(action_space.n):
         print(f"{a} {action_space.get_action(a)}")
-    print(line_break)
+    print(LINE_BREAK)
 
 
 def choose_flat_action(env):
@@ -86,7 +97,7 @@ def choose_param_action(env):
 
     # subnet-1, since action_space handles exclusion of internet subnet
     avec = [atype_idx, subnet-1, host, 0, 0]
-    if atype != Exploit and atype != PrivilegeEscalation:
+    if atype not in (Exploit, PrivilegeEscalation):
         action = env.action_space.get_action(avec)
         print("----------------")
         print(f"ACTION SELECTED: {action}")
@@ -119,9 +130,9 @@ def choose_param_action(env):
 
 def choose_action(env):
     input("Press enter to choose next action..")
-    print("\n" + line_break2)
+    print("\n" + LINE_BREAK2)
     print("CHOOSE ACTION")
-    print(line_break2)
+    print(LINE_BREAK2)
     if env.flat_actions:
         return choose_flat_action(env)
     return choose_param_action(env)
@@ -146,9 +157,9 @@ def run_keyboard_agent(env, render_mode="readable"):
     bool
         whether goal reached or not
     """
-    print(line_break2)
+    print(LINE_BREAK2)
     print("STARTING EPISODE")
-    print(line_break2)
+    print(LINE_BREAK2)
 
     o = env.reset()
     env.render(render_mode)
@@ -160,13 +171,13 @@ def run_keyboard_agent(env, render_mode="readable"):
         o, r, done, _ = env.step(a)
         total_reward += r
         total_steps += 1
-        print("\n" + line_break2)
+        print("\n" + LINE_BREAK2)
         print("OBSERVATION RECIEVED")
-        print(line_break2)
+        print(LINE_BREAK2)
         env.render(render_mode)
         print(f"Reward={r}")
         print(f"Done={done}")
-        print(line_break)
+        print(LINE_BREAK)
 
     if done:
         done = env.goal_reached()
@@ -196,9 +207,9 @@ def run_generative_keyboard_agent(env, render_mode="readable"):
     bool
         whether goal reached or not
     """
-    print(line_break2)
+    print(LINE_BREAK2)
     print("STARTING EPISODE")
-    print(line_break2)
+    print(LINE_BREAK2)
 
     o = env.reset()
     s = env.current_state
@@ -210,20 +221,20 @@ def run_generative_keyboard_agent(env, render_mode="readable"):
     done = False
     while not done:
         a = choose_action(env)
-        ns, o, r, done, info = env.generative_step(s, a)
+        ns, o, r, done, _ = env.generative_step(s, a)
         total_reward += r
         total_steps += 1
-        print(line_break2)
+        print(LINE_BREAK2)
         print("NEXT STATE")
-        print(line_break2)
+        print(LINE_BREAK2)
         env.render_state(render_mode, ns)
-        print("\n" + line_break2)
+        print("\n" + LINE_BREAK2)
         print("OBSERVATION RECIEVED")
-        print(line_break2)
+        print(LINE_BREAK2)
         env.render(render_mode, o)
         print(f"Reward={r}")
         print(f"Done={done}")
-        print(line_break)
+        print(LINE_BREAK)
         s = ns
 
     if done:
@@ -259,9 +270,9 @@ if __name__ == "__main__":
     else:
         total_reward, steps, goal = run_keyboard_agent(env)
 
-    print(line_break2)
+    print(LINE_BREAK2)
     print("EPISODE FINISHED")
-    print(line_break)
+    print(LINE_BREAK)
     print(f"Goal reached = {goal}")
     print(f"Total reward = {total_reward}")
     print(f"Steps taken = {steps}")

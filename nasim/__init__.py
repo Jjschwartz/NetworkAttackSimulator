@@ -1,3 +1,4 @@
+import gym
 from gym.envs.registration import register
 
 from nasim.envs import NASimEnv
@@ -124,6 +125,24 @@ def generate(num_hosts,
 
 
 # Register NASimEnv with OpenAI gym
+def _register(id, entry_point, kwargs, nondeterministic, force=True):
+    """Registers NASim Open AI Gym Environment.
+
+    Handles issues with re-registering gym environments.
+    """
+    env_specs = gym.envs.registry.env_specs
+    if id in env_specs.keys():
+        if not force:
+            return
+        del env_specs[id]
+    register(
+        id=id,
+        entry_point=entry_point,
+        kwargs=kwargs,
+        nondeterministic=nondeterministic
+    )
+
+
 for benchmark in AVAIL_BENCHMARKS:
     # v0 - flat_actions, flat_obs
     # v1 - flat_actions, 2D_obs
@@ -135,7 +154,7 @@ for benchmark in AVAIL_BENCHMARKS:
         if not fully_obs:
             name = f"{name}-PO"
 
-        register(
+        _register(
             id=f"{name}-v0",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
@@ -147,7 +166,7 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
-        register(
+        _register(
             id=f"{name}-v1",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
@@ -159,7 +178,7 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
-        register(
+        _register(
             id=f"{name}-v2",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
@@ -171,7 +190,7 @@ for benchmark in AVAIL_BENCHMARKS:
             nondeterministic=True
         )
 
-        register(
+        _register(
             id=f"{name}-v3",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={

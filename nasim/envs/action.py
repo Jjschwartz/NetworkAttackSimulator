@@ -796,7 +796,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
         target = (subnet, host)
 
-        if not (a_class == Exploit or a_class == PrivilegeEscalation):
+        if a_class not in (Exploit, PrivilegeEscalation):
             # can ignore other action parameters
             kwargs = self._get_scan_action_def(a_class)
             return a_class(target=target, **kwargs)
@@ -822,15 +822,16 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     def _get_scan_action_def(self, a_class):
         """Get the constants for scan actions definitions """
         if a_class == ServiceScan:
-            return {"cost": self.scenario.service_scan_cost}
+            cost = self.scenario.service_scan_cost
         elif a_class == OSScan:
-            return {"cost": self.scenario.os_scan_cost}
+            cost = self.scenario.os_scan_cost
         elif a_class == SubnetScan:
-            return {"cost": self.scenario.subnet_scan_cost}
+            cost = self.scenario.subnet_scan_cost
         elif a_class == ProcessScan:
-            return {"cost": self.scenario.process_scan_cost}
+            cost = self.scenario.process_scan_cost
         else:
             raise TypeError(f"Not implemented for Action class {a_class}")
+        return {"cost": cost}
 
     def _get_exploit_def(self, service, os):
         """Check if exploit parameters are valid """

@@ -1,15 +1,29 @@
+"""A random agent that selects a random action at each step
+
+To run 'tiny' benchmark scenario with default settings, run the following from
+the nasim/agents dir:
+
+$ python random_agent.py tiny
+
+This will run the agent and display progress and final results to stdout.
+
+To see available running arguments:
+
+$ python random_agent.py --help
+"""
+
 import numpy as np
 
 import nasim
 
-line_break = "-"*60
+LINE_BREAK = "-"*60
 
 
 def run_random_agent(env, step_limit=1e6, verbose=True):
     if verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("STARTING EPISODE")
-        print(line_break)
+        print(LINE_BREAK)
         print(f"t: Reward")
 
     env.reset()
@@ -27,15 +41,15 @@ def run_random_agent(env, step_limit=1e6, verbose=True):
         t += 1
 
     if done and verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("EPISODE FINISHED")
-        print(line_break)
+        print(LINE_BREAK)
         print(f"Total steps = {t}")
         print(f"Total reward = {total_reward}")
     elif verbose:
-        print(line_break)
+        print(LINE_BREAK)
         print("STEP LIMIT REACHED")
-        print(line_break)
+        print(LINE_BREAK)
 
     if done:
         done = env.goal_reached()
@@ -85,9 +99,9 @@ if __name__ == "__main__":
     run_steps = np.array(run_steps)
     run_rewards = np.array(run_rewards)
 
-    print(line_break)
+    print(LINE_BREAK)
     print("Random Agent Runs Complete")
-    print(line_break)
+    print(LINE_BREAK)
     print(f"Mean steps = {run_steps.mean():.2f} +/- {run_steps.std():.2f}")
     print(f"Mean rewards = {run_rewards.mean():.2f} "
           f"+/- {run_rewards.std():.2f}")

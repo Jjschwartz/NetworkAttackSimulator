@@ -9,7 +9,7 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
-Version 0.7.1
+Version 0.7.2
 *************
 
 - Fixed bug with 're-registering' Gym environments when reloading modules

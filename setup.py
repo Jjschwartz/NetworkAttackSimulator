@@ -41,7 +41,7 @@ setup(
     extras_require=extras,
     python_requires='>=3.7',
     package_data={
-        'nasim': ['nasim/scenarios/benchmark/*.yaml']
+        'nasim': ['scenarios/benchmark/*.yaml']
     },
     project_urls={
         'Documentation': "https://networkattacksimulator.readthedocs.io",

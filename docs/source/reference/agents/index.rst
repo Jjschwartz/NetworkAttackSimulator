@@ -36,3 +36,17 @@ Each agent file defines a main function so can be run in python via the terminal
 
 
 A description and details of how to run each agent can be found at the top of each agent file.
+
+
+Viewing Agent Policies
+----------------------
+
+For the DQN and Tabular Q-Learning agents you can optionally also view the final policies learned by the agents after training has finished:
+
+.. code-block:: bash
+
+    # simply include the --render_eval flag with the DQN and Q-Learning agents
+    python ql_agent.py tiny --render_eval
+
+
+This will show a single episode of the agent, displaying the actions the agent performs along with the observations and rewards the agent recieves.

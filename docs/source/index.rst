@@ -9,6 +9,13 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.7.3
+*************
+
+- Fixed issue with scenario YAML files not being included with PyPi package
+- Added final policy visualisation option to DQN and Q-Learning agents
+
+
 Version 0.7.2
 *************
 

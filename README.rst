@@ -79,6 +79,11 @@ License
 What's new
 ----------
 
+- 2020-09-23 (v 0.7.3) (MICRO release)
+
+  + Fixed issue with scenario YAML files not being included with PyPi package
+  + Added final policy visualisation option to DQN and Q-Learning agents
+
 - 2020-09-20 (v 0.7.2) (MICRO release)
 
   + Fixed bug with 're-registering' Gym environments when reloading modules

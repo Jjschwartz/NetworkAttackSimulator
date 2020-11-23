@@ -110,7 +110,7 @@ class DQNAgent:
                  env,
                  seed=None,
                  lr=0.001,
-                 training_steps=10000,
+                 training_steps=20000,
                  batch_size=32,
                  replay_size=10000,
                  final_epsilon=0.05,
@@ -162,7 +162,7 @@ class DQNAgent:
                        hidden_sizes,
                        self.num_actions).to(self.device)
         if self.verbose:
-            print("\nUsing Neural Network:")
+            print(f"\nUsing Neural Network running on device={self.device}:")
             print(self.dqn)
 
         self.target_dqn = DQN(self.obs_dim,
@@ -304,6 +304,9 @@ class DQNAgent:
 
         line_break = "="*60
         if render:
+            print("\n" + line_break)
+            print(f"Running EVALUATION using epsilon = {eval_epsilon:.4f}")
+            print(line_break)
             env.render(render_mode)
             input("Initial state. Press enter to continue..")
 
@@ -317,11 +320,19 @@ class DQNAgent:
                 print("\n" + line_break)
                 print(f"Step {steps}")
                 print(line_break)
-                print(f"Action Performed={env.action_space.get_action(a)}")
+                print(f"Action Performed = {env.action_space.get_action(a)}")
                 env.render(render_mode)
-                print(f"Reward={r}")
-                print(f"Done={done}")
+                print(f"Reward = {r}")
+                print(f"Done = {done}")
                 input("Press enter to continue..")
+
+                if done:
+                    print("\n" + line_break)
+                    print("EPISODE FINISHED")
+                    print(line_break)
+                    print(f"Goal reached = {env.goal_reached()}")
+                    print(f"Total steps = {steps}")
+                    print(f"Total reward = {episode_return}")
 
         return episode_return, steps, env.goal_reached()
 
@@ -330,6 +341,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("env_name", type=str, help="benchmark scenario name")
+    parser.add_argument("--render_eval", action="store_true",
+                        help="Renders final policy")
     parser.add_argument("-o", "--partially_obs", action="store_true",
                         help="Partially Observable Mode")
     parser.add_argument("--hidden_sizes", type=int, nargs="*",
@@ -337,8 +350,8 @@ if __name__ == "__main__":
                         help="(default=[64. 64])")
     parser.add_argument("--lr", type=float, default=0.001,
                         help="Learning rate (default=0.001)")
-    parser.add_argument("--training_steps", type=int, default=10000,
-                        help="training steps (default=10000)")
+    parser.add_argument("-t", "--training_steps", type=int, default=20000,
+                        help="training steps (default=20000)")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="(default=32)")
     parser.add_argument("--target_update_freq", type=int, default=1000,
@@ -366,3 +379,4 @@ if __name__ == "__main__":
                                flat_obs=True)
     dqn_agent = DQNAgent(env, verbose=args.quite, **vars(args))
     dqn_agent.train()
+    dqn_agent.run_eval_episode(render=args.render_eval)

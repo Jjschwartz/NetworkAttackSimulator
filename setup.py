@@ -18,7 +18,7 @@ extras['all'] = [item for group in extras.values() for item in group]
 
 setup(
     name='nasim',
-    version='0.7.2',
+    version='0.7.3',
     url="https://networkattacksimulator.readthedocs.io",
     description="A simple and fast simulator for remote network pen-testing",
     long_description=open('README.rst').read(),

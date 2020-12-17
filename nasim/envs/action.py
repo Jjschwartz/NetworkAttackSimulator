@@ -243,12 +243,12 @@ class Action:
     def __eq__(self, other):
         if self is other:
             return True
-        elif not isinstance(other, type(self)):
+        if not isinstance(other, type(self)):
             return False
-        elif self.target != other.target:
+        if self.target != other.target:
             return False
-        elif not (math.isclose(self.cost, other.cost)
-                  and math.isclose(self.prob, other.prob)):
+        if not (math.isclose(self.cost, other.cost)
+                and math.isclose(self.prob, other.prob)):
             return False
         return self.req_access == other.req_access
 
@@ -568,6 +568,8 @@ class ActionResult:
     permission_error : bool
         True if action failed due to a permission error (e.g. incorrect access
         level to perform action)
+    newly_discovered : dict
+        host addresses discovered for the first time by action
     """
 
     def __init__(self,
@@ -579,7 +581,8 @@ class ActionResult:
                  access=None,
                  discovered=None,
                  connection_error=False,
-                 permission_error=False):
+                 permission_error=False,
+                 newly_discovered=None):
         """
         Parameters
         ----------
@@ -601,6 +604,8 @@ class ActionResult:
             True if action failed due to connection error (default=None)
         permission_error : bool, optional
             True if action failed due to a permission error (default=None)
+        newly_discovered : dict, optional
+            host addresses discovered for first time by action (default=None)
         """
         self.success = success
         self.value = value
@@ -611,6 +616,10 @@ class ActionResult:
         self.discovered = {} if discovered is None else discovered
         self.connection_error = connection_error
         self.permission_error = permission_error
+        if newly_discovered is not None:
+            self.newly_discovered = newly_discovered
+        else:
+            self.newly_discovered = {}
 
     def info(self):
         """Get results as dict
@@ -629,13 +638,14 @@ class ActionResult:
             access=self.access,
             discovered=self.discovered,
             connection_error=self.connection_error,
-            permission_error=self.permission_error
+            permission_error=self.permission_error,
+            newly_discovered=self.newly_discovered
         )
 
     def __str__(self):
-        output = ["ActionObservation:"],
-        for k, v in self.info().items():
-            output.append(f"  {k}={v}")
+        output = ["ActionObservation:"]
+        for k, val in self.info().items():
+            output.append(f"  {k}={val}")
         return "\n".join(output)
 
 

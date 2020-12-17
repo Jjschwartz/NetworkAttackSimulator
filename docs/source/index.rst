@@ -9,6 +9,14 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+
+Version 0.7.4
+*************
+
+- Fixed issues with incorrect observation of host 'value' and 'discovery_value'. Now, when in partially observable mode, the agent will correctly only observe these values on the step that they are recieved
+- Some other minor code formatting fixes
+
+
 Version 0.7.3
 *************
 

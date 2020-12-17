@@ -104,18 +104,26 @@ class Network:
             return next_state, result
 
         discovered = {}
+        newly_discovered = {}
         discovery_reward = 0
         target_subnet = action.target[0]
         for h_addr in self.address_space:
+            newly_discovered[h_addr] = False
+            discovered[h_addr] = False
             if self.subnets_connected(target_subnet, h_addr[0]):
-                discovered[h_addr] = True
                 host = next_state.get_host(h_addr)
+                discovered[h_addr] = True
                 if not host.discovered:
+                    newly_discovered[h_addr] = True
                     host.discovered = True
                     discovery_reward += host.discovery_value
-            else:
-                discovered[h_addr] = False
-        obs = ActionResult(True, discovery_reward, discovered=discovered)
+
+        obs = ActionResult(
+            True,
+            discovery_reward,
+            discovered=discovered,
+            newly_discovered=newly_discovered
+        )
         return next_state, obs
 
     def _update(self, state, action, action_obs):

@@ -1,5 +1,6 @@
 import numpy as np
 
+from .utils import AccessLevel
 from .host_vector import HostVector
 from .observation import Observation
 
@@ -168,10 +169,18 @@ class State:
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
             obs_kwargs["access"] = True
+            # if action.access == AccessLevel.ROOT:
+            if action_result.value > 0:
+                # Means exploit gained ROOT access for first time
+                # So observe value
+                obs_kwargs["value"] = True
         elif action.is_privilege_escalation():
             obs_kwargs["compromised"] = True
-            obs_kwargs["value"] = True
             obs_kwargs["access"] = True
+            if action_result.value > 0:
+                # Means exploit gained ROOT access for first time
+                # So observe value
+                obs_kwargs["value"] = True
         elif action.is_service_scan():
             obs_kwargs["services"] = True
         elif action.is_os_scan():
@@ -180,12 +189,15 @@ class State:
             obs_kwargs["processes"] = True
             obs_kwargs["access"] = True
         elif action.is_subnet_scan():
-            for host_addr, discovered in action_result.discovered.items():
+            for host_addr in action_result.discovered:
+                discovered = action_result.discovered[host_addr]
                 if not discovered:
                     continue
                 d_idx, d_host = self.get_host_and_idx(host_addr)
-                d_obs = d_host.observe(discovery_value=True,
-                                       **obs_kwargs)
+                newly_discovered = action_result.newly_discovered[host_addr]
+                d_obs = d_host.observe(
+                    discovery_value=newly_discovered, **obs_kwargs
+                )
                 obs.update_from_host(d_idx, d_obs)
             # this is for target host (where scan was performed on)
             obs_kwargs["compromised"] = True

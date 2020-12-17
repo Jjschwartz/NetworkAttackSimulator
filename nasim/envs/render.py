@@ -1,7 +1,8 @@
+"""This module contains functions and classes for rendering NASim """
 import math
 import random
-import networkx as nx
 import tkinter as Tk
+import networkx as nx
 from prettytable import PrettyTable
 
 # import order important here

@@ -329,7 +329,7 @@ class NASimEnv(gym.Env):
         """
         if self._renderer is None:
             self._renderer = Viewer(self.network)
-        self._renderer.render_episode(episode)
+        self._renderer.render_episode(episode, width, height)
 
     def render_network_graph(self, ax=None, show=False):
         """Render a plot of network as a graph with hosts as nodes arranged
@@ -375,10 +375,10 @@ class NASimEnv(gym.Env):
         assert isinstance(self.action_space, FlatActionSpace), \
             "Can only use action mask function when using flat action space"
         mask = np.zeros(self.action_space.n, dtype=np.int64)
-        for a in range(self.action_space.n):
-            action = self.action_space.get_action(a)
+        for a_idx in range(self.action_space.n):
+            action = self.action_space.get_action(a_idx)
             if self.network.host_discovered(action.target):
-                mask[a] = 1
+                mask[a_idx] = 1
         return mask
 
     def get_score_upper_bound(self):

@@ -568,6 +568,9 @@ class ActionResult:
     permission_error : bool
         True if action failed due to a permission error (e.g. incorrect access
         level to perform action)
+    undefined_error : bool
+        True if action failed due to an undefined error (e.g. random exploit
+        failure)
     newly_discovered : dict
         host addresses discovered for the first time by action
     """
@@ -582,6 +585,7 @@ class ActionResult:
                  discovered=None,
                  connection_error=False,
                  permission_error=False,
+                 undefined_error=False,
                  newly_discovered=None):
         """
         Parameters
@@ -591,19 +595,21 @@ class ActionResult:
         value : float, optional
             value gained from action (default=0.0)
         services : dict, optional
-            services identified by action (default=None)
+            services identified by action (default=None={})
         os : dict, optional
-            OS identified by action (default=None)
+            OS identified by action (default=None={})
         processes : dict, optional
-            processes identified by action (default=None)
+            processes identified by action (default=None={})
         access : dict, optional
-            access gained by action (default=None)
+            access gained by action (default=None={})
         discovered : dict, optional
-            host addresses discovered by action (default=None)
+            host addresses discovered by action (default=None={})
         connection_error : bool, optional
-            True if action failed due to connection error (default=None)
+            True if action failed due to connection error (default=False)
         permission_error : bool, optional
-            True if action failed due to a permission error (default=None)
+            True if action failed due to a permission error (default=False)
+        undefined_error : bool, optional
+            True if action failed due to an undefined error (default=False)
         newly_discovered : dict, optional
             host addresses discovered for first time by action (default=None)
         """
@@ -616,6 +622,7 @@ class ActionResult:
         self.discovered = {} if discovered is None else discovered
         self.connection_error = connection_error
         self.permission_error = permission_error
+        self.undefined_error = undefined_error
         if newly_discovered is not None:
             self.newly_discovered = newly_discovered
         else:

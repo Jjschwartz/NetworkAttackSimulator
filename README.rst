@@ -79,6 +79,10 @@ License
 What's new
 ----------
 
+- 2020-12-24 (v 0.7.5) (MICRO release)
+
+  + Added 'undefined error' to observation to fix issue with initial and later observations being indistinguishable.
+
 - 2020-12-17 (v 0.7.4) (MICRO release)
 
   + Fixed issues with incorrect observation of host 'value' and 'discovery_value'. Now, when in partially observable mode, the agent will correctly only observe these values on the step that they are recieved.

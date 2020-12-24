@@ -9,6 +9,7 @@ INTERNET = 0
 
 
 class Network:
+    """A computer network """
 
     def __init__(self, scenario):
         self.hosts = scenario.hosts
@@ -22,6 +23,7 @@ class Network:
         self.sensitive_hosts = scenario.sensitive_hosts
 
     def reset(self, state):
+        """Reset the network state to initial state """
         next_state = state.copy()
         for host_addr in self.address_space:
             host = next_state.get_host(host_addr)
@@ -49,7 +51,7 @@ class Network:
             the result from the action
         """
         tgt_subnet, tgt_id = action.target
-        assert 0 < tgt_subnet and tgt_subnet < len(self.subnets)
+        assert 0 < tgt_subnet < len(self.subnets)
         assert tgt_id <= self.subnets[tgt_subnet]
 
         next_state = state.copy()
@@ -83,7 +85,7 @@ class Network:
             # host already compromised so exploits don't fail due to randomness
             pass
         elif np.random.rand() > action.prob:
-            return next_state, ActionResult(False, 0.0)
+            return next_state, ActionResult(False, 0.0, undefined_error=True)
 
         if action.is_subnet_scan():
             return self._perform_subnet_scan(next_state, action)

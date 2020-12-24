@@ -34,6 +34,9 @@ class Observation:
         indicates whether there was a connection error or not
     3. Permission error - True (1) or False (0)
         indicates whether there was a permission error or not
+    4. Undefined error - True (1) or False (0)
+        indicates whether there was an undefined error or not (e.g. failure due
+        to stochastic nature of exploits)
 
     Since the number of features in the auxiliary row is less than the number
     of features in each host row, the remainder of the row is all zeros.
@@ -41,8 +44,9 @@ class Observation:
 
     # obs vector positions for auxiliary observations
     _success_idx = 0
-    _conn_error_idx = _success_idx+1
-    _perm_error_idx = _conn_error_idx+1
+    _conn_error_idx = _success_idx + 1
+    _perm_error_idx = _conn_error_idx + 1
+    _undef_error_idx = _perm_error_idx + 1
 
     def __init__(self, state_shape):
         """
@@ -92,6 +96,8 @@ class Observation:
         self.tensor[self.aux_row][self._conn_error_idx] = con_err
         perm_err = int(action_result.permission_error)
         self.tensor[self.aux_row][self._perm_error_idx] = perm_err
+        undef_err = int(action_result.undefined_error)
+        self.tensor[self.aux_row][self._undef_error_idx] = undef_err
 
     def from_state_and_action(self, state, action_result):
         self.from_state(state)
@@ -132,6 +138,17 @@ class Observation:
             True if there was a permission error, otherwise False
         """
         return bool(self.tensor[self.aux_row][self._perm_error_idx])
+
+    @property
+    def undefined_error(self):
+        """Whether there was an undefined error or not
+
+        Returns
+        -------
+        bool
+            True if there was a undefined error, otherwise False
+        """
+        return bool(self.tensor[self.aux_row][self._undef_error_idx])
 
     def shape_flat(self):
         """Get the flat (1D) shape of the Observation.
@@ -174,6 +191,15 @@ class Observation:
         return self.tensor
 
     def get_readable(self):
+        """Get a human readable version of the observation
+
+        Returns
+        -------
+        list[dict]
+            list of host observations as human-readable dictionary
+        dict[str, bool]
+            auxiliary observation dictionary
+        """
         host_obs = []
         for host_idx in range(self.obs_shape[0]-1):
             host_obs_vec = self.tensor[host_idx]
@@ -183,7 +209,8 @@ class Observation:
         aux_obs = {
             "Success": self.success,
             "Connection Error": self.connection_error,
-            "Permission Error": self.permission_error
+            "Permission Error": self.permission_error,
+            "Undefined Error": self.undefined_error
         }
         return host_obs, aux_obs
 

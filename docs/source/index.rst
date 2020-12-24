@@ -9,6 +9,11 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.7.5
+*************
+
+- Added 'undefined error' to observation to fix issue with initial and later observations being indistinguishable.
+
 
 Version 0.7.4
 *************

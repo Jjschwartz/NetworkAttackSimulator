@@ -81,7 +81,7 @@ What's new
 
 - 2021-3-15 (v 0.8.0) (MINOR release)
 
-  + Added option of specifying a 'value' for each host when defining a custom network using the .YAML format.
+  + Added option of specifying a 'value' for each host when defining a custom network using the .YAML format (thanks @Joe-zsc for the suggestion).
   + Added the 'small-honeypot' scenario to included scenarios.
 
 - 2020-12-24 (v 0.7.5) (MICRO release)

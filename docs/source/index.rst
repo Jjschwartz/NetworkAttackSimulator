@@ -12,7 +12,7 @@ What's new
 Version 0.8.0
 *************
 
-- Added option of specifying a 'value' for each host when defining a custom network using the .YAML format.
+- Added option of specifying a 'value' for each host when defining a custom network using the .YAML format (thanks @Joe-zsc for the suggestion).
 - Added the 'small-honeypot' scenario to included scenarios.
 
 

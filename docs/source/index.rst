@@ -9,6 +9,13 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.8.0
+*************
+
+- Added option of specifying a 'value' for each host when defining a custom network using the .YAML format.
+- Added the 'small-honeypot' scenario to included scenarios.
+
+
 Version 0.7.5
 *************
 

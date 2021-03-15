@@ -1,6 +1,8 @@
 """This module contains functionality for loading network scenarios from yaml
 files.
 """
+import math
+
 import nasim.scenarios.utils as u
 from nasim.scenarios import Scenario
 from nasim.scenarios.host import Host
@@ -443,21 +445,36 @@ class ScenarioLoader:
         assert host_os in self.os, \
             f"{err_prefix} invalid os in configuration: {host_os}"
 
-        err_prefix += f" {u.HOST_FIREWALL}"
+        fw_err_prefix = f"{err_prefix} {u.HOST_FIREWALL}"
         if u.HOST_FIREWALL in cfg:
             firewall = cfg[u.HOST_FIREWALL]
             assert isinstance(firewall, dict), \
-                (f"{err_prefix} must be a dictionary, with host addresses as"
-                 f" keys and a list of denied services as values. {firewall} "
-                 "is invalid.")
+                (f"{fw_err_prefix} must be a dictionary, with host "
+                 "addresses as keys and a list of denied services as values. "
+                 f"{firewall} is invalid.")
             for addr, srv_list in firewall.items():
                 addr = self._validate_host_address(addr, err_prefix)
                 assert self._is_valid_firewall_setting(srv_list), \
-                    (f"{err_prefix} setting must be a list, contain only "
+                    (f"{fw_err_prefix} setting must be a list, contain only "
                      f"valid services and contain no duplicates: {srv_list}"
                      " is not valid")
         else:
             cfg[u.HOST_FIREWALL] = dict()
+
+        v_err_prefix = f"{err_prefix} {u.HOST_VALUE}"
+        if u.HOST_VALUE in cfg:
+            host_value = cfg[u.HOST_VALUE]
+            assert isinstance(host_value, (int, float)), \
+                (f"{v_err_prefix} must be an integer or float value. "
+                 f"{host_value} is invalid")
+
+            if addr in self.sensitive_hosts:
+                sh_value = self.sensitive_hosts[addr]
+                assert math.isclose(host_value, sh_value), \
+                    (f"{v_err_prefix} for a sensitive host must either match "
+                     f"the value specified in the {u.SENSITIVE_HOSTS} section "
+                     f"or be excluded the host config. The value {host_value} "
+                     f"is invalid as it does not match value {sh_value}.")
 
     def _validate_host_address(self, addr, err_prefix=""):
         try:
@@ -529,7 +546,7 @@ class ScenarioLoader:
         for address, h_cfg in self.host_configs.items():
             formatted_address = eval(address)
             os_cfg, srv_cfg, proc_cfg = self._construct_host_config(h_cfg)
-            value = self._get_host_value(formatted_address)
+            value = self._get_host_value(formatted_address, h_cfg)
             hosts[formatted_address] = Host(
                 address=formatted_address,
                 os=os_cfg,
@@ -552,8 +569,10 @@ class ScenarioLoader:
             processes_cfg[process] = process in host_cfg[u.HOST_PROCESSES]
         return os_cfg, services_cfg, processes_cfg
 
-    def _get_host_value(self, address):
-        return float(self.sensitive_hosts.get(address, 0.0))
+    def _get_host_value(self, address, host_cfg):
+        if address in self.sensitive_hosts:
+            return float(self.sensitive_hosts[address])
+        return float(host_cfg.get(u.HOST_VALUE, u.DEFAULT_HOST_VALUE))
 
     def _parse_step_limit(self):
         if u.STEP_LIMIT not in self.yaml_dict:

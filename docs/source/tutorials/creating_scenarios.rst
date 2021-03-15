@@ -93,7 +93,13 @@ There are a few things to note when defining a host:
 
 **Host firewalls** are defined as a mapping from host address to the list of services to deny from that host. Host addresses must be a valid address of a host in the network and any services must also match services defined in the services section. Finally, if a host address is not part of the firewall then it is assumed all traffic is allowed from that host, at the host level (it may still be blocked by subnet firewall).
 
-Here is the example host configurations section for the ``tiny`` scenario, where a host firewall is defined only for host ``(1, 0)``:
+**Host Value** is the optional value the agent will recieve when compromising the host. Unlike for the *sensitive_hosts* section this value can be negative as well as zero and positive. This makes it possible to set additional host specific rewards or penalties, for example setting a negative reward for a 'honeypot' host on the network. A couple of things to note:
+
+  1. Host value is optional and will default to 0.
+  2. For any *sensitive hosts* the value must either not be specified or it must match the value specified in the *sensitive_hosts* section of the file.
+  3. Same as for *sensitive hosts*,  agent will only recieve the value as a reward when they compromise the host.
+
+Here is the example host configurations section for the ``tiny`` scenario, where a host firewall and is defined only for host ``(1, 0)`` and the host ``(1, 0)`` has a value of ``0`` (noting we could leave value unspecified in this case for the same result, we include it here as an example):
 
 .. code-block:: yaml
 
@@ -105,6 +111,7 @@ Here is the example host configurations section for the ``tiny`` scenario, where
        # which services to deny between individual hosts
        firewall:
          (3, 0): [ssh]
+       value: 0
      (2, 0):
        os: linux
        services: [ssh]

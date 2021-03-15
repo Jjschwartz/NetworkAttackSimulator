@@ -9,8 +9,8 @@
 # 1 privilege escalation
 #
 # Optimal path:
-# (e_ssh, (1, 0)) -> subnet_scan -> (e_ssh, (3, 0)) -> (pe_tomcat, (3, 0)) -> (e_ssh, (2, 0))
-#     -> (pe_tomcat, (2, 0))
+# (e_ssh, (1, 0)) -> subnet_scan -> (e_ssh, (3, 0)) -> (pe_tomcat, (3, 0))
+#     -> (e_ssh, (2, 0)) -> (pe_tomcat, (2, 0))
 # Score = 200 - (6*1) = 195
 #
 subnets: [1, 1, 1]

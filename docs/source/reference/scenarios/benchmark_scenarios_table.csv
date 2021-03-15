@@ -1,18 +1,19 @@
 Name,Type,Subnets,Hosts,OS,Services,Processes,Exploits,PrivEscs,Actions,Observation Dims,States,Step Limit
-tiny,static,4,3,1,1,1,1,1,18,(4, 14),576,1000
-tiny-hard,static,4,3,2,3,2,3,2,27,(4, 18),9216,1000
-tiny-small,static,5,5,2,3,2,3,2,45,(6, 20),15360,1000
-small,static,5,8,2,3,2,3,2,72,(9, 23),24576,1000
-small-linear,static,7,8,2,3,2,3,2,72,(9, 22),24576,1000
-medium,static,6,16,2,5,3,5,3,192,(17, 27),393216,2000
-medium-single-site,static,2,16,2,5,3,5,3,192,(17, 34),393216,2000
-medium-multi-site,static,7,16,2,5,3,5,3,192,(17, 29),393216,2000
-tiny-gen,generated,4,3,1,1,1,1,1,18,(4, 14),576,1000
-tiny-gen-rangoal,generated,4,3,1,1,1,1,1,18,(4, 14),576,1000
-small-gen,generated,5,8,2,3,2,3,2,72,(9, 23),24576,1000
-small-gen-rangoal,generated,5,8,2,3,2,3,2,72,(9, 23),24576,1000
-medium-gen,generated,6,16,2,5,2,5,2,176,(17, 26),196608,2000
-large-gen,generated,8,23,3,7,3,7,3,322,(24, 32),4521984,5000
-huge-gen,generated,11,38,4,10,4,10,4,684,(39, 40),2.39E+08,10000
-pocp-1-gen,generated,10,35,2,50,2,60,2,2310,(36, 75),1.51E+19,30000
-pocp-2-gen,generated,21,95,3,10,3,30,3,3515,(96, 48),1.49E+08,30000
+tiny,static,4,3,1,1,1,1,1,18,4X14,576,1000
+tiny-hard,static,4,3,2,3,2,3,2,27,4X18,9216,1000
+tiny-small,static,5,5,2,3,2,3,2,45,6X20,15360,1000
+small,static,5,8,2,3,2,3,2,72,9X23,24576,1000
+small-honeypot,static,5,8,2,3,2,3,2,72,9X23,24576,1000
+small-linear,static,7,8,2,3,2,3,2,72,9X22,24576,1000
+medium,static,6,16,2,5,3,5,3,192,17X27,393216,2000
+medium-single-site,static,2,16,2,5,3,5,3,192,17x34,393216,2000
+medium-multi-site,static,7,16,2,5,3,5,3,192,17X29,393216,2000
+tiny-gen,generated,4,3,1,1,1,1,1,18,4X14,576,1000
+tiny-gen-rangoal,generated,4,3,1,1,1,1,1,18,4X14,576,1000
+small-gen,generated,5,8,2,3,2,3,2,72,9X23,24576,1000
+small-gen-rangoal,generated,5,8,2,3,2,3,2,72,9X23,24576,1000
+medium-gen,generated,6,16,2,5,2,5,2,176,17X26,196608,2000
+large-gen,generated,8,23,3,7,3,7,3,322,24X32,4521984,5000
+huge-gen,generated,11,38,4,10,4,10,4,684,39X40,2.39E+08,10000
+pocp-1-gen,generated,10,35,2,50,2,60,2,2310,36X75,1.51E+19,30000
+pocp-2-gen,generated,21,95,3,10,3,30,3,3515,96X48,1.49E+08,30000

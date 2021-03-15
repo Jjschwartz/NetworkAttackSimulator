@@ -1,4 +1,5 @@
-# A small standard (one public network) network configuration
+# A small standard (one public network) network configuration containing a
+# honeypot host (3, 2).
 #
 # 4 subnets
 # 8 hosts
@@ -88,8 +89,10 @@ host_configurations:
     processes: [daclsvc]
   (3, 2):
     os: windows
-    services: [ftp]
+    services: [ftp, http]
     processes: [daclsvc]
+    # This host is the honeypot so has large negative value
+    value: -100
   (3, 3):
     os: windows
     services: [ftp]

@@ -13,6 +13,7 @@ NUM_ACCESS_LEVELS = 2
 NO_ACCESS = 0
 USER_ACCESS = 1
 ROOT_ACCESS = 2
+DEFAULT_HOST_VALUE = 0
 
 # scenario property keys
 SUBNETS = "subnets"
@@ -52,6 +53,7 @@ HOST_SERVICES = "services"
 HOST_PROCESSES = "processes"
 HOST_OS = "os"
 HOST_FIREWALL = "firewall"
+HOST_VALUE = "value"
 
 
 def load_yaml(file_path):

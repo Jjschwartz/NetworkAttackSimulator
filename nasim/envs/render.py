@@ -420,7 +420,7 @@ class EpisodeViewer:
                 f"t={self.timestep}\nGoal reached\ntotal reward={reward}"
             )
         else:
-            title = "t={self.timestep}\n{action}\nreward={reward}"
+            title = f"t={self.timestep}\n{action}\nreward={reward}"
         ax_title = self.axes.set_title(title, fontsize=16, pad=10)
         ax_title.set_y(1.05)
 

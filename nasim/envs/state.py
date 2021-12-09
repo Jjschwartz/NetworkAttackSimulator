@@ -169,18 +169,10 @@ class State:
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
             obs_kwargs["access"] = True
-            # if action.access == AccessLevel.ROOT:
-            if action_result.value > 0:
-                # Means exploit gained ROOT access for first time
-                # So observe value
-                obs_kwargs["value"] = True
+            obs_kwargs["value"] = True
         elif action.is_privilege_escalation():
             obs_kwargs["compromised"] = True
             obs_kwargs["access"] = True
-            if action_result.value > 0:
-                # Means exploit gained ROOT access for first time
-                # So observe value
-                obs_kwargs["value"] = True
         elif action.is_service_scan():
             obs_kwargs["services"] = True
         elif action.is_os_scan():

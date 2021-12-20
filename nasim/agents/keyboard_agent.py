@@ -260,19 +260,53 @@ if __name__ == "__main__":
                               " for testing."))
     args = parser.parse_args()
 
-    env = nasim.make_benchmark(args.env_name,
-                               args.seed,
-                               fully_obs=not args.partially_obs,
-                               flat_actions=not args.param_actions,
-                               flat_obs=True)
-    if args.use_generative:
-        total_reward, steps, goal = run_generative_keyboard_agent(env)
-    else:
-        total_reward, steps, goal = run_keyboard_agent(env)
+    # env = nasim.make_benchmark(args.env_name,
+    #                            args.seed,
+    #                            fully_obs=not args.partially_obs,
+    #                            flat_actions=not args.param_actions,
+    #                            flat_obs=True)
+    # if args.use_generative:
+    #     total_reward, steps, goal = run_generative_keyboard_agent(env)
+    # else:
+    #     total_reward, steps, goal = run_keyboard_agent(env)
 
-    print(LINE_BREAK2)
-    print("EPISODE FINISHED")
-    print(LINE_BREAK)
-    print(f"Goal reached = {goal}")
-    print(f"Total reward = {total_reward}")
-    print(f"Steps taken = {steps}")
+    # print(LINE_BREAK2)
+    # print("EPISODE FINISHED")
+    # print(LINE_BREAK)
+    # print(f"Goal reached = {goal}")
+    # print(f"Total reward = {total_reward}")
+    # print(f"Steps taken = {steps}")
+
+    env_names = ['tiny-gen', 'small-gen']
+    env_names = ['small-gen']
+    count = 0
+
+    while True:
+        env_kwargs = nasim.scenarios.benchmark.generated.AVAIL_GEN_BENCHMARKS[
+            env_names[count]
+        ]
+        env_kwargs = {**env_kwargs}
+        # env_kwargs["address_space_bounds"] = (5, 5)
+
+        print(env_kwargs)
+
+        scenario = nasim.scenarios.generate_scenario(**env_kwargs)
+
+        env = nasim.NASimEnv(scenario,
+                             fully_obs=not args.partially_obs,
+                             flat_actions=not args.param_actions,
+                             flat_obs=True)
+        print(env.observation_space)
+        print(env.current_state.tensor.shape)
+        if args.use_generative:
+            total_reward, steps, goal = run_generative_keyboard_agent(env)
+        else:
+            total_reward, steps, goal = run_keyboard_agent(env)
+
+        print(LINE_BREAK2)
+        print("EPISODE FINISHED")
+        print(LINE_BREAK)
+        print(f"Goal reached = {goal}")
+        print(f"Total reward = {total_reward}")
+        print(f"Steps taken = {steps}")
+        count = (count + 1) % len(env_names)

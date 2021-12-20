@@ -33,6 +33,7 @@ FIREWALL = "firewall"
 HOSTS = "host"
 STEP_LIMIT = "step_limit"
 ACCESS_LEVELS = "access_levels"
+ADDRESS_SPACE_BOUNDS = "address_space_bounds"
 
 # scenario exploit keys
 EXPLOIT_SERVICE = "service"

@@ -1,6 +1,5 @@
 import numpy as np
 
-from .utils import AccessLevel
 from .host_vector import HostVector
 from .observation import Observation
 

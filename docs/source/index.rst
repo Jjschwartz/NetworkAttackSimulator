@@ -9,6 +9,14 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.9.0
+*************
+
+- The value of a host is now observed when any level of access is gained on a host. This makes it so that agents can learn to decide whether to invest time in gaining root access on a host or not, depending on the host's value (thanks @jaromiru for the proposal).
+- Initial observation of reachable hosts now contains the host's address (thanks @jaromiru).
+- Added some support for custom address space bounds in when using scenario generator (thanks @jaromiru for the suggestion).
+
+
 Version 0.8.0
 *************
 

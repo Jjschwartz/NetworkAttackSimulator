@@ -73,8 +73,8 @@ class Observation:
             value_bounds[1],
             discovery_bounds[1],
             AccessLevel.ROOT,
-            len(scenario.subnets),
-            max(scenario.subnets)
+            scenario.address_space_bounds[0],
+            scenario.address_space_bounds[1]
         )
         return (obs_low, obs_high)
 

@@ -79,6 +79,12 @@ License
 What's new
 ----------
 
+- 2021-12-20 (v 0.9.0) (MINOR release)
+
+  + The value of a host is now observed when any level of access is gained on a host. This makes it so that agents can learn to decide whether to invest time in gaining root access on a host or not, depending on the host's value (thanks @jaromiru for the proposal).
+  + Initial observation of reachable hosts now contains the host's address (thanks @jaromiru).
+  + Added some support for custom address space bounds in when using scenario generator (thanks @jaromiru for the suggestion).
+
 - 2021-3-15 (v 0.8.0) (MINOR release)
 
   + Added option of specifying a 'value' for each host when defining a custom network using the .YAML format (thanks @Joe-zsc for the suggestion).

@@ -28,7 +28,8 @@ DEFAULTS = dict(
     random_goal=False,
     base_host_value=1,
     host_discovery_value=1,
-    step_limit=1000
+    step_limit=1000,
+    address_space_bounds=None
 )
 
 # Generated Scenario definitions

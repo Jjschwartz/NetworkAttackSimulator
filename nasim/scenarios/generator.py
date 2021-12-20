@@ -91,6 +91,7 @@ class ScenarioGenerator:
                  seed=None,
                  name=None,
                  step_limit=None,
+                 address_space_bounds=None,
                  **kwargs):
         """Generate the network configuration based on standard formula.
 
@@ -163,6 +164,10 @@ class ScenarioGenerator:
         step_limit : int, optional
             max number of steps permitted in a single episode, if None there is
             no limit (default=None)
+        address_space_bounds : (int, int), optional
+            bounds for the (subnet#, host#) address space. If None bounds will
+            be determined by the number of subnets in the scenario and the max
+            number of hosts in any subnet.
 
         Returns
         -------
@@ -190,6 +195,7 @@ class ScenarioGenerator:
 
         self._generate_subnets(num_hosts)
         self._generate_topology()
+        self._generate_address_space_bounds(address_space_bounds)
         self._generate_os(num_os)
         self._generate_services(num_services)
         self._generate_processes(num_processes)
@@ -220,6 +226,7 @@ class ScenarioGenerator:
     def _construct_scenario(self):
         scenario_dict = dict()
         scenario_dict[u.SUBNETS] = self.subnets
+        scenario_dict[u.ADDRESS_SPACE_BOUNDS] = self.address_space_bounds
         scenario_dict[u.TOPOLOGY] = self.topology
         scenario_dict[u.SERVICES] = self.services
         scenario_dict[u.PROCESSES] = self.processes
@@ -291,6 +298,29 @@ class ScenarioGenerator:
             if child_right < num_subnets:
                 topology[row][child_right] = 1
         self.topology = topology
+
+    def _generate_address_space_bounds(self, address_space_bounds):
+        if address_space_bounds is None:
+            address_space_bounds = (len(self.subnets), max(self.subnets))
+
+        err_msg = (
+            "address_space_bounds must be None or a tuple/list of length 2"
+            f"containing positive ints. '{address_space_bounds}' is invalid"
+        )
+        assert isinstance(address_space_bounds, (tuple, list)), err_msg
+        address_space_bounds = tuple(address_space_bounds)
+
+        assert len(address_space_bounds) == 2, err_msg
+        for val in address_space_bounds:
+            assert isinstance(val, int) and 0 < val, err_msg
+        assert address_space_bounds[0] >= len(self.subnets), \
+            ("Number of subnets in address bound must be >= number of subnets"
+             f" in the scenario. '{address_space_bounds[0]}' is invalid")
+        assert address_space_bounds[1] >= max(self.subnets), \
+            ("Number of hosts in address bound must be >= number of hosts "
+             " in the largest subnet in the scenario. "
+             f"'{address_space_bounds[1]}' is invalid")
+        self.address_space_bounds = address_space_bounds
 
     def _generate_os(self, num_os):
         self.os = [f"os_{i}" for i in range(num_os)]

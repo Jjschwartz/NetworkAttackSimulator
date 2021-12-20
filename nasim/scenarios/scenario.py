@@ -173,7 +173,9 @@ class Scenario:
 
     @property
     def address_space_bounds(self):
-        return len(self.subnets), max(self.subnets)
+        return self.scenario_dict.get(
+            u.ADDRESS_SPACE_BOUNDS, (len(self.subnets), max(self.subnets))
+        )
 
     @property
     def host_value_bounds(self):

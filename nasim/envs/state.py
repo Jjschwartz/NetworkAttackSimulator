@@ -114,7 +114,8 @@ class State:
         for host_addr, host in self.hosts:
             if not host.reachable:
                 continue
-            host_obs = host.observe(reachable=True,
+            host_obs = host.observe(address=True,
+                                    reachable=True,
                                     discovered=True)
             host_idx = self.get_host_idx(host_addr)
             obs.update_from_host(host_idx, host_obs)

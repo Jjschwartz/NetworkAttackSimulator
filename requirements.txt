@@ -22,7 +22,7 @@ MarkupSafe==1.1.1
 matplotlib==3.3.0
 -e git+https://github.com/Jjschwartz/NetworkAttackSimulator.git@b9788cd482b91967e36690445f059e8d9fb8d997#egg=nasim
 networkx==2.4
-numpy==1.19.1
+numpy==1.21.0
 packaging==20.4
 Pillow==9.0.0
 pkginfo==1.5.0.1

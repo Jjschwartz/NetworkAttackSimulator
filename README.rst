@@ -79,6 +79,10 @@ License
 What's new
 ----------
 
+- 2022-05-19 (v 0.9.1) (MICRO release)
+
+  + Fixed a few bugs and added some tests (thanks @simonsays1980 for the bug reports)
+
 - 2021-12-20 (v 0.9.0) (MINOR release)
 
   + The value of a host is now observed when any level of access is gained on a host. This makes it so that agents can learn to decide whether to invest time in gaining root access on a host or not, depending on the host's value (thanks @jaromiru for the proposal).

@@ -43,6 +43,7 @@ If pushing a new version (MAJOR, MINOR, or MICRO), do the following:
 
    # build distributions
    python setup.py sdist bdist_wheel
+
    # upload latest distribution builds to pypi
    # this will ask for PyPi username and password
    python -m twine upload dist/* --skip-existing

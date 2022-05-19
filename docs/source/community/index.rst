@@ -10,3 +10,4 @@ Community & Development
     license
     contact
     acknowledgements
+    distributing

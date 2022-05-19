@@ -9,6 +9,12 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+Version 0.9.1
+*************
+
+- Fixed a few bugs and added some tests (thanks @simonsays1980 for the bug reports)
+
+
 Version 0.9.0
 *************
 

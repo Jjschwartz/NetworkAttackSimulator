@@ -258,9 +258,9 @@ class NASimEnv(gym.Env):
         if mode == "readable":
             self._renderer.render_readable(obs)
         else:
-            print(
+            raise NotImplementedError(
                 "Please choose correct render mode from :"
-                f"{self.rendering.modes}"
+                f"{self.metadata['rendering.modes']}"
             )
 
     def render_state(self, mode="readable", state=None):
@@ -295,8 +295,10 @@ class NASimEnv(gym.Env):
         if mode == "readable":
             self._renderer.render_readable_state(state)
         else:
-            print("Please choose correct render mode from :"
-                  f"{self.rendering.modes}")
+            raise NotImplementedError(
+                "Please choose correct render mode from : "
+                f"{self.metadata['rendering.modes']}"
+            )
 
     def render_action(self, action):
         """Renders human readable version of action.
@@ -306,11 +308,13 @@ class NASimEnv(gym.Env):
 
         Parameters
         ----------
-        action : int or Action
-            the action to render
+        action : Action or int or list or NumpyArray
+            Action to render. If not Action object, then if using
+            flat actions this should be an int and if using non-flat actions
+            this should be an indexable array.
         """
-        if isinstance(action, int):
-            action = self.action_space[action]
+        if not isinstance(action, Action):
+            action = self.action_space.get_action(action)
         print(action)
 
     def render_episode(self, episode, width=7, height=7):

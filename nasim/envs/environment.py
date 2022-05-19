@@ -260,7 +260,7 @@ class NASimEnv(gym.Env):
         else:
             print(
                 "Please choose correct render mode from :"
-                f"{self.rendering_modes}"
+                f"{self.rendering.modes}"
             )
 
     def render_state(self, mode="readable", state=None):
@@ -296,7 +296,7 @@ class NASimEnv(gym.Env):
             self._renderer.render_readable_state(state)
         else:
             print("Please choose correct render mode from :"
-                  f"{self.rendering_modes}")
+                  f"{self.rendering.modes}")
 
     def render_action(self, action):
         """Renders human readable version of action.

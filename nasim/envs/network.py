@@ -221,7 +221,7 @@ class Network:
 
     def get_total_discovery_value(self):
         total = 0
-        for host in self.hosts:
+        for host in self.hosts.values():
             total += host.discovery_value
         return total
 

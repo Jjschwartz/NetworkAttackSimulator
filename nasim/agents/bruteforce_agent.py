@@ -50,6 +50,7 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
     env.reset()
     total_reward = 0
     done = False
+    env_step_limit_reached = False
     steps = 0
     cycle_complete = False
 
@@ -58,7 +59,7 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
     else:
         act_iter = product(*[range(n) for n in env.action_space.nvec])
 
-    while not done and steps < step_limit:
+    while not done and not env_step_limit_reached and steps < step_limit:
         if env.flat_actions:
             act = (act + 1) % env.action_space.n
             cycle_complete = (steps > 0 and act == 0)
@@ -71,7 +72,7 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
                 act = next(act_iter)
                 cycle_complete = True
 
-        _, rew, done, _ = env.step(act)
+        _, rew, done, env_step_limit_reached, _ = env.step(act)
         total_reward += rew
 
         if cycle_complete and verbose:

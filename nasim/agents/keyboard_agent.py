@@ -166,9 +166,10 @@ def run_keyboard_agent(env, render_mode="readable"):
     total_reward = 0
     total_steps = 0
     done = False
-    while not done:
+    step_limit_reached = False
+    while not done and not step_limit_reached:
         a = choose_action(env)
-        o, r, done, _ = env.step(a)
+        o, r, done, step_limit_reached, _ = env.step(a)
         total_reward += r
         total_steps += 1
         print("\n" + LINE_BREAK2)
@@ -177,10 +178,8 @@ def run_keyboard_agent(env, render_mode="readable"):
         env.render(render_mode)
         print(f"Reward={r}")
         print(f"Done={done}")
+        print(f"Step limit reached={step_limit_reached}")
         print(LINE_BREAK)
-
-    if done:
-        done = env.goal_reached()
 
     return total_reward, total_steps, done
 

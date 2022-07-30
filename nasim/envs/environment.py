@@ -101,7 +101,7 @@ class NASimEnv(gym.Env):
 
         self.steps = 0
 
-    def reset(self):
+    def reset(self, seed=None, return_info=False, options=None):
         """Reset the state of the environment and returns the initial state.
 
         Implements gym.Env.reset().
@@ -111,6 +111,7 @@ class NASimEnv(gym.Env):
         numpy.Array
             the initial observation of the environment
         """
+        super().reset(seed=seed)
         self.steps = 0
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
@@ -118,8 +119,11 @@ class NASimEnv(gym.Env):
         )
 
         if self.flat_obs:
-            return self.last_obs.numpy_flat()
-        return self.last_obs.numpy()
+            obs = self.last_obs.numpy_flat()
+        else:
+            obs = self.last_obs.numpy()
+
+        return (obs, {}) if return_info else obs
 
     def step(self, action):
         """Run one step of the environment using action.
@@ -140,7 +144,10 @@ class NASimEnv(gym.Env):
         float
             reward from performing action
         bool
-            whether the episode has ended or not
+            whether the episode reached a terminal state or not (i.e. all
+            target machines have been successfully compromised)
+        bool
+            whether the episode has reached the step limit (if one exists)
         dict
             auxiliary information regarding step
             (see :func:`nasim.env.action.ActionResult.info`)
@@ -159,10 +166,12 @@ class NASimEnv(gym.Env):
 
         self.steps += 1
 
-        if not done and self.scenario.step_limit is not None:
-            done = self.steps >= self.scenario.step_limit
+        step_limit_reached = (
+            self.scenario.step_limit is not None
+            and self.steps >= self.scenario.step_limit
+        )
 
-        return obs, reward, done, info
+        return obs, reward, done, step_limit_reached, info
 
     def generative_step(self, state, action):
         """Run one step of the environment using action in given state.
@@ -185,7 +194,7 @@ class NASimEnv(gym.Env):
         float
             reward from performing action
         bool
-            whether the episode has ended or not
+            whether a terminal state has been reached or not
         dict
             auxiliary information regarding step
             (see :func:`nasim.env.action.ActionResult.info`)

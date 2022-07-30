@@ -29,5 +29,5 @@ def test_bruteforce(scenario, po, obs, actions,v):
     """
     name = ''.join([g.capitalize() for g in scenario.split("-")])
     name = f"nasim:{name}{po}{obs}{actions}-{v}"
-    env = gym.make(name)
+    env = gym.make(name, new_step_api=True)
     run_bruteforce_agent(env, verbose=False)

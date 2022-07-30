@@ -48,13 +48,13 @@ To reset the environment and get the initial observation, use the ``reset()`` fu
 Performing a single step
 ------------------------
 
-A step in the environment can be taken using the ``step(action)`` function. Here ``action`` can take a few different forms depending on if using ``flat_actions=True`` or ``flat_actions=False``, for our example we can simply pass an integer with 0 <= action < N, which specifies the index of the action in the action space. The ``step`` function then returns a ``(Observation, float, bool, dict)`` tuple corresponding to observation, reward, done, auxiliary info, respectively::
+A step in the environment can be taken using the ``step(action)`` function. Here ``action`` can take a few different forms depending on if using ``flat_actions=True`` or ``flat_actions=False``, for our example we can simply pass an integer with 0 <= action < N, which specifies the index of the action in the action space. The ``step`` function then returns a ``(Observation, float, bool, bool, dict)`` tuple corresponding to observation, reward, done, step limit reached, auxiliary info, respectively::
 
   action = # integer in range [0, env.action_space.n]
-  o, r, done, info = env.step(action)
+  o, r, done, step_limit_reached, info = env.step(action)
 
 
-if ``done=True`` then the goal has been reached, and the episode is over. It is then recommended to stop or reset the environment, otherwise theres no gaurantee of what will happen.
+if ``done=True`` then the goal has been reached, and the episode is over. Alternatively, if the current scenario has a step limit and ``step_limit_reached=True`` then, well, the step limit has been reached. Following both cases, it is then recommended to stop or reset the environment, otherwise theres no gaurantee of what will happen (especially the first case).
 
 
 An example agent
@@ -71,9 +71,10 @@ Some example agents are provided in the ``nasim/agents`` directory. Here is a qu
   o = env.reset()
   total_reward = 0
   done = False
-  while not done:
+  step_limit_reached = False
+  while not done and not step_limit_reached:
       a = agent.choose_action(o)
-      o, r, done, _ = env.step(a)
+      o, r, done, step_limit_reached, info = env.step(a)
       total_reward += r
 
   print("Done")

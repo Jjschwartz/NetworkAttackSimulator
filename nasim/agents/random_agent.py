@@ -29,18 +29,19 @@ def run_random_agent(env, step_limit=1e6, verbose=True):
     env.reset()
     total_reward = 0
     done = False
+    env_step_limit_reached = False
     t = 0
     a = 0
 
-    while not done and t < step_limit:
+    while not done and not env_step_limit_reached and t < step_limit:
         a = env.action_space.sample()
-        _, r, done, _ = env.step(a)
+        _, r, done, env_step_limit_reached, _ = env.step(a)
         total_reward += r
         if (t+1) % 100 == 0 and verbose:
             print(f"{t}: {total_reward}")
         t += 1
 
-    if done and verbose:
+    if (done or env_step_limit_reached) and verbose:
         print(LINE_BREAK)
         print("EPISODE FINISHED")
         print(LINE_BREAK)

@@ -269,14 +269,15 @@ class DQNAgent:
     def run_train_episode(self, step_limit):
         o = self.env.reset()
         done = False
+        env_step_limit_reached = False
 
         steps = 0
         episode_return = 0
 
-        while not done and steps < step_limit:
+        while not done and not env_step_limit_reached and steps < step_limit:
             a = self.get_egreedy_action(o, self.get_epsilon())
 
-            next_o, r, done, _ = self.env.step(a)
+            next_o, r, done, env_step_limit_reached, _ = self.env.step(a)
             self.replay.store(o, a, next_o, r, done)
             self.steps_done += 1
             loss, mean_v = self.optimize()
@@ -298,6 +299,7 @@ class DQNAgent:
             env = self.env
         o = env.reset()
         done = False
+        env_step_limit_reached = False
 
         steps = 0
         episode_return = 0
@@ -310,9 +312,9 @@ class DQNAgent:
             env.render(render_mode)
             input("Initial state. Press enter to continue..")
 
-        while not done:
+        while not done and not env_step_limit_reached:
             a = self.get_egreedy_action(o, eval_epsilon)
-            next_o, r, done, _ = env.step(a)
+            next_o, r, done, env_step_limit_reached, _ = env.step(a)
             o = next_o
             episode_return += r
             steps += 1
@@ -324,9 +326,10 @@ class DQNAgent:
                 env.render(render_mode)
                 print(f"Reward = {r}")
                 print(f"Done = {done}")
+                print(f"Step limit reached = {env_step_limit_reached}")
                 input("Press enter to continue..")
 
-                if done:
+                if done or env_step_limit_reached:
                     print("\n" + line_break)
                     print("EPISODE FINISHED")
                     print(line_break)

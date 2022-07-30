@@ -82,7 +82,7 @@ What's new
 - 2022-07-30 (v 0.10.0) (MINOR release)
 
   + Fixed typos (thanks @francescoluciano)
-  + Updates to be compatible with latest version of OpenAI gym API (v0.25) (see `Open AI gym API docs <https://www.gymlibrary.ml/content/api/>`_ for details), notable changes are:
+  + Updates to be compatible with latest version of OpenAI gym API (v0.25) (see `Open AI gym API docs <https://www.gymlibrary.ml/content/api/>`_ for details), notable changes are
 
     - Updated naming convention when initializing environments using the ``gym.make`` API (see `gym load docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_ for details.)
 	- Updated reset function to match new gym API (shouldn't break any implementations using old API)

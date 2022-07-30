@@ -149,7 +149,7 @@ What's new
   + Cleaned up dependencies, setup.py, etc and some small fixes
 
 
-.. |docs| image:: https://readthedocs.org/projects/networkattacksimulator/badge/?version=latest
+.. |docs| image:: https://readthedocs.org/projects/networkattacksimulator/badge/
     :target: https://networkattacksimulator.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
     :scale: 100%

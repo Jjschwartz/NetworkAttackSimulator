@@ -2,7 +2,6 @@ alabaster==0.7.12
 attrs==22.1.0
 Babel==2.10.3
 bleach==5.0.1
-certifi @ file:///opt/conda/conda-bld/certifi_1655968806487/work/certifi
 cffi==1.15.1
 charset-normalizer==2.1.0
 cloudpickle==2.1.0

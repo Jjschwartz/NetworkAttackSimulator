@@ -2,7 +2,6 @@ alabaster==0.7.12
 attrs==22.1.0
 Babel==2.10.3
 bleach==5.0.1
-certifi @ file:///opt/conda/conda-bld/certifi_1655968806487/work/certifi
 cffi==1.15.1
 charset-normalizer==2.1.0
 cloudpickle==2.1.0
@@ -23,7 +22,6 @@ keyring==23.7.0
 kiwisolver==1.4.4
 MarkupSafe==2.1.1
 matplotlib==3.5.2
--e git+ssh://git@github.com/Jjschwartz/NetworkAttackSimulator.git@9cb3b096411d45f38a405f45a8ea12269e40b3aa#egg=nasim
 networkx==2.8.5
 numpy==1.23.1
 packaging==21.3

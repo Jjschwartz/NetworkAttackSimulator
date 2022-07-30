@@ -39,7 +39,7 @@ setup(
         'prettytable>=0.7'
     ],
     extras_require=extras,
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     package_data={
         'nasim': ['scenarios/benchmark/*.yaml']
     },
@@ -51,7 +51,6 @@ setup(
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
     zip_safe=False

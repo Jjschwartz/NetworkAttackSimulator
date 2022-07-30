@@ -18,7 +18,7 @@ extras['all'] = [item for group in extras.values() for item in group]
 
 setup(
     name='nasim',
-    version='0.9.1',
+    version='0.10.0',
     url="https://networkattacksimulator.readthedocs.io",
     description="A simple and fast simulator for remote network pen-testing",
     long_description=open('README.rst').read(),
@@ -31,7 +31,7 @@ setup(
         if package.startswith('nasim')
     ],
     install_requires=[
-        'gym>=0.17',
+        'gym>=0.25',
         'numpy>=1.18',
         'networkx>=2.4',
         'matplotlib>=3.1',

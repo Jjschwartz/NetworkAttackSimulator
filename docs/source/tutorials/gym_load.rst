@@ -49,9 +49,12 @@ Usage
 
 Now we understand the naming of environments, making a new environment using ``gym.make()`` is easy.
 
-For example to create a new ``Tiny-PO-v0`` environment:
+For example to create a new ``TinyPO-v0`` environment:
 
 .. code:: python
 
    import gym
-   env = gym.make("nasim:Tiny-PO-v0")
+   env = gym.make("nasim:TinyPO-v0")
+
+
+.. note:: With the latest updates in ``v0.10.0`` and new Open AI gym API, you may need to specify ``new_step_api=True`` when calling the ``gym.make`` function if your implementation expects the new API. This is due to how the default wrappers that are created when calling ``gym.make`` handle things.

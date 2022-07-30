@@ -729,16 +729,16 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
        -1 since we don't include the internet subnet
 
     2. Host = [0, max subnets size-1]
-    3. OS = [0, #OS+1]
+    3. OS = [0, #OS]
 
        Where 0=None.
 
-    4. Service = [0, #services]
-    5. Process = [0, #processes+1]
+    4. Service = [0, #services - 1]
+    5. Process = [0, #processes]
 
        Where 0=None.
 
-    Note that OS, Service and Process are only importand for exploits and
+    Note that OS, Service and Process are only important for exploits and
     privilege escalation actions.
 
     ...

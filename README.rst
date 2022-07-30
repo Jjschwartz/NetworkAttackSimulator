@@ -84,9 +84,9 @@ What's new
   + Fixed typos (thanks @francescoluciano)
   + Updates to be compatible with latest version of OpenAI gym API (v0.25) (see `Open AI gym API docs <https://www.gymlibrary.ml/content/api/>`_ for details), notable changes are:
 
-    + Updated naming convention when initializing environments using the ``gym.make`` API (see `gym load docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_ for details.)
-	+ Updated reset function to match new gym API (shouldn't break any implementations using old API)
-	+ Updated step function to match new gym API. It now returns two bools, the first specifies if terminal/goal state has been reached and the other specifies if the episode is terminated due to the scenario step limit (if any exists) has been reached. This change may break implementations and you may need to specify (or not) when initializing the gym environment using ``gym.make(env_id, new_step_api=True)``
+    - Updated naming convention when initializing environments using the ``gym.make`` API (see `gym load docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_ for details.)
+	- Updated reset function to match new gym API (shouldn't break any implementations using old API)
+	- Updated step function to match new gym API. It now returns two bools, the first specifies if terminal/goal state has been reached and the other specifies if the episode is terminated due to the scenario step limit (if any exists) has been reached. This change may break implementations and you may need to specify (or not) when initializing the gym environment using ``gym.make(env_id, new_step_api=True)``
 
 - 2022-05-19 (v 0.9.1) (MICRO release)
 

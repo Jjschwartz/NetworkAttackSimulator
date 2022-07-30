@@ -79,6 +79,13 @@ License
 What's new
 ----------
 
+- 2022-07-30 (v 0.10.0) (MINOR release)
+
+  + Fixed typos (thanks @francescoluciano)
+  + Updates to be compatible with latest version of OpenAI gym (v0.25), notable changes are:
+
+    + Updated naming convention when initializing environments using the ``gym.make`` API (see `gym load docs <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_ for details.)
+
 - 2022-05-19 (v 0.9.1) (MICRO release)
 
   + Fixed a few bugs and added some tests (thanks @simonsays1980 for the bug reports)

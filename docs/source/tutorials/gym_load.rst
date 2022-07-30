@@ -17,26 +17,28 @@ Unlike when starting an environment using the ``nasim`` library directly, where 
 
 When using ``gym.make()`` each environment has the following mode and naming convention:
 
-  ``ScenarioName-[PO-]vX``
+  ``ScenarioName[PO][2D][VA]-vX``
 
 Where:
 
 - ``ScenarioName`` is the name of the benchmark scenario in Camel Casing
-- ``[PO-]`` is optional and specifies the environment is in partially observable mode, if it is not included the environment is in fully observable mode.
-- ``vX`` controls the action and observation space mode and where ``X`` can be ``0``, ``1``, ``2``, or ``3``:
-
-  - ``v0``: flat actions and flat obs
-  - ``v1``: flat actions and 2D obs
-  - ``v2``: parameterised actions and flat obs
-  - ``v3``: parameterised actions and 2D obs
+- ``[PO]`` is optional and specifies the environment is in partially observable mode, if it is not included the environment is in fully observable mode.
+- ``[2D]`` is optional and specifies the environment is to return 2D observations, if it is not included the environment returns 1D observations.
+- ``[VA]`` is optional and specifies the environment is to accept Vector actions (parametrised actions), if it is not included the environment expects integer (flat) actions.
+- ``vX`` is the environment version. Currently (as of version ``0.10.0``) all environments are on ``v0``
 
 For example, the 'tiny' benchmark scenario in partially observable mode with flat action-space and flat observation space has the name:
 
-  ``Tiny-PO-v0``
+  ``TinyPO-v0``
 
 Or the 'small-gen' benchmark scenario in fully observable mode with parametrised action-space and flat observation-space has the name:
 
-  ``SmallGen-v2``
+  ``SmallGenVA-v0``
+
+
+Or the 'medium-single-site' benchmark scenario in partially observable mode with parametrised action-space and 2D observation-space has the name:
+
+  ``MediumSingleSitePO2DVA-v0``
 
 
 .. note:: See :ref:`env_params` for more explanation on the different modes.

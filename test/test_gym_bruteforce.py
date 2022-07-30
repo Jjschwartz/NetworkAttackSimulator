@@ -19,13 +19,15 @@ def test_gym_reload():
     reload(nasim)
 
 @pytest.mark.parametrize("scenario", AVAIL_BENCHMARKS)
-@pytest.mark.parametrize("po", ['', 'PO-'])
-@pytest.mark.parametrize("v", ['v0', 'v1', 'v2', 'v3'])
-def test_bruteforce(scenario, po, v):
+@pytest.mark.parametrize("po", ['', 'PO'])
+@pytest.mark.parametrize("obs", ['', '2D'])
+@pytest.mark.parametrize("actions", ['', 'VA'])
+@pytest.mark.parametrize("v", ['v0'])
+def test_bruteforce(scenario, po, obs, actions,v):
     """Tests all benchmark scenarios using every possible environment
     setting, using bruteforce agent, checking for any errors
     """
     name = ''.join([g.capitalize() for g in scenario.split("-")])
-    name = f"nasim:{name}-{po}{v}"
+    name = f"nasim:{name}{po}{obs}{actions}-{v}"
     env = gym.make(name)
     run_bruteforce_agent(env, verbose=False)

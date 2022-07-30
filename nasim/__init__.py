@@ -143,15 +143,14 @@ def _register(id, entry_point, kwargs, nondeterministic, force=True):
 
 
 for benchmark in AVAIL_BENCHMARKS:
-    # v0 - flat_actions, flat_obs
-    # v1 - flat_actions, 2D_obs
-    # v2 - param_actions, flat obs
-    # v3 - param_actions, 2D obs
+    # PO - partially observable
+    # 2D - use 2D Obs
+    # VA - use param actions
     # tiny should yield Tiny and tiny-small should yield TinySmall
     for fully_obs in [True, False]:
         name = ''.join([g.capitalize() for g in benchmark.split("-")])
         if not fully_obs:
-            name = f"{name}-PO"
+            name = f"{name}PO"
 
         _register(
             id=f"{name}-v0",
@@ -166,7 +165,7 @@ for benchmark in AVAIL_BENCHMARKS:
         )
 
         _register(
-            id=f"{name}-v1",
+            id=f"{name}2D-v0",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
                 "scenario": benchmark,
@@ -178,7 +177,7 @@ for benchmark in AVAIL_BENCHMARKS:
         )
 
         _register(
-            id=f"{name}-v2",
+            id=f"{name}VA-v0",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
                 "scenario": benchmark,
@@ -190,7 +189,7 @@ for benchmark in AVAIL_BENCHMARKS:
         )
 
         _register(
-            id=f"{name}-v3",
+            id=f"{name}2DVA-v0",
             entry_point='nasim.envs:NASimGymEnv',
             kwargs={
                 "scenario": benchmark,

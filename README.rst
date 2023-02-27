@@ -79,6 +79,10 @@ License
 What's new
 ----------
 
+- 2023-02-27 (v 0.10.1) (MICRO release)
+
+  + Fixed bug for host based actions (thanks @nguyen-thanh20 for the bug report)
+
 - 2022-07-30 (v 0.10.0) (MINOR release)
 
   + Fixed typos (thanks @francescoluciano)

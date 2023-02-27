@@ -9,6 +9,13 @@ The environment is modelled after the `OpenAI gym <https://github.com/openai/gym
 What's new
 ----------
 
+
+Version 0.10.1
+**************
+
++ Fixed bug for host based actions (thanks @nguyen-thanh20 for the bug report)
+
+
 Version 0.10.0
 **************
 

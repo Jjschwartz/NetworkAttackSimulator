@@ -20,7 +20,7 @@ Before pushing to master
 
 2. Ensure updates are included in the *What's new* section of the *README.rst* and *docs/source/index.rst* files (this step can be ignored for very small changes)
 3. Ensure any necessary updates have been included in the documentation.
-4. Make sure the documentation can be build by running:
+4. Make sure the documentation can be built by running:
 
 .. code-block:: bash
 

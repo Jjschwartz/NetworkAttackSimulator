@@ -254,7 +254,7 @@ class HostVector:
                 return next_state, result
 
         # following actions are on host so require correct access
-        if not self.compromised and action.req_access <= self.access:
+        if not (self.compromised and action.req_access <= self.access):
             result = ActionResult(False, 0, permission_error=True)
             return next_state, result
 

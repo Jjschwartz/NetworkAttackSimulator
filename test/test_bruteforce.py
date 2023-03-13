@@ -23,7 +23,8 @@ def test_bruteforce_static(scenario, seed, fully_obs, flat_actions, flat_obs):
                                seed=seed,
                                fully_obs=fully_obs,
                                flat_actions=flat_actions,
-                               flat_obs=flat_obs)
+                               flat_obs=flat_obs,
+                               render_mode=None)
     run_bruteforce_agent(env, verbose=False)
 
 
@@ -40,5 +41,6 @@ def test_bruteforce_gen(scenario, seed, fully_obs, flat_actions, flat_obs):
                                seed=seed,
                                fully_obs=fully_obs,
                                flat_actions=flat_actions,
-                               flat_obs=flat_obs)
+                               flat_obs=flat_obs,
+                               render_mode=None)
     run_bruteforce_agent(env, verbose=False)

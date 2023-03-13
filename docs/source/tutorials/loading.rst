@@ -5,7 +5,7 @@ Starting a NASim Environment
 
 Interaction with NASim is done primarily via the :class:`~nasim.envs.environment.NASimEnv` class, which handles a simulated network environment as defined by the chosen scenario.
 
-There are two ways to start a new environment: (i) via the nasim library directly, or (ii) using the `gym.make()` function of the Open AI gym library.
+There are two ways to start a new environment: (i) via the nasim library directly, or (ii) using the `gym.make()` function of the gymnasium library.
 
 In this tutorial we will be covering the first method. For the second method check out :ref:`gym_load_tute`.
 

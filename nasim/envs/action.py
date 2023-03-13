@@ -35,9 +35,9 @@ actions or not:
 
 import math
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 
-from .utils import AccessLevel
+from nasim.envs.utils import AccessLevel
 
 
 def load_action_list(scenario):
@@ -646,6 +646,7 @@ class ActionResult:
             discovered=self.discovered,
             connection_error=self.connection_error,
             permission_error=self.permission_error,
+            undefined_error=self.undefined_error,
             newly_discovered=self.newly_discovered
         )
 

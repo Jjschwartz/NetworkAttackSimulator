@@ -34,7 +34,7 @@ import nasim
 try:
     from torch.utils.tensorboard import SummaryWriter
 except ImportError as e:
-    from gym import error
+    from gymnasium import error
     raise error.DependencyNotInstalled(
         f"{e}. (HINT: you can install tabular_q_learning_agent dependencies "
         "by running 'pip install nasim[dqn]'.)"
@@ -198,7 +198,7 @@ class TabularQLearningAgent:
             print(f"\tgoal = {goal}")
 
     def run_train_episode(self, step_limit):
-        s = self.env.reset()
+        s, _ = self.env.reset()
         done = False
         env_step_limit_reached = False
 
@@ -224,10 +224,14 @@ class TabularQLearningAgent:
                          env=None,
                          render=False,
                          eval_epsilon=0.05,
-                         render_mode="readable"):
+                         render_mode="human"):
         if env is None:
             env = self.env
-        s = env.reset()
+
+        original_render_mode = env.render_mode
+        env.render_mode = render_mode
+
+        s, _ = env.reset()
         done = False
         env_step_limit_reached = False
 
@@ -239,7 +243,7 @@ class TabularQLearningAgent:
             print("\n" + line_break)
             print(f"Running EVALUATION using epsilon = {eval_epsilon:.4f}")
             print(line_break)
-            env.render(render_mode)
+            env.render()
             input("Initial state. Press enter to continue..")
 
         while not done and not env_step_limit_reached:
@@ -253,7 +257,7 @@ class TabularQLearningAgent:
                 print(f"Step {steps}")
                 print(line_break)
                 print(f"Action Performed = {env.action_space.get_action(a)}")
-                env.render(render_mode)
+                env.render()
                 print(f"Reward = {r}")
                 print(f"Done = {done}")
                 print(f"Step limit reached = {env_step_limit_reached}")
@@ -267,6 +271,7 @@ class TabularQLearningAgent:
                     print(f"Total steps = {steps}")
                     print(f"Total reward = {episode_return}")
 
+        env.render_mode = original_render_mode
         return episode_return, steps, env.goal_reached()
 
 

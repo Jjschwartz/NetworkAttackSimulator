@@ -36,7 +36,7 @@ import nasim
 try:
     from torch.utils.tensorboard import SummaryWriter
 except ImportError as e:
-    from gym import error
+    from gymnasium import error
     raise error.DependencyNotInstalled(
         f"{e}. (HINT: you can install tabular_q_learning_agent dependencies "
         "by running 'pip install nasim[dqn]'.)"

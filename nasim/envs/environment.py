@@ -2,21 +2,21 @@
 
 The NASimEnv class is the main interface for agents interacting with NASim.
 """
-import gym
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
-from gym import spaces
 
-from .state import State
-from .render import Viewer
-from .network import Network
-from .observation import Observation
-from .action import Action, FlatActionSpace, ParameterisedActionSpace
+from nasim.envs.state import State
+from nasim.envs.render import Viewer
+from nasim.envs.network import Network
+from nasim.envs.observation import Observation
+from nasim.envs.action import Action, FlatActionSpace, ParameterisedActionSpace
 
 
 class NASimEnv(gym.Env):
     """ A simulated computer network environment for pen-testing.
 
-    Implements the OpenAI gym interface.
+    Implements the gymnasium interface.
 
     ...
 
@@ -29,12 +29,12 @@ class NASimEnv(gym.Env):
     action_space : FlatActionSpace or ParameterisedActionSpace
         Action space for environment.
         If *flat_action=True* then this is a discrete action space (which
-        subclasses gym.spaces.Discrete), so each action is represented by an
+        subclasses gymnasium.spaces.Discrete), so each action is represented by an
         integer.
         If *flat_action=False* then this is a parameterised action space (which
-        subclasses gym.spaces.MultiDiscrete), so each action is represented
+        subclasses gymnasium.spaces.MultiDiscrete), so each action is represented
         using a list of parameters.
-    observation_space : gym.spaces.Box
+    observation_space : gymnasium.spaces.Box
         observation space for environment.
         If *flat_obs=True* then observations are represented by a 1D vector,
         otherwise observations are represented as a 2D matrix.
@@ -45,8 +45,10 @@ class NASimEnv(gym.Env):
     steps : int
         the number of steps performed since last reset (this does not include
         generative steps)
+
     """
-    metadata = {'rendering.modes': ["readable"]}
+    metadata = {'render_modes': ["human", "ansi"]}
+    render_mode = None
     reward_range = (-float('inf'), float('inf'))
 
     action_space = None
@@ -58,7 +60,8 @@ class NASimEnv(gym.Env):
                  scenario,
                  fully_obs=False,
                  flat_actions=True,
-                 flat_obs=True):
+                 flat_obs=True,
+                 render_mode=None):
         """
         Parameters
         ----------
@@ -73,12 +76,15 @@ class NASimEnv(gym.Env):
         flat_obs : bool, optional
             If true then uses a 1D observation space, otherwise uses a 2D
             observation space (default=True)
+        render_mode : str, optional
+            The render mode to use for the environment.
         """
         self.name = scenario.name
         self.scenario = scenario
         self.fully_obs = fully_obs
         self.flat_actions = flat_actions
         self.flat_obs = flat_obs
+        self.render_mode = render_mode
 
         self.network = Network(scenario)
         self.current_state = State.generate_initial_state(self.network)
@@ -101,17 +107,26 @@ class NASimEnv(gym.Env):
 
         self.steps = 0
 
-    def reset(self, seed=None, return_info=False, options=None):
+    def reset(self, *, seed=None, options=None):
         """Reset the state of the environment and returns the initial state.
 
-        Implements gym.Env.reset().
+        Implements gymnasium.Env.reset().
+
+        Parameters
+        ----------
+        seed : int, optional
+            the optional seed for the environments RNG
+        options : dict, optional
+            optional environment options (does nothing in NASim at the moment)
 
         Returns
         -------
         numpy.Array
             the initial observation of the environment
+        dict
+            auxiliary information regarding reset
         """
-        super().reset(seed=seed)
+        super().reset(seed=seed, options=options)
         self.steps = 0
         self.current_state = self.network.reset(self.current_state)
         self.last_obs = self.current_state.get_initial_observation(
@@ -123,12 +138,12 @@ class NASimEnv(gym.Env):
         else:
             obs = self.last_obs.numpy()
 
-        return (obs, {}) if return_info else obs
+        return obs, {}
 
     def step(self, action):
         """Run one step of the environment using action.
 
-        Implements gym.Env.step().
+        Implements gymnasium.Env.step().
 
         Parameters
         ----------
@@ -241,7 +256,19 @@ class NASimEnv(gym.Env):
         """
         return State.generate_initial_state(self.network)
 
-    def render(self, mode="readable", obs=None):
+    def render(self):
+        """Render environment.
+
+        Implements gymnasium.Env.render().
+
+        See render module for more details on modes and symbols.
+
+        """
+        if self.render_mode is None:
+            return
+        return self.render_obs(mode=self.render_mode, obs=self.last_obs)
+
+    def render_obs(self, mode="human", obs=None):
         """Render observation.
 
         See render module for more details on modes and symbols.
@@ -255,6 +282,9 @@ class NASimEnv(gym.Env):
             If numpy.ndarray it must be in format that matches Observation
             (i.e. ndarray returned by step method) (default=None)
         """
+        if mode is None:
+            return
+
         if obs is None:
             obs = self.last_obs
 
@@ -264,15 +294,15 @@ class NASimEnv(gym.Env):
         if self._renderer is None:
             self._renderer = Viewer(self.network)
 
-        if mode == "readable":
-            self._renderer.render_readable(obs)
+        if mode in ("human", "ansi"):
+            return self._renderer.render_readable(obs)
         else:
             raise NotImplementedError(
                 "Please choose correct render mode from :"
-                f"{self.metadata['rendering.modes']}"
+                f"{self.metadata['render_modes']}"
             )
 
-    def render_state(self, mode="readable", state=None):
+    def render_state(self, mode="human", state=None):
         """Render state.
 
         See render module for more details on modes and symbols.
@@ -290,6 +320,9 @@ class NASimEnv(gym.Env):
             If numpy.ndarray it must be in format that matches State
             (i.e. ndarray returned by generative_step method) (default=None)
         """
+        if mode is None:
+            return
+
         if state is None:
             state = self.current_state
 
@@ -301,12 +334,12 @@ class NASimEnv(gym.Env):
         if self._renderer is None:
             self._renderer = Viewer(self.network)
 
-        if mode == "readable":
-            self._renderer.render_readable_state(state)
+        if mode in ("human", "ansi"):
+            return self._renderer.render_readable_state(state)
         else:
             raise NotImplementedError(
                 "Please choose correct render mode from : "
-                f"{self.metadata['rendering.modes']}"
+                f"{self.metadata['render_modes']}"
             )
 
     def render_action(self, action):
@@ -443,3 +476,8 @@ class NASimEnv(gym.Env):
             f"flat_obs={self.flat_obs}"
         ]
         return "\n  ".join(output)
+
+    def close(self):
+        if self._renderer is not None:
+            self._renderer.close()
+            self._renderer = None

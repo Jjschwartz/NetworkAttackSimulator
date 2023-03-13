@@ -24,9 +24,10 @@ to be an example implementation that can be used as a reference for building
 your own agents.
 """
 import random
-import numpy as np
-from gym import error
 from pprint import pprint
+
+from gymnasium import error
+import numpy as np
 
 import nasim
 
@@ -133,7 +134,7 @@ class DQNAgent:
         if self.seed is not None:
             np.random.seed(self.seed)
 
-        # envirnment setup
+        # environment setup
         self.env = env
 
         self.num_actions = self.env.action_space.n
@@ -267,7 +268,7 @@ class DQNAgent:
             print(f"\tgoal = {goal}")
 
     def run_train_episode(self, step_limit):
-        o = self.env.reset()
+        o, _ = self.env.reset()
         done = False
         env_step_limit_reached = False
 
@@ -294,10 +295,14 @@ class DQNAgent:
                          env=None,
                          render=False,
                          eval_epsilon=0.05,
-                         render_mode="readable"):
+                         render_mode="human"):
         if env is None:
             env = self.env
-        o = env.reset()
+
+        original_render_mode = env.render_mode
+        env.render_mode = render_mode
+
+        o, _ = env.reset()
         done = False
         env_step_limit_reached = False
 
@@ -309,7 +314,7 @@ class DQNAgent:
             print("\n" + line_break)
             print(f"Running EVALUATION using epsilon = {eval_epsilon:.4f}")
             print(line_break)
-            env.render(render_mode)
+            env.render()
             input("Initial state. Press enter to continue..")
 
         while not done and not env_step_limit_reached:
@@ -323,7 +328,7 @@ class DQNAgent:
                 print(f"Step {steps}")
                 print(line_break)
                 print(f"Action Performed = {env.action_space.get_action(a)}")
-                env.render(render_mode)
+                env.render()
                 print(f"Reward = {r}")
                 print(f"Done = {done}")
                 print(f"Step limit reached = {env_step_limit_reached}")
@@ -337,6 +342,7 @@ class DQNAgent:
                     print(f"Total steps = {steps}")
                     print(f"Total reward = {episode_return}")
 
+        env.render_mode = original_render_mode
         return episode_return, steps, env.goal_reached()
 
 

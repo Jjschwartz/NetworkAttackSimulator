@@ -138,15 +138,13 @@ def choose_action(env):
     return choose_param_action(env)
 
 
-def run_keyboard_agent(env, render_mode="readable"):
+def run_keyboard_agent(env):
     """Run Keyboard agent
 
     Parameters
     ----------
     env : NASimEnv
         the environment
-    render_mode : str, optional
-        display mode for environment (default="readable")
 
     Returns
     -------
@@ -161,8 +159,8 @@ def run_keyboard_agent(env, render_mode="readable"):
     print("STARTING EPISODE")
     print(LINE_BREAK2)
 
-    o = env.reset()
-    env.render(render_mode)
+    o, _ = env.reset()
+    env.render()
     total_reward = 0
     total_steps = 0
     done = False
@@ -175,7 +173,7 @@ def run_keyboard_agent(env, render_mode="readable"):
         print("\n" + LINE_BREAK2)
         print("OBSERVATION RECIEVED")
         print(LINE_BREAK2)
-        env.render(render_mode)
+        env.render()
         print(f"Reward={r}")
         print(f"Done={done}")
         print(f"Step limit reached={step_limit_reached}")
@@ -184,7 +182,7 @@ def run_keyboard_agent(env, render_mode="readable"):
     return total_reward, total_steps, done
 
 
-def run_generative_keyboard_agent(env, render_mode="readable"):
+def run_generative_keyboard_agent(env, render_mode="human"):
     """Run Keyboard agent in generative mode.
 
     The experience is the same as the normal mode, this is mainly useful
@@ -195,7 +193,7 @@ def run_generative_keyboard_agent(env, render_mode="readable"):
     env : NASimEnv
         the environment
     render_mode : str, optional
-        display mode for environment (default="readable")
+        display mode for environment (default="human")
 
     Returns
     -------
@@ -210,10 +208,10 @@ def run_generative_keyboard_agent(env, render_mode="readable"):
     print("STARTING EPISODE")
     print(LINE_BREAK2)
 
-    o = env.reset()
+    o, _ = env.reset()
     s = env.current_state
     env.render_state(render_mode, s)
-    env.render(render_mode, o)
+    env.render_obs(render_mode, o)
 
     total_reward = 0
     total_steps = 0
@@ -230,7 +228,7 @@ def run_generative_keyboard_agent(env, render_mode="readable"):
         print("\n" + LINE_BREAK2)
         print("OBSERVATION RECIEVED")
         print(LINE_BREAK2)
-        env.render(render_mode, o)
+        env.render_obs(render_mode, o)
         print(f"Reward={r}")
         print(f"Done={done}")
         print(LINE_BREAK)
@@ -263,9 +261,11 @@ if __name__ == "__main__":
                                args.seed,
                                fully_obs=not args.partially_obs,
                                flat_actions=not args.param_actions,
-                               flat_obs=True)
+                               flat_obs=True,
+                               render_mode="human")
     if args.use_generative:
-        total_reward, steps, goal = run_generative_keyboard_agent(env)
+        total_reward, steps, goal = run_generative_keyboard_agent(env,
+                                                                  render_mode="human")
     else:
         total_reward, steps, goal = run_keyboard_agent(env)
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from .action import ActionResult
-from .utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
+from nasim.envs.action import ActionResult
+from nasim.envs.utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
 
 # column in topology adjacency matrix that represents connection between
 # subnet and public

@@ -3,11 +3,18 @@ Welcome to Network Attack Simulator's documentation!
 
 Network Attack Simulator (NASim) is a lightweight, high-level network attack simulator written in python. It is designed to be used for rapid testing of autonomous pen-testing agents using reinforcement learning and planning. It is a simulator by definition so does not replicate all details of attacking a real system but it instead aims to capture some of the more salient features of network pen-testing such as the large and changing sizes of the state and action spaces, partial observability and varied network topology.
 
-The environment is modelled after the `OpenAI gym <https://github.com/openai/gym>`_ interface.
+The environment is modelled after the `gymnasium (formerly Open AI gym) <https://github.com/Farama-Foundation/Gymnasium/>`_ interface.
 
 
 What's new
 ----------
+
+Version 0.11.0
+**************
+
++ Migrated to `gymnasium (formerly Open AI gym) <https://github.com/Farama-Foundation/Gymnasium/>`_ fromOpen AI gym (thanks @rzvnbr for the suggestion).
++ Fixed bug with action string representation (thanks @rzvnbr for the bug report)
++ Added "sim to real considerations" explanation document to the docs (thanks @Tudyx for the suggestion)
 
 
 Version 0.10.1

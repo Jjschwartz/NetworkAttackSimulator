@@ -1,2 +1,2 @@
-from .gym_env import NASimGymEnv
-from .environment import NASimEnv
+from nasim.envs.gym_env import NASimGymEnv
+from nasim.envs.environment import NASimEnv

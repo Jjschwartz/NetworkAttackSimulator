@@ -3,9 +3,9 @@
 Starting NASim using OpenAI gym
 ===============================
 
-On startup NASim also registers each benchmark scenario as an `Open AI Gym <https://github.com/openai/gym>`_ , allowing NASim benchmark environments to be loaded using ``gym.make()``.
+On startup NASim also registers each benchmark scenario as an `Gymnasium <https://github.com/Farama-Foundation/Gymnasium/>`_  environment, allowing NASim benchmark environments to be loaded using ``gymnasium.make()``.
 
-:ref:`all_benchmark_scenarios` can be loaded using ``gym.make()``.
+:ref:`all_benchmark_scenarios` can be loaded using ``gymnasium.make()``.
 
 .. note:: Custom scenarios must be loaded using the nasim library directly, see :ref:`loading_tute`.
 
@@ -13,9 +13,9 @@ On startup NASim also registers each benchmark scenario as an `Open AI Gym <http
 Environment Naming
 ------------------
 
-Unlike when starting an environment using the ``nasim`` library directly, where environment modes are specified as arguments to the ``nasim.make_benchmark()`` function, when using ``gym.make()`` the scenario and mode are specified in a single name.
+Unlike when starting an environment using the ``nasim`` library directly, where environment modes are specified as arguments to the ``nasim.make_benchmark()`` function, when using ``gymnasium.make()`` the scenario and mode are specified in a single name.
 
-When using ``gym.make()`` each environment has the following mode and naming convention:
+When using ``gymnasium.make()`` each environment has the following mode and naming convention:
 
   ``ScenarioName[PO][2D][VA]-vX``
 
@@ -53,8 +53,8 @@ For example to create a new ``TinyPO-v0`` environment:
 
 .. code:: python
 
-   import gym
+   import gymnasium as gym
    env = gym.make("nasim:TinyPO-v0")
 
-
-.. note:: With the latest updates in ``v0.10.0`` and new Open AI gym API, you may need to specify ``new_step_api=True`` when calling the ``gym.make`` function if your implementation expects the new API. This is due to how the default wrappers that are created when calling ``gym.make`` handle things.
+   # to specify render mode
+   env = gym.make("nasim:TinyPO-v0", render_mode="human")

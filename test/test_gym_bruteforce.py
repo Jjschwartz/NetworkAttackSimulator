@@ -5,7 +5,7 @@ Tests loading environments using gym.make()
 """
 from importlib import reload
 
-import gym
+import gymnasium as gym
 import pytest
 
 import nasim
@@ -29,5 +29,5 @@ def test_bruteforce(scenario, po, obs, actions,v):
     """
     name = ''.join([g.capitalize() for g in scenario.split("-")])
     name = f"nasim:{name}{po}{obs}{actions}-{v}"
-    env = gym.make(name, new_step_api=True)
+    env = gym.make(name, render_mode=None)
     run_bruteforce_agent(env, verbose=False)

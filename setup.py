@@ -1,3 +1,5 @@
+import pathlib
+
 from setuptools import setup, find_packages
 
 extras = {
@@ -16,9 +18,21 @@ extras = {
 
 extras['all'] = [item for group in extras.values() for item in group]
 
+
+def get_version():
+    """Gets the posggym version."""
+    path = pathlib.Path(__file__).absolute().parent / "nasim" / "__init__.py"
+    content = path.read_text()
+
+    for line in content.splitlines():
+        if line.startswith("__version__"):
+            return line.strip().split()[-1].strip().strip('"')
+    raise RuntimeError("bad version data in __init__.py")
+
+
 setup(
     name='nasim',
-    version='0.10.1',
+    version=get_version(),
     url="https://networkattacksimulator.readthedocs.io",
     description="A simple and fast simulator for remote network pen-testing",
     long_description=open('README.rst').read(),
@@ -31,7 +45,7 @@ setup(
         if package.startswith('nasim')
     ],
     install_requires=[
-        'gym>=0.25',
+        'gymnasium>=0.26',
         'numpy>=1.18',
         'networkx>=2.4',
         'matplotlib>=3.1',

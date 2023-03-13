@@ -141,6 +141,10 @@ class Viewer:
         print("State:")
         print(host_table)
 
+    def close(self):
+        """Close renderer."""
+        plt.close("all")
+
     def _construct_table_from_dict(self, d):
         headers = list(d.keys())
         table = PrettyTable(headers)

@@ -6,8 +6,8 @@ in the NASim environment.
 
 import numpy as np
 
-from .utils import AccessLevel
-from .action import ActionResult
+from nasim.envs.utils import AccessLevel
+from nasim.envs.action import ActionResult
 
 
 class HostVector:

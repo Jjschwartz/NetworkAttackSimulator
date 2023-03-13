@@ -1,7 +1,7 @@
-from .utils import INTERNET
-from .scenario import Scenario
-from .loader import ScenarioLoader
-from .generator import ScenarioGenerator
+from nasim.scenarios.utils import INTERNET
+from nasim.scenarios.scenario import Scenario
+from nasim.scenarios.loader import ScenarioLoader
+from nasim.scenarios.generator import ScenarioGenerator
 import nasim.scenarios.benchmark as benchmark
 
 

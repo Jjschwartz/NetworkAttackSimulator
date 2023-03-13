@@ -3,7 +3,7 @@
 Interacting with NASim Environment
 ==================================
 
-Assuming you are comfortable loading an environment from a scenario (see :ref:`loading_tute` or :ref:`gym_load_tute`), then interacting with a NASim Environment is very easy and follows the same interface as `OpenAI gym <https://github.com/openai/gym>`_.
+Assuming you are comfortable loading an environment from a scenario (see :ref:`loading_tute` or :ref:`gym_load_tute`), then interacting with a NASim Environment is very easy and follows the same interface as `gymnasium <https://github.com/Farama-Foundation/Gymnasium/>`_.
 
 
 Starting the environment
@@ -16,8 +16,8 @@ First thing is simply loading the environment::
   env = nasim.make_benchmark("tiny")
 
   # or using gym
-  import gym
-  env. = gym.make("nasim:Tiny-PO-v0")
+  import gymnasium as gym
+  env = gym.make("nasim:Tiny-PO-v0")
 
 
 Here we are using the default environment parameters: ``fully_obs=False``, ``flat_actions=True``, and ``flat_obs=True``.
@@ -42,7 +42,10 @@ Getting the initial observation and resetting the environment
 
 To reset the environment and get the initial observation, use the ``reset()`` function::
 
-  o = env.reset()
+  o, info = env.reset()
+
+
+The ``info`` return value contains optional auxiliary information.
 
 
 Performing a single step
@@ -57,6 +60,25 @@ A step in the environment can be taken using the ``step(action)`` function. Here
 if ``done=True`` then the goal has been reached, and the episode is over. Alternatively, if the current scenario has a step limit and ``step_limit_reached=True`` then, well, the step limit has been reached. Following both cases, it is then recommended to stop or reset the environment, otherwise theres no gaurantee of what will happen (especially the first case).
 
 
+Visualizing the environment
+---------------------------
+
+You can use the ``render()`` function to get a human readable visualization of the state of the environment. To use render correctly make sure to pass ``render_mode="human"`` to the environment initialization function::
+
+  import nasim
+  # load my environment in the desired way (make_benchmark, load, generate)
+  env = nasim.make_benchmark("tiny", render_mode="human")
+
+  # or using gym
+  import gymnasium as gym
+  env = gym.make("nasim:Tiny-PO-v0", render_mode="human")
+
+  env.reset()
+  # render the environment
+  # (if render_mode="human" is not passed during initialization this will do nothing)
+  env.render()
+
+
 An example agent
 ----------------
 
@@ -68,7 +90,7 @@ Some example agents are provided in the ``nasim/agents`` directory. Here is a qu
 
   agent = AnAgent(...)
 
-  o = env.reset()
+  o, info = env.reset()
   total_reward = 0
   done = False
   step_limit_reached = False

@@ -1,7 +1,7 @@
 import numpy as np
 
-from .host_vector import HostVector
-from .observation import Observation
+from nasim.envs.host_vector import HostVector
+from nasim.envs.observation import Observation
 
 
 class State:

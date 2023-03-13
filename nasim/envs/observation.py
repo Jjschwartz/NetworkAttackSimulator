@@ -1,7 +1,7 @@
 import numpy as np
 
-from .utils import AccessLevel
-from .host_vector import HostVector
+from nasim.envs.utils import AccessLevel
+from nasim.envs.host_vector import HostVector
 
 
 class Observation:

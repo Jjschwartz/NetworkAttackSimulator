@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import nasim
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
 
 
@@ -22,7 +23,7 @@ copyright = '2020, Jonathon Schwartz'
 author = 'Jonathon Schwartz'
 
 # The full version, including alpha/beta/rc tags
-release = '0.10.0'
+release = nasim.__version__
 
 
 # -- General configuration ---------------------------------------------------

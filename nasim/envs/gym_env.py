@@ -1,9 +1,9 @@
-from .environment import NASimEnv
+from nasim.envs.environment import NASimEnv
 from nasim.scenarios import Scenario, make_benchmark_scenario
 
 
 class NASimGymEnv(NASimEnv):
-    """A wrapper around the NASimEnv compatible with OpenAI gym.make()
+    """A wrapper around the NASimEnv compatible with gymnasium.make()
 
     See nasim.NASimEnv for details.
     """
@@ -12,7 +12,8 @@ class NASimGymEnv(NASimEnv):
                  scenario,
                  fully_obs=False,
                  flat_actions=True,
-                 flat_obs=True):
+                 flat_obs=True,
+                 render_mode=None):
         """
         Parameters
         ----------
@@ -28,10 +29,13 @@ class NASimGymEnv(NASimEnv):
         flat_obs : bool, optional
             if true then uses a 1D observation space. If False
             will use a 2D observation space (default=True)
+        render_mode : str, optional
+            The render mode to use for the environment.
         """
         if not isinstance(scenario, Scenario):
             scenario = make_benchmark_scenario(scenario)
         super().__init__(scenario,
                          fully_obs=fully_obs,
                          flat_actions=flat_actions,
-                         flat_obs=flat_obs)
+                         flat_obs=flat_obs,
+                         render_mode=render_mode)

@@ -1,6 +1,6 @@
 import os.path as osp
 
-from .generated import AVAIL_GEN_BENCHMARKS
+from nasim.scenarios.benchmark.generated import AVAIL_GEN_BENCHMARKS
 
 BENCHMARK_DIR = osp.dirname(osp.abspath(__file__))
 

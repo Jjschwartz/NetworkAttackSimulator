@@ -49,7 +49,8 @@ if __name__ == "__main__":
         args.env_name,
         fully_obs=True,
         flat_actions=True,
-        flat_obs=True
+        flat_obs=True,
+        render_mode="human"
     )
 
     line_break = f"\n{'-'*60}"
@@ -61,12 +62,12 @@ if __name__ == "__main__":
         dqn_agent = DQNAgent(env, verbose=False, **vars(args))
         dqn_agent.load(DQN_POLICIES[args.env_name])
         ret, steps, goal = dqn_agent.run_eval_episode(
-            env, True, 0.01, "readable"
+            env, True, 0.01, "human"
         )
     else:
         print("Player controlled")
         print(line_break)
-        ret, steps, goal = run_keyboard_agent(env, "readable")
+        ret, steps, goal = run_keyboard_agent(env)
 
     print(line_break)
     print(f"Episode Complete")

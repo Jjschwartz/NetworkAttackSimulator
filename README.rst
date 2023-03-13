@@ -54,12 +54,12 @@ The documentation is available at: https://networkattacksimulator.readthedocs.io
 
 
 
-Using with OpenAI gym
+Using with gymnasium
 ---------------------
 
-NASim implements the `Open AI Gym <https://github.com/openai/gym>`_ environment interface and so can be used with any algorithm that is developed for that interface.
+NASim implements the `Gymnasium <https://github.com/Farama-Foundation/Gymnasium/tree/main>`_ environment interface and so can be used with any algorithm that is developed for that interface.
 
-See `Starting NASim using OpenAI gym <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_.
+See `Starting NASim using gymnasium <https://networkattacksimulator.readthedocs.io/en/latest/tutorials/gym_load.html>`_.
 
 
 Authors
@@ -78,6 +78,12 @@ License
 
 What's new
 ----------
+
+- 2023-03-13 (v 0.11.0) (MINOR release)
+
+  + Migrated to `gymnasium (formerly Open AI gym) <https://github.com/Farama-Foundation/Gymnasium/>`_ fromOpen AI gym (thanks @rzvnbr for the suggestion).
+  + Fixed bug with action string representation (thanks @rzvnbr for the bug report)
+  + Added "sim to real considerations" explanation document to the docs (thanks @Tudyx for the suggestion)
 
 - 2023-02-27 (v 0.10.1) (MICRO release)
 

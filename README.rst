@@ -79,6 +79,12 @@ License
 What's new
 ----------
 
+
+- 2023-05-14 (v 0.12.0) (MINOR release)
+
+  + Renamed `NASimEnv.get_minimum_actions -> NASimEnv.get_minumum_hops` to better reflect what it does (thanks @rzvnbr for the suggestion).
+
+
 - 2023-03-13 (v 0.11.0) (MINOR release)
 
   + Migrated to `gymnasium (formerly Open AI gym) <https://github.com/Farama-Foundation/Gymnasium/>`_ fromOpen AI gym (thanks @rzvnbr for the suggestion).

@@ -9,6 +9,12 @@ The environment is modelled after the `gymnasium (formerly Open AI gym) <https:/
 What's new
 ----------
 
+Version 0.12.0
+**************
+
++ Renamed `NASimEnv.get_minimum_actions -> NASimEnv.get_minumum_hops` to better reflect what it does (thanks @rzvnbr for the suggestion).
+
+
 Version 0.11.0
 **************
 

@@ -60,3 +60,14 @@ def test_get_total_sensitive_host_value(scenario, expected_value):
     env.reset()
     actual_value = env.network.get_total_sensitive_host_value()
     assert actual_value == expected_value
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected_value"),
+    [("tiny", 3), ("small", 4)]
+)
+def test_get_minumum_hops(scenario, expected_value):
+    env = nasim.make_benchmark(scenario)
+    env.reset()
+    actual_value = env.get_minimum_hops()
+    assert actual_value == expected_value

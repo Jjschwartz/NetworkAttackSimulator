@@ -1,7 +1,7 @@
 import numpy as np
 
 from nasim.envs.action import ActionResult
-from nasim.envs.utils import get_minimal_steps_to_goal, min_subnet_depth, AccessLevel
+from nasim.envs.utils import get_minimal_hops_to_goal, min_subnet_depth, AccessLevel
 
 # column in topology adjacency matrix that represents connection between
 # subnet and public
@@ -225,8 +225,8 @@ class Network:
             total += host.discovery_value
         return total
 
-    def get_minimal_steps(self):
-        return get_minimal_steps_to_goal(
+    def get_minimal_hops(self):
+        return get_minimal_hops_to_goal(
             self.topology, self.sensitive_addresses
         )
 

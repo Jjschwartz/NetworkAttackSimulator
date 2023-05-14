@@ -395,18 +395,19 @@ class NASimEnv(gym.Env):
         state = self.current_state
         self._renderer.render_graph(state, ax, show)
 
-    def get_minimum_actions(self):
-        """Get the minimum number of actions required to reach the goal.
+    def get_minimum_hops(self):
+        """Get the minimum number of network hops required to reach targets.
 
-        That is minimum number of actions to exploit all sensitive hosts on
-        the network starting from the initial state
+        That is minimum number of hosts that must be traversed in the network
+        in order to reach all sensitive hosts on the network starting from the
+        initial state
 
         Returns
         -------
         int
-            minumum possible actions to reach goal
+            minumum possible number of network hops to reach target hosts
         """
-        return self.network.get_minimal_steps()
+        return self.network.get_minimal_hops()
 
     def get_action_mask(self):
         """Get a vector mask for valid actions.
@@ -432,10 +433,10 @@ class NASimEnv(gym.Env):
 
         The theoretical upper bound score is where the agent exploits only a
         single host in each subnet that is required to reach sensitive hosts
-        along the shortest bath in network graph, and exploits the two
-        sensitive hosts (i.e. the minial steps). Assuming action cost of 1 and
-        each sensitive host is exploitable from any other connected subnet
-        (which may not be true, hence being an upper bound).
+        along the shortest bath in network graph, and exploits the all
+        sensitive hosts (i.e. the minimum network hops). Assuming action cost
+        of 1 and each sensitive host is exploitable from any other connected
+        subnet (which may not be true, hence being an upper bound).
 
         Returns
         -------
@@ -444,7 +445,7 @@ class NASimEnv(gym.Env):
         """
         max_reward = self.network.get_total_sensitive_host_value()
         max_reward += self.network.get_total_discovery_value()
-        max_reward -= self.network.get_minimal_steps()
+        max_reward -= self.network.get_minimal_hops()
         return max_reward
 
     def goal_reached(self, state=None):

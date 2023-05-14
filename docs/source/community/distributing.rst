@@ -47,3 +47,7 @@ If pushing a new version (MAJOR, MINOR, or MICRO), do the following:
    # upload latest distribution builds to pypi
    # this will ask for PyPi username and password
    python -m twine upload dist/* --skip-existing
+
+
+4. Login to https://pypi.org/ and verify latest version is added correctly.
+5. Visit https://networkattacksimulator.readthedocs.io/en/latest/index.html and check documentation has updated correctly (make sure to refresh browser cache to ensure your looking at the latest version.)

@@ -72,7 +72,7 @@ def run_bruteforce_agent(env, step_limit=1e6, verbose=True):
                 act = next(act_iter)
                 cycle_complete = True
 
-        _, rew, done, env_step_limit_reached, _ = env.step(act)
+        _, rew, done, env_step_limit_reached, _ = env.step(int(act))
         total_reward += rew
 
         if cycle_complete and verbose:

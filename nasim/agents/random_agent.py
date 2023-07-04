@@ -35,7 +35,7 @@ def run_random_agent(env, step_limit=1e6, verbose=True):
 
     while not done and not env_step_limit_reached and t < step_limit:
         a = env.action_space.sample()
-        _, r, done, env_step_limit_reached, _ = env.step(a)
+        _, r, done, env_step_limit_reached, _ = env.step(int(a))
         total_reward += r
         if (t+1) % 100 == 0 and verbose:
             print(f"{t}: {total_reward}")

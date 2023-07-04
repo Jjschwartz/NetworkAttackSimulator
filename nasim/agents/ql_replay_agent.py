@@ -247,10 +247,9 @@ class TabularQLearningAgent:
         episode_return = 0
 
         while not done and not env_step_limit_reached and steps < step_limit:
-            a = self.get_egreedy_action(o, self.get_epsilon())
-
+            a = self.get_egreedy_action(o[0], self.get_epsilon())
             next_o, r, done, env_step_limit_reached, _ = self.env.step(a)
-            self.replay.store(o, a, next_o, r, done)
+            self.replay.store(o[0], a, next_o, r, done)
             self.steps_done += 1
             mean_td_error, mean_v = self.optimize()
             self.logger.add_scalar(
@@ -287,7 +286,7 @@ class TabularQLearningAgent:
             input("Initial state. Press enter to continue..")
 
         while not done and not env_step_limit_reached:
-            a = self.get_egreedy_action(o, eval_epsilon)
+            a = self.get_egreedy_action(o[0], eval_epsilon)
             next_o, r, done, env_step_limit_reached, _ = env.step(a)
             o = next_o
             episode_return += r
@@ -296,7 +295,7 @@ class TabularQLearningAgent:
                 print("\n" + line_break)
                 print(f"Step {steps}")
                 print(line_break)
-                print(f"Action Performed = {env.action_space.get_action(a)}")
+                print(f"Action Performed = {env.action_space.get_action(int(a))}")
                 env.render(render_mode)
                 print(f"Reward = {r}")
                 print(f"Done = {done}")

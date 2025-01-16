@@ -58,9 +58,15 @@ def load_action_list(scenario):
         action_list.append(
             ServiceScan(address, scenario.service_scan_cost)
         )
+        action_list.append(                               
+            VulScan(address, scenario.vul_scan_cost)      
+        )                                                 
         action_list.append(
             OSScan(address, scenario.os_scan_cost)
         )
+        action_list.append(                                
+            Wiretapping(address, scenario.wiretapping_cost)
+        )                                                  
         action_list.append(
             SubnetScan(address, scenario.subnet_scan_cost)
         )
@@ -165,7 +171,7 @@ class Action:
         bool
             True if action is scan, otherwise False
         """
-        return isinstance(self, (ServiceScan, OSScan, SubnetScan, ProcessScan))
+        return isinstance(self, (ServiceScan, OSScan, SubnetScan, ProcessScan, VulScan, Wiretapping))
 
     def is_remote(self):
         """Check if action is a remote action
@@ -178,7 +184,7 @@ class Action:
         bool
             True if action is remote, otherwise False
         """
-        return isinstance(self, (ServiceScan, OSScan, Exploit))
+        return isinstance(self, (ServiceScan, OSScan, Exploit, Wiretapping))
 
     def is_service_scan(self):
         """Check if action is a service scan
@@ -189,6 +195,26 @@ class Action:
             True if action is service scan, otherwise False
         """
         return isinstance(self, ServiceScan)
+
+    def is_vul_scan(self):
+        """Check if action is a service scan
+
+        Returns
+        -------
+        bool
+            True if action is service scan, otherwise False
+        """
+        return isinstance(self, VulScan)
+
+    def is_wiretapping(self):
+        """Check if action is a service scan
+
+        Returns
+        -------
+        bool
+            True if action is service scan, otherwise False
+        """
+        return isinstance(self, Wiretapping)
 
     def is_os_scan(self):
         """Check if action is an OS scan
@@ -275,6 +301,8 @@ class Exploit(Action):
                  target,
                  cost,
                  service,
+                 vul,
+                 credentials_needed,
                  os=None,
                  access=0,
                  prob=1.0,
@@ -289,6 +317,10 @@ class Exploit(Action):
             cost of performing action
         service : str
             the target service
+        vul : str
+            the vulnerability targeted
+        cred_needed : int
+            credentials needed to perform exploit
         os : str, optional
             the target OS of exploit, if None then exploit works for all OS
             (default=None)
@@ -304,22 +336,29 @@ class Exploit(Action):
                          target=target,
                          cost=cost,
                          prob=prob,
-                         req_access=req_access)
+                         req_access=req_access,
+                         credentials_needed=credentials_needed)
         self.os = os
         self.service = service
         self.access = access
+        self.vul = vul                  
+        self.credentials_needed = credentials_needed
 
     def __str__(self):
-        return (f"{super().__str__()}, os={self.os}, "
-                f"service={self.service}, access={self.access}")
+        return (f"{super().__str__()}, "
+                f"os = {self.os}, "
+                f"vul = {self.vul}, "
+                f"cred_needed = {self.credentials_needed}, "
+                f"service = {self.service}, access = {self.access}")
 
     def __eq__(self, other):
         if not super().__eq__(other):
             return False
         return self.service == other.service \
             and self.os == other.os \
-            and self.access == other.access
-
+            and self.access == other.access \
+            and self.vul == other.vul \
+            and self.credentials_needed == other.credentials_needed
 
 class PrivilegeEscalation(Action):
     """A privilege escalation action in the environment
@@ -345,6 +384,7 @@ class PrivilegeEscalation(Action):
                  target,
                  cost,
                  access,
+                 credentials_tofind,
                  process=None,
                  os=None,
                  prob=1.0,
@@ -359,6 +399,8 @@ class PrivilegeEscalation(Action):
             cost of performing action
         access : int
             the access level resulting from the privilege escalation
+        credentials_tofind : 
+            credentials which will be found if PE is successful
         process : str, optional
             the target process, if None the action does not require a process
             to work (default=None)
@@ -375,21 +417,24 @@ class PrivilegeEscalation(Action):
                          target=target,
                          cost=cost,
                          prob=prob,
-                         req_access=req_access)
+                         req_access=req_access,
+                         credentials_tofind=credentials_tofind)
         self.access = access
         self.os = os
         self.process = process
+        self.credentials_tofind = credentials_tofind
 
     def __str__(self):
-        return (f"{super().__str__()}, os={self.os}, "
-                f"process={self.process}, access={self.access}")
+        return (f"{super().__str__()}, os = {self.os}, cred_tofind = {self.credentials_tofind}, "
+                f"process = {self.process}, access = {self.access}")
 
     def __eq__(self, other):
         if not super().__eq__(other):
             return False
         return self.process == other.process \
             and self.os == other.os \
-            and self.access == other.access
+            and self.access == other.access \
+            and self.credentials_tofind == other.credentials_tofind
 
 
 class ServiceScan(Action):
@@ -424,6 +469,69 @@ class ServiceScan(Action):
                          req_access=req_access,
                          **kwargs)
 
+class VulScan(Action):
+    """An Vulnerability Scan action in the environment
+
+    Inherits from the base Action Class.
+    """
+    
+    def __init__(self,
+                 target,
+                 cost,
+                 prob=1.0,
+                 req_access=AccessLevel.USER,
+                 **kwargs):
+        """
+        Parameters
+        ---------
+        target : (int, int)
+            address of target
+        cost : float
+            cost of performing action
+        prob : float, optional
+            probability of success for a given action (default=1.0)
+        req_access : AccessLevel, optional
+            the required access level to perform action
+            (default=AccessLevel.USER)
+        """
+        super().__init__("vul_scan",
+                         target=target,
+                         cost=cost,
+                         prob=prob,
+                         req_access=req_access,
+                         **kwargs)
+
+class Wiretapping(Action):
+    """An Wiretapping action in the environment
+
+    Inherits from the base Action Class.
+    """
+    
+    def __init__(self,
+                 target,
+                 cost,
+                 prob=1.0,
+                 req_access=AccessLevel.USER,
+                 **kwargs):
+        """
+        Parameters
+        ---------
+        target : (int, int)
+            address of target
+        cost : float
+            cost of performing action
+        prob : float, optional
+            probability of success for a given action (default=1.0)
+        req_access : AccessLevel, optional
+            the required access level to perform action
+            (default=AccessLevel.USER)
+        """
+        super().__init__("wiretapping",
+                         target=target,
+                         cost=cost,
+                         prob=prob,
+                         req_access=req_access,
+                         **kwargs)
 
 class OSScan(Action):
     """An OS Scan action in the environment
@@ -456,7 +564,6 @@ class OSScan(Action):
                          prob=prob,
                          req_access=req_access,
                          **kwargs)
-
 
 class SubnetScan(Action):
     """A Subnet Scan action in the environment
@@ -556,6 +663,16 @@ class ActionResult:
         services identified by action.
     os : dict
         OS identified by action
+        
+    vul : dict
+        vulnerabilies discovered by action
+    cred_tofind : dict
+        discoverable credentials identified by action 
+    cred_found : dict
+        discovered credentials by action 
+    cred_needed : dict
+        needed credentials identified by action 
+        
     processes : dict
         processes identified by action
     access : dict
@@ -580,6 +697,10 @@ class ActionResult:
                  value=0.0,
                  services=None,
                  os=None,
+                 vul=None,
+                 cred_tofind=None,
+                 cred_found=None,
+                 cred_needed=None,
                  processes=None,
                  access=None,
                  discovered=None,
@@ -598,6 +719,16 @@ class ActionResult:
             services identified by action (default=None={})
         os : dict, optional
             OS identified by action (default=None={})
+        
+        vul : dict, optional
+            vulnerabilies discovered by action (default=None={})
+        cred_tofind : dict, optional
+            discoverable credentials identified by action (default=0={})
+        cred_found : dict, optional
+            discovered credentials by action (default={})
+        cred_needed : dict, optional
+            needed credentials identified by action (default=0={})
+        
         processes : dict, optional
             processes identified by action (default=None={})
         access : dict, optional
@@ -617,6 +748,10 @@ class ActionResult:
         self.value = value
         self.services = {} if services is None else services
         self.os = {} if os is None else os
+        self.vul = {} if vul is None else vul 
+        self.cred_tofind = {} if cred_tofind == 0 else cred_tofind 
+        self.cred_found = {} if cred_found == 0 else cred_found  
+        self.cred_needed = {} if cred_needed == 0 else cred_needed  
         self.processes = {} if processes is None else processes
         self.access = {} if access is None else access
         self.discovered = {} if discovered is None else discovered
@@ -641,6 +776,10 @@ class ActionResult:
             value=self.value,
             services=self.services,
             os=self.os,
+            vul=self.vul,
+            cred_tofind=self.cred_tofind,
+            cred_found=self.cred_found,
+            cred_needed=self.cred_needed,
             processes=self.processes,
             access=self.access,
             discovered=self.discovered,
@@ -709,7 +848,7 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
     The action parameters (in order) are:
 
-    0. Action Type = [0, 5]
+    0. Action Type = [0, 7]
 
        Where:
 
@@ -720,10 +859,15 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
          2=ServiceScan,
 
          3=OSScan,
+         
+         4=VulScan,
+         
+         5=Wiretapping,
 
-         4=SubnetScan,
+         6=SubnetScan,
 
-         5=ProcessScan,
+         7=ProcessScan,
+         
 
     1. Subnet = [0, #subnets-1]
 
@@ -733,13 +877,21 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
     3. OS = [0, #OS]
 
        Where 0=None.
-
+       
     4. Service = [0, #services - 1]
     5. Process = [0, #processes]
 
        Where 0=None.
+       
+    6. Vulnerability = [0, #vul]
+    
+        Where 0=None.
+    
+    7. Credential = [0, #cred]
+    
+        Where 0=None.
 
-    Note that OS, Service and Process are only important for exploits and
+    Note that OS, Service, Process, Vulnerability and Credentials are only important for exploits and
     privilege escalation actions.
 
     ...
@@ -756,6 +908,8 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         Exploit,
         PrivilegeEscalation,
         ServiceScan,
+        VulScan,
+        Wiretapping,
         OSScan,
         SubnetScan,
         ProcessScan
@@ -777,9 +931,10 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
             max(self.scenario.subnets),
             self.scenario.num_os+1,
             self.scenario.num_services,
-            self.scenario.num_processes
+            self.scenario.num_processes+1,
+            self.scenario.num_vul+1,
+            self.scenario.num_cred
         ]
-
         super().__init__(nvec)
 
     def get_action(self, action_vec):
@@ -821,18 +976,21 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
 
         os = None if action_vec[3] == 0 else self.scenario.os[action_vec[3]-1]
 
+        
         if a_class == Exploit:
             # have to make sure it is valid choice
             # and also get constant params (name, cost, prob, access)
-            service = self.scenario.services[action_vec[4]]
-            a_def = self._get_exploit_def(service, os)
+            service = self.scenario.services[action_vec[4]-1]
+            vul = None if action_vec[6] == 0 else self.scenario.vul[action_vec[6]-1] 
+            cred_needed = None if action_vec[7] == 0 else action_vec[7]
+            a_def = self._get_exploit_def(service, os, vul, cred_needed)
         else:
             # privilege escalation
             # have to make sure it is valid choice
             # and also get constant params (name, cost, prob, access)
-            proc = self.scenario.processes[action_vec[5]]
+            proc = None if action_vec[5] == 0 else self.scenario.processes[action_vec[5]-1]
             a_def = self._get_privesc_def(proc, os)
-
+            
         if a_def is None:
             return NoOp()
         return a_class(target=target, **a_def)
@@ -841,6 +999,10 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
         """Get the constants for scan actions definitions """
         if a_class == ServiceScan:
             cost = self.scenario.service_scan_cost
+        elif a_class == VulScan:
+            cost = self.scenario.vul_scan_cost
+        elif a_class == Wiretapping:
+            cost = self.scenario.wiretapping_cost
         elif a_class == OSScan:
             cost = self.scenario.os_scan_cost
         elif a_class == SubnetScan:
@@ -851,14 +1013,19 @@ class ParameterisedActionSpace(spaces.MultiDiscrete):
             raise TypeError(f"Not implemented for Action class {a_class}")
         return {"cost": cost}
 
-    def _get_exploit_def(self, service, os):
+
+    def _get_exploit_def(self, service, os, vul, cred_needed):
         """Check if exploit parameters are valid """
         e_map = self.scenario.exploit_map
         if service not in e_map:
             return None
         if os not in e_map[service]:
             return None
-        return e_map[service][os]
+        if vul not in e_map[service][os]: 
+            return None 
+        if cred_needed not in e_map[service][os][vul]:
+            return None 
+        return e_map[service][os][vul][cred_needed]
 
     def _get_privesc_def(self, proc, os):
         """Check if privilege escalation parameters are valid """

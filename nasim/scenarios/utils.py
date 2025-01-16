@@ -34,6 +34,9 @@ HOSTS = "host"
 STEP_LIMIT = "step_limit"
 ACCESS_LEVELS = "access_levels"
 ADDRESS_SPACE_BOUNDS = "address_space_bounds"
+VUL = "vul"
+WIRETAPPING_COST = "wiretapping_cost"
+VUL_SCAN_COST = "vul_scan_cost"
 
 # scenario exploit keys
 EXPLOIT_SERVICE = "service"
@@ -41,6 +44,8 @@ EXPLOIT_OS = "os"
 EXPLOIT_PROB = "prob"
 EXPLOIT_COST = "cost"
 EXPLOIT_ACCESS = "access"
+EXPLOIT_VUL = "vul"
+EXPLOIT_CREDENTIALS_NEEDED = "credentials_needed"
 
 # scenario privilege escalation keys
 PRIVESC_PROCESS = "process"
@@ -48,6 +53,7 @@ PRIVESC_OS = "os"
 PRIVESC_PROB = "prob"
 PRIVESC_COST = "cost"
 PRIVESC_ACCESS = "access"
+PRIVESC_CREDENTIALS_TOFIND = "credentials_tofind"
 
 # host configuration keys
 HOST_SERVICES = "services"
@@ -55,7 +61,9 @@ HOST_PROCESSES = "processes"
 HOST_OS = "os"
 HOST_FIREWALL = "firewall"
 HOST_VALUE = "value"
-
+HOST_VUL = "vul"
+HOST_CREDENTIALS_NEEDED = "credentials_needed"
+HOST_CREDENTIALS_TOFIND = "credentials_tofind"
 
 def load_yaml(file_path):
     """Load yaml file located at file path.

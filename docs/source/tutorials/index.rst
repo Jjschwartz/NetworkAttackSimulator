@@ -12,3 +12,6 @@ Tutorials
     environment
     scenarios
     creating_scenarios
+    credentials_vulnerabilities
+
+    

@@ -12,6 +12,7 @@ class Scenario:
         self.generated = generated
         self._e_map = None
         self._pe_map = None
+        self._cred = None
 
         # this is used for consistent positioning of
         # host state and obs in state and obs matrices
@@ -30,6 +31,30 @@ class Scenario:
     @property
     def num_services(self):
         return len(self.services)
+    
+    @property
+    def credentials(self):
+        if self._cred is None:
+            credentials = []
+            for _, e_def in self.exploits.items():
+                cred_needed = e_def[u.EXPLOIT_CREDENTIALS_NEEDED]
+                serv_name = e_def[u.EXPLOIT_SERVICE]
+                if cred_needed not in credentials:
+                    credentials.append(cred_needed)
+            self._cred = credentials
+        return self._cred
+    
+    @property
+    def num_cred(self):
+        return len(self.credentials)
+
+    @property
+    def vul(self):
+        return self.scenario_dict[u.VUL]
+
+    @property
+    def num_vul(self):
+        return len(self.vul)
 
     @property
     def os(self):
@@ -63,12 +88,15 @@ class Scenario:
     def exploit_map(self):
         """A nested dictionary for all exploits in scenario.
 
-        I.e. {service_name: {
-                 os_name: {
-                     name: e_name,
-                     cost: e_cost,
-                     prob: e_prob,
-                     access: e_access
+            I.e. {service_name: {
+             os_name: {
+                 vul: {
+                    name: e_name,
+                    vul: e_vul,
+                    cost: e_cost,
+                    prob: e_prob,
+                    access: e_access
+                    cred_needed: e_cred_needed
                  }
              }
         """
@@ -82,13 +110,25 @@ class Scenario:
 
                 os = e_def[u.EXPLOIT_OS]
                 if os not in srv_map:
-                    srv_map[os] = {
+                    srv_map[os] = {}
+                srv_map2 = srv_map[os]
+
+                vul = e_def[u.EXPLOIT_VUL]
+                if vul not in srv_map2:
+                    srv_map2[vul] = {}
+                srv_map3 = srv_map2[vul]
+                
+                cred_needed = e_def[u.EXPLOIT_CREDENTIALS_NEEDED]
+                if cred_needed not in srv_map3:
+                    srv_map3[vul] = {
                         "name": e_name,
                         u.EXPLOIT_SERVICE: srv_name,
                         u.EXPLOIT_OS: os,
+                        u.EXPLOIT_VUL: vul,
                         u.EXPLOIT_COST: e_def[u.EXPLOIT_COST],
                         u.EXPLOIT_PROB: e_def[u.EXPLOIT_PROB],
-                        u.EXPLOIT_ACCESS: e_def[u.EXPLOIT_ACCESS]
+                        u.EXPLOIT_ACCESS: e_def[u.EXPLOIT_ACCESS],
+                        u.EXPLOIT_CREDENTIALS_NEEDED: e_def[u.EXPLOIT_CREDENTIALS_NEEDED]
                     }
             self._e_map = e_map
         return self._e_map
@@ -103,6 +143,7 @@ class Scenario:
                      cost: pe_cost,
                      prob: pe_prob,
                      access: pe_access
+                     credentials_tofind: pe_credentials_tofind
                  }
              }
         """
@@ -122,7 +163,8 @@ class Scenario:
                         u.PRIVESC_OS: os,
                         u.PRIVESC_COST: pe_def[u.PRIVESC_COST],
                         u.PRIVESC_PROB: pe_def[u.PRIVESC_PROB],
-                        u.PRIVESC_ACCESS: pe_def[u.PRIVESC_ACCESS]
+                        u.PRIVESC_ACCESS: pe_def[u.PRIVESC_ACCESS],
+                        u.PRIVESC_CREDENTIALS_TOFIND: pe_def[u.PRIVESC_CREDENTIALS_TOFIND]
                     }
             self._pe_map = pe_map
         return self._pe_map
@@ -160,6 +202,14 @@ class Scenario:
         return self.scenario_dict[u.SERVICE_SCAN_COST]
 
     @property
+    def vul_scan_cost(self):
+        return self.scenario_dict[u.VUL_SCAN_COST]
+
+    @property
+    def wiretapping_cost(self):
+        return self.scenario_dict[u.WIRETAPPING_COST]
+
+    @property
     def os_scan_cost(self):
         return self.scenario_dict[u.OS_SCAN_COST]
 
@@ -173,9 +223,7 @@ class Scenario:
 
     @property
     def address_space_bounds(self):
-        return self.scenario_dict.get(
-            u.ADDRESS_SPACE_BOUNDS, (len(self.subnets), max(self.subnets))
-        )
+        return len(self.subnets), max(self.subnets)
 
     @property
     def host_value_bounds(self):
@@ -215,9 +263,10 @@ class Scenario:
     def get_action_space_size(self):
         num_exploits = len(self.exploits)
         num_privescs = len(self.privescs)
+        num_vul = len(self.vul)
         # OSScan, ServiceScan, SubnetScan, ProcessScan
         num_scans = 4
-        actions_per_host = num_exploits + num_privescs + num_scans
+        actions_per_host = num_exploits + num_privescs + num_scans + num_vul
         return len(self.hosts) * actions_per_host
 
     def get_state_space_size(self):
@@ -227,6 +276,7 @@ class Scenario:
             host_aux_bin_features
             + self.num_os
             + self.num_services
+            + self.num_vul
             + self.num_processes
         )
         # access
@@ -243,6 +293,7 @@ class Scenario:
             + host_aux_features
             + self.num_os
             + self.num_services
+            + self.num_vul
             + self.num_processes
         )
         return len(self.hosts), host_state_size
@@ -259,6 +310,7 @@ class Scenario:
             "Hosts": len(self.hosts),
             "OS": self.num_os,
             "Services": self.num_services,
+            "Vul": self.num_vul,
             "Processes": self.num_processes,
             "Exploits": len(self.exploits),
             "PrivEscs": len(self.privescs),

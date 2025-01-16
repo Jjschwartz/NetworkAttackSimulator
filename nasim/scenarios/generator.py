@@ -46,6 +46,7 @@ class ScenarioGenerator:
       corresponding value in list
 
     For deterministic exploits set ``exploit_probs=1.0``.
+    This includes exploits upon a vulnerability.
 
     **Privilege Escalation Probabilities**:
 
@@ -70,6 +71,8 @@ class ScenarioGenerator:
                  num_processes=2,
                  num_exploits=None,
                  num_privescs=None,
+                 num_vul=0,
+                 num_cred=0,
                  r_sensitive=10,
                  r_user=10,
                  exploit_cost=1,
@@ -80,6 +83,8 @@ class ScenarioGenerator:
                  os_scan_cost=1,
                  subnet_scan_cost=1,
                  process_scan_cost=1,
+                 vul_scan_cost=0,
+                 wiretapping_cost=0,
                  uniform=False,
                  alpha_H=2.0,
                  alpha_V=2.0,
@@ -101,6 +106,8 @@ class ScenarioGenerator:
             number of hosts to include in network (minimum is 3)
         num_services : int
             number of services running on network (minimum is 1)
+        num_vul : int
+            number of vulnerabilites existing in network (minimum is 1)
         num_os : int, optional
             number of OS running on network (minimum is 1) (default=2)
         num_processes : int, optional
@@ -132,6 +139,10 @@ class ScenarioGenerator:
             cost for a subnet scan (default=1)
         process_scan_cost : int or float, optional
             cost for a process scan (default=1)
+        vul_scan_cost : int
+            cost for a vulnerability scan (default=0)
+        wiretapping_cost : int
+            cost for a wiretapping action (default=0)
         uniform : bool, optional
             whether to use uniform distribution or correlated host configs
             (default=False)
@@ -183,6 +194,7 @@ class ScenarioGenerator:
         assert 0 < r_sensitive and 0 < r_user
         assert 0 < alpha_H and 0 < alpha_V and 0 < lambda_V
         assert 0 < restrictiveness
+        assert 0 <= num_cred <= 9
 
         if seed is not None:
             np.random.seed(seed)
@@ -190,16 +202,28 @@ class ScenarioGenerator:
         if num_exploits is None:
             num_exploits = num_services
 
+        if num_exploits > num_services:
+            num_exploits = num_services
+
         if num_privescs is None:
             num_privescs = num_processes
+            
+        if num_vul > num_services:
+            num_vul = num_services
+            
+        self.serv_vul_map = {}
+        self.subnet_cred_map = {}
+        self.subnet_host_cred_map = {}
 
         self._generate_subnets(num_hosts)
         self._generate_topology()
         self._generate_address_space_bounds(address_space_bounds)
         self._generate_os(num_os)
         self._generate_services(num_services)
+        self._generate_vul(num_vul)
+        self._generate_service_vul_map()
         self._generate_processes(num_processes)
-        self._generate_exploits(num_exploits, exploit_cost, exploit_probs)
+        self._generate_exploits(num_exploits, exploit_cost, exploit_probs, num_cred)
         self._generate_privescs(num_privescs, privesc_cost, privesc_probs)
         self._generate_sensitive_hosts(r_sensitive, r_user, random_goal)
         self.base_host_value = base_host_value
@@ -210,10 +234,17 @@ class ScenarioGenerator:
             self._generate_correlated_hosts(alpha_H, alpha_V, lambda_V)
         self._ensure_host_vulnerability()
         self._generate_firewall(restrictiveness)
+        
+        self._distribute_credentials(num_cred)
+        self._distribute_locks()
+        
         self.service_scan_cost = service_scan_cost
         self.os_scan_cost = os_scan_cost
         self.subnet_scan_cost = subnet_scan_cost
         self.process_scan_cost = process_scan_cost
+        self.vul_scan_cost = vul_scan_cost
+        self.wiretapping_cost = wiretapping_cost
+        
 
         if name is None:
             name = f"gen_H{num_hosts}_E{num_exploits}_S{num_services}"
@@ -241,6 +272,9 @@ class ScenarioGenerator:
         scenario_dict[u.FIREWALL] = self.firewall
         scenario_dict[u.HOSTS] = self.hosts
         scenario_dict[u.STEP_LIMIT] = self.step_limit
+        scenario_dict[u.VUL_SCAN_COST] = self.vul_scan_cost
+        scenario_dict[u.WIRETAPPING_COST] = self.wiretapping_cost
+        scenario_dict[u.VUL] = self.vul
         scenario = Scenario(
             scenario_dict, name=self.name, generated=True
         )
@@ -324,35 +358,136 @@ class ScenarioGenerator:
 
     def _generate_os(self, num_os):
         self.os = [f"os_{i}" for i in range(num_os)]
-
+        
+    def _generate_vul(self, num_vul):
+        self.vul = [f"vul_{i}" for i in range(num_vul)]
+        
+    def _generate_service_vul_map(self):
+        # Randomly generate dependencies betweens a service and a vulnerability
+        mapped = {}
+        r_vul = np.random.permutation(self.vul)
+        i = 0
+        while i < len(r_vul):
+            mapped[self.services[i]] = r_vul[i]
+            i += 1
+        self.serv_vul_map = mapped
+        
+    def _distribute_credentials(self, num_cred):
+        #distribution of credentials to be found by Wiretapping()
+        #1. randomly assigned into each subnet
+        num_sub = len(self.subnets)
+        subnet_cred_list = [""] * num_sub
+        for cred in range(1, num_cred + 1):
+            subnet = np.random.randint(0, num_sub - 1)
+            subnet_cred_list[subnet] += str(cred)
+        
+        for i in range(1, num_sub + 1):
+            subnet_cred = subnet_cred_list[i - 1]
+            if subnet_cred != "":
+                self.subnet_cred_map[i] = int(subnet_cred_list[i - 1])
+        
+        #2. distribute credentials to hosts in a subnet
+        #mapping of subnet-id's to a list consisting of credentials, randomly assigned
+        #list index corresponds to host-id
+        
+        for subnet, size in enumerate(self.subnets):
+            if subnet == u.INTERNET:
+                continue
+            else:
+                host_cred_list = [""] * size
+                for cred in subnet_cred_list[subnet]:
+                    host_id = np.random.randint(0, size)
+                    host_cred_list[host_id] += cred
+                self.subnet_host_cred_map[subnet] = host_cred_list   
+        
+        self.update_host_cred_tofind()   
+        
+    def update_host_cred_tofind(self):
+        for subnet, size in enumerate(self.subnets):
+            if subnet == u.INTERNET:
+                continue
+            else:
+                for host_id in range(size):
+                    credentials = self.subnet_host_cred_map[subnet][host_id]
+                    #credentials got distributed so update the value
+                    if credentials != "":
+                        self.hosts[(subnet, host_id)].cred_tofind = int(credentials)
+               
+    
+    def _distribute_locks(self):
+        #generate all host-id's, permutate and randomly 'lock' them using 'known' credentials while going through the hosts one by one
+        probability = 1
+        found_credentials = []
+        host_ids = []
+        for subnet, size in enumerate(self.subnets):
+            if subnet == u.INTERNET:
+                continue
+            else:
+                for h in range(size):
+                    host_ids.append((subnet, h))
+        list(np.random.permutation(host_ids))
+        
+        for id in host_ids:
+            host = self.hosts[id]
+            cred_tofind = host.cred_tofind
+            if found_credentials != []:
+                #assign the lock by chance
+                if np.random.choice([False, True],p=[1 - probability, probability]):
+                    lock = np.random.choice(found_credentials)
+                    self.update_host_cred_needed(id, lock)
+            #check for possible 'found' credentials
+            if cred_tofind > 0:
+                for c in str(cred_tofind):
+                    if c not in found_credentials:
+                        found_credentials.append(int(c))
+        
+    
+    def update_host_cred_needed(self, host_id, cred_needed):
+        self.hosts[host_id].cred_needed = int(cred_needed)
+    
+    
     def _generate_services(self, num_services):
         self.services = [f"srv_{s}" for s in range(num_services)]
 
     def _generate_processes(self, num_processes):
         self.processes = [f"proc_{s}" for s in range(num_processes)]
 
-    def _generate_exploits(self, num_exploits, exploit_cost, exploit_probs):
+    def _generate_exploits(self, num_exploits, exploit_cost, exploit_probs, num_cred):
         exploits = {}
         exploit_probs = self._get_action_probs(num_exploits, exploit_probs)
         # add None since some exploits might work for all OS
         possible_os = self.os + [None]
         # we create one exploit per service
+        # if service is vulnerability bound, prob = 1
+        e_names = []
         exploits_added = 0
         while exploits_added < num_exploits:
+            e_prob = exploit_probs[exploits_added]
+            vul = None
             srv = np.random.choice(self.services)
-            os = np.random.choice(possible_os)
+            if srv in self.serv_vul_map:
+                vul = self.serv_vul_map[srv]
+                os = None
+                e_prob = 1.0
+            else:
+                os = np.random.choice(possible_os)
             al = np.random.randint(u.USER_ACCESS, u.ROOT_ACCESS+1)
-            e_name = f"e_{srv}"
+            e_name = f"e_{srv}" + f"_{vul}"
             if os is not None:
                 e_name += f"_{os}"
-            if e_name not in exploits:
-                exploits[e_name] = {
-                    u.EXPLOIT_SERVICE: srv,
-                    u.EXPLOIT_OS: os,
-                    u.EXPLOIT_PROB: exploit_probs[exploits_added],
-                    u.EXPLOIT_COST: exploit_cost,
-                    u.EXPLOIT_ACCESS: al
-                }
+            if e_name not in e_names:
+                e_names.append(e_name)
+                for c in range(num_cred + 1):
+                    e_name_tmp = e_name + f"_{c}"
+                    exploits[e_name_tmp] = {
+                        u.EXPLOIT_SERVICE: srv,
+                        u.EXPLOIT_OS: os,
+                        u.EXPLOIT_PROB: e_prob,
+                        u.EXPLOIT_COST: exploit_cost,
+                        u.EXPLOIT_ACCESS: al,
+                        u.EXPLOIT_VUL: vul,
+                        u.EXPLOIT_CREDENTIALS_NEEDED: c
+                    }
                 exploits_added += 1
         self.exploits = exploits
 
@@ -380,7 +515,7 @@ class ScenarioGenerator:
                    or all([os in os_choices for os in self.os]):
                     break
 
-        # we create one exploit per service
+        # we create one privesc per process
         privescs_added = 0
         while privescs_added < num_privesc:
             proc = np.random.choice(self.processes)
@@ -394,7 +529,8 @@ class ScenarioGenerator:
                     u.PRIVESC_OS: os,
                     u.PRIVESC_PROB: privesc_probs[privescs_added],
                     u.PRIVESC_COST: privesc_cost,
-                    u.PRIVESC_ACCESS: u.ROOT_ACCESS
+                    u.PRIVESC_ACCESS: u.ROOT_ACCESS,
+                    u.PRIVESC_CREDENTIALS_TOFIND: 0
                 }
                 privescs_added += 1
         self.privescs = privescs
@@ -445,6 +581,14 @@ class ScenarioGenerator:
             # second last host in USER network is goal
             sensitive_hosts[(len(self.subnets)-1, self.subnets[-1]-1)] = r_user
         self.sensitive_hosts = sensitive_hosts
+        
+    def _generate_vul_cfg(self, srv_cfg):
+        # Generates a matching vul_cfg to a srv_cfg
+        vul_cfg = {}
+        for srv_cfg_key in srv_cfg.keys():
+            if self.serv_vul_map.get(srv_cfg_key) is not None:
+                vul_cfg[self.serv_vul_map[srv_cfg_key]] = True      
+        return vul_cfg
 
     def _generate_uniform_hosts(self):
         hosts = dict()
@@ -457,7 +601,7 @@ class ScenarioGenerator:
                 continue
             for h in range(size):
                 srv_cfg = srv_config_set[np.random.choice(num_srv_configs)]
-                srv_cfg = self._convert_to_service_map(srv_cfg)
+                srv_cfg = self._convert_to_service_map(srv_cfg)                  
 
                 proc_cfg = proc_config_set[np.random.choice(num_proc_configs)]
                 proc_cfg = self._convert_to_process_map(proc_cfg)
@@ -474,8 +618,13 @@ class ScenarioGenerator:
                     processes=proc_cfg.copy(),
                     firewall={},
                     value=value,
-                    discovery_value=self.host_discovery_value
+                    discovery_value=self.host_discovery_value,
+                    vul = self._generate_vul_cfg(srv_cfg),
+                    cred_needed=0,
+                    cred_tofind=0
                 )
+                print(host)
+                
                 hosts[address] = host
         self.hosts = hosts
 
@@ -567,7 +716,11 @@ class ScenarioGenerator:
                     processes=process_cfg.copy(),
                     firewall={},
                     value=value,
-                    discovery_value=self.host_discovery_value
+                    discovery_value=self.host_discovery_value,
+                    vul=self._generate_vul_cfg(service_cfg),
+                    
+                    cred_tofind = 0,                        
+                    cred_needed = 0                        
                 )
                 hosts[address] = host
         self.hosts = hosts

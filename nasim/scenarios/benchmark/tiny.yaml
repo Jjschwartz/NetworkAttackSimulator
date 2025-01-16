@@ -14,19 +14,25 @@
 # Score = 200 - (6*1) = 195
 #
 subnets: [1, 1, 1]
+
 topology: [[ 1, 1, 0, 0],
            [ 1, 1, 1, 1],
            [ 0, 1, 1, 1],
            [ 0, 1, 1, 1]]
+
 sensitive_hosts:
   (2, 0): 100
   (3, 0): 100
+
 os:
   - linux
+
 services:
   - ssh
+
 processes:
   - tomcat
+
 exploits:
   e_ssh:
     service: ssh
@@ -34,6 +40,9 @@ exploits:
     prob: 0.8
     cost: 1
     access: user
+    vul: None
+    credentials_needed: 0
+
 privilege_escalation:
   pe_tomcat:
     process: tomcat
@@ -41,15 +50,26 @@ privilege_escalation:
     prob: 1.0
     cost: 1
     access: root
+    credentials_tofind: 0
+
 service_scan_cost: 1
 os_scan_cost: 1
 subnet_scan_cost: 1
 process_scan_cost: 1
+vul_scan_cost: 0
+wiretapping_cost: 0
+
+vul: 
+  - None
+
 host_configurations:
   (1, 0):
     os: linux
     services: [ssh]
     processes: [tomcat]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
     # which services to deny between individual hosts
     firewall:
       (3, 0): [ssh]
@@ -57,12 +77,19 @@ host_configurations:
     os: linux
     services: [ssh]
     processes: [tomcat]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
     firewall:
       (1, 0): [ssh]
   (3, 0):
     os: linux
     services: [ssh]
     processes: [tomcat]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
 # two row for each connection between subnets as defined by topology
 # one for each direction of connection
 # list which services to allow
@@ -75,4 +102,5 @@ firewall:
   (3, 1): [ssh]
   (2, 3): [ssh]
   (3, 2): [ssh]
+
 step_limit: 1000

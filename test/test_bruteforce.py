@@ -33,6 +33,7 @@ def test_bruteforce_static(scenario, seed, fully_obs, flat_actions, flat_obs):
 @pytest.mark.parametrize("fully_obs", [True, False])
 @pytest.mark.parametrize("flat_actions", [True, False])
 @pytest.mark.parametrize("flat_obs", [True, False])
+@pytest.mark.parametrize("flat_obs", [3, ])
 def test_bruteforce_gen(scenario, seed, fully_obs, flat_actions, flat_obs):
     """Tests all generated benchmark scenarios using every possible environment
     setting, using bruteforce agent, checking for any errors
@@ -42,5 +43,5 @@ def test_bruteforce_gen(scenario, seed, fully_obs, flat_actions, flat_obs):
                                fully_obs=fully_obs,
                                flat_actions=flat_actions,
                                flat_obs=flat_obs,
-                               render_mode=None)
+                               render_mode=None,)
     run_bruteforce_agent(env, verbose=False)

@@ -26,7 +26,11 @@ VALID_CONFIG_KEYS = {
     u.FIREWALL: dict
 }
 
-OPTIONAL_CONFIG_KEYS = {u.STEP_LIMIT: int}
+OPTIONAL_CONFIG_KEYS = {u.STEP_LIMIT: int,
+                        u.WIRETAPPING_COST: (int, float),
+                        u.VUL_SCAN_COST: (int, float),
+                        u.VUL: list                
+}
 
 VALID_ACCESS_VALUES = ["user", "root", u.USER_ACCESS, u.ROOT_ACCESS]
 ACCESS_LEVEL_MAP = {
@@ -44,6 +48,11 @@ EXPLOIT_KEYS = {
     u.EXPLOIT_ACCESS: (str, int)
 }
 
+#optional privesc config keys
+OPTIONAL_EXPLOIT_KEYS = {u.EXPLOIT_VUL: str,
+                         u.EXPLOIT_CREDENTIALS_NEEDED: int
+}
+
 # required keys for privesc actions
 PRIVESC_KEYS = {
     u.PRIVESC_OS: str,
@@ -53,11 +62,22 @@ PRIVESC_KEYS = {
     u.PRIVESC_ACCESS: (str, int)
 }
 
+#optional privesc config keys
+OPTIONAL_PRIVESC_CONFIG_KEYS = {u.PRIVESC_CREDENTIALS_TOFIND: int}
+
 # required keys for host configs
 HOST_CONFIG_KEYS = {
     u.HOST_OS: (str, None),
     u.HOST_SERVICES: list,
     u.HOST_PROCESSES: list
+}
+
+#optional host config keys
+OPTIONAL_HOST_CONFIG_KEYS = {u.HOST_VUL: list,
+                             u.HOST_CREDENTIALS_NEEDED: int,
+                             u.HOST_CREDENTIALS_TOFIND: int,
+                             u.HOST_FIREWALL: dict,
+                             u.HOST_VALUE: int
 }
 
 
@@ -94,6 +114,7 @@ class ScenarioLoader:
         self._parse_topology()
         self._parse_os()
         self._parse_services()
+        self._parse_vul()
         self._parse_processes()
         self._parse_sensitive_hosts()
         self._parse_exploits()
@@ -111,12 +132,15 @@ class ScenarioLoader:
         scenario_dict[u.TOPOLOGY] = self.topology
         scenario_dict[u.OS] = self.os
         scenario_dict[u.SERVICES] = self.services
+        scenario_dict[u.VUL] = self.vul
         scenario_dict[u.PROCESSES] = self.processes
         scenario_dict[u.SENSITIVE_HOSTS] = self.sensitive_hosts
         scenario_dict[u.EXPLOITS] = self.exploits
         scenario_dict[u.PRIVESCS] = self.privescs
         scenario_dict[u.OS_SCAN_COST] = self.os_scan_cost
         scenario_dict[u.SERVICE_SCAN_COST] = self.service_scan_cost
+        scenario_dict[u.VUL_SCAN_COST] = self.vul_scan_cost
+        scenario_dict[u.WIRETAPPING_COST] = self.wiretapping_cost
         scenario_dict[u.SUBNET_SCAN_COST] = self.subnet_scan_cost
         scenario_dict[u.PROCESS_SCAN_COST] = self.process_scan_cost
         scenario_dict[u.FIREWALL] = self.firewall
@@ -131,6 +155,7 @@ class ScenarioLoader:
         they are valid type.
         """
         # 0. check correct number of keys
+        #print(self.yaml_dict)
         assert len(self.yaml_dict) >= len(VALID_CONFIG_KEYS), \
             (f"Too few config file keys: {len(self.yaml_dict)} "
              f"< {len(VALID_CONFIG_KEYS)}")
@@ -208,6 +233,20 @@ class ScenarioLoader:
         assert len(services) == len(set(services)), \
             f"{services}. Services must not contain duplicates"
 
+    def _parse_vul(self):
+        vul = self.yaml_dict.get(u.VUL)
+        if vul is not None:
+            self._validate_vul(vul)
+        else:
+            vul = []
+        self.vul = vul
+
+    def _validate_vul(self, vul):
+        assert len(vul) >= 0, \
+           f"{len(vul)}. Invalid number of vul, must be > 0"
+        assert len(vul) == len(set(vul)), \
+            f"{vul}. vul must not contain duplicates"
+
     def _parse_processes(self):
         processes = self.yaml_dict[u.PROCESSES]
         self._validate_processes(processes)
@@ -215,7 +254,7 @@ class ScenarioLoader:
 
     def _validate_processes(self, processes):
         assert len(processes) >= 1, \
-            f"{len(processes)}. Invalid number of services, must be > 0"
+            f"{len(processes)}. Invalid number of processes, must be > 0"
         assert len(processes) == len(set(processes)), \
             f"{processes}. Processes must not contain duplicates"
 
@@ -298,6 +337,10 @@ class ScenarioLoader:
             assert k in e, f"{e_name}. Exploit missing key: '{k}'"
             assert isinstance(e[k], t), \
                 f"{e_name}. Exploit '{k}' incorrect type. Expected {t}"
+                
+        for e_key in e.keys():
+            assert e_key in EXPLOIT_KEYS or e_key in OPTIONAL_EXPLOIT_KEYS, \
+                (f"{e_name}. {e_key} is not a valid key for exploits")
 
         assert e[u.EXPLOIT_SERVICE] in self.services, \
             (f"{e_name}. Exploit target service invalid: "
@@ -310,11 +353,30 @@ class ScenarioLoader:
             (f"{e_name}. Exploit target OS is invalid. '{e[u.EXPLOIT_OS]}'."
              " Should be None or one of the OS in the os list.")
 
-        assert 0 <= e[u.EXPLOIT_PROB] < 1, \
+        assert 0 <= e[u.EXPLOIT_PROB] <= 1, \
             (f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
              "a valid probability")
 
-        assert e[u.EXPLOIT_COST] > 0, f"{e_name}. Exploit cost must be > 0."
+        e_vul = e.get(u.EXPLOIT_VUL)
+        if str(e_vul).lower() == "none":
+            e[u.EXPLOIT_VUL] = None
+            
+        assert e[u.EXPLOIT_VUL] is None or e[u.EXPLOIT_VUL] in self.vul, \
+            (f"{e_name}. Exploit vulnerability, '{e[u.EXPLOIT_VUL]}' not "
+             "valid")
+         
+        e_cred_needed = e.get(u.EXPLOIT_CREDENTIALS_NEEDED)
+        if e_cred_needed is None:
+            e[u.EXPLOIT_CREDENTIALS_NEEDED] = 0
+
+        assert type(e[u.EXPLOIT_CREDENTIALS_NEEDED]) == int and len(str(e[u.EXPLOIT_CREDENTIALS_NEEDED])) == 1, \
+            (f"{e_name}. credentials_needed, '{e[u.EXPLOIT_CREDENTIALS_NEEDED]}' has to be a single digit integer")
+        
+        e_cost = e.get(u.EXPLOIT_COST)
+        if e_cost is None:
+            e[u.EXPLOIT_COST] = 0
+            
+        assert e[u.EXPLOIT_COST] >= 0, f"{e_name}. Exploit cost must be >= 0."
 
         assert e[u.EXPLOIT_ACCESS] in VALID_ACCESS_VALUES, \
             (f"{e_name}. Exploit access value '{e[u.EXPLOIT_ACCESS]}' "
@@ -332,7 +394,7 @@ class ScenarioLoader:
             self._validate_single_privesc(pe_name, pe)
 
     def _validate_single_privesc(self, pe_name, pe):
-        s_name = "Priviledge Escalation"
+        s_name = "Privilege Escalation"
 
         assert isinstance(pe, dict), f"{pe_name}. {s_name} must be a dict."
 
@@ -340,6 +402,10 @@ class ScenarioLoader:
             assert k in pe, f"{pe_name}. {s_name} missing key: '{k}'"
             assert isinstance(pe[k], t), \
                 (f"{pe_name}. {s_name} '{k}' incorrect type. Expected {t}")
+                
+        for pe_key in pe.keys():
+            assert pe_key in PRIVESC_KEYS or pe_key in OPTIONAL_PRIVESC_CONFIG_KEYS, \
+                (f"{pe_name}. {pe_key} is not a valid key for privilige escalation")
 
         assert pe[u.PRIVESC_PROCESS] in self.processes, \
             (f"{pe_name}. {s_name} target process invalid: "
@@ -362,7 +428,15 @@ class ScenarioLoader:
         assert pe[u.PRIVESC_ACCESS] in VALID_ACCESS_VALUES, \
             (f"{pe_name}. {s_name} access value '{pe[u.PRIVESC_ACCESS]}' "
              f"invalid. Must be one of {VALID_ACCESS_VALUES}")
-
+            
+        pe_cred_tofind = pe.get(u.PRIVESC_CREDENTIALS_TOFIND)
+        if pe_cred_tofind is None:
+            pe[u.PRIVESC_CREDENTIALS_TOFIND] = 0
+            
+        assert type(pe[u.PRIVESC_CREDENTIALS_TOFIND]) == int and len(str(pe[u.PRIVESC_CREDENTIALS_TOFIND])) == 1, \
+            (f"{pe_name}. {s_name} credentials_tofind, '{pe[u.PRIVESC_CREDENTIALS_TOFIND]}' has to be a single digit integer")
+            
+        
         if isinstance(pe[u.PRIVESC_ACCESS], str):
             pe[u.PRIVESC_ACCESS] = ACCESS_LEVEL_MAP[pe[u.PRIVESC_ACCESS]]
 
@@ -371,11 +445,24 @@ class ScenarioLoader:
         self.service_scan_cost = self.yaml_dict[u.SERVICE_SCAN_COST]
         self.subnet_scan_cost = self.yaml_dict[u.SUBNET_SCAN_COST]
         self.process_scan_cost = self.yaml_dict[u.PROCESS_SCAN_COST]
+        
+        vul_scan_cost = self.yaml_dict.get(u.VUL_SCAN_COST)
+        if vul_scan_cost is None:
+            vul_scan_cost = 0
+        self.vul_scan_cost = vul_scan_cost
+            
+        wiretapping_cost = self.yaml_dict.get(u.WIRETAPPING_COST)
+        if wiretapping_cost is None:
+            wiretapping_cost = 0
+        self.wiretapping_cost = wiretapping_cost
+            
         for (n, c) in [
                 ("OS", self.os_scan_cost),
                 ("Service", self.service_scan_cost),
+                ("Vul", self.vul_scan_cost),
                 ("Subnet", self.subnet_scan_cost),
-                ("Process", self.process_scan_cost)
+                ("Process", self.process_scan_cost),
+                ("Wiretapping", self.wiretapping_cost)
         ]:
             self._validate_scan_cost(n, c)
 
@@ -420,6 +507,11 @@ class ScenarioLoader:
 
         for k in HOST_CONFIG_KEYS:
             assert k in cfg, f"{err_prefix} configuration missing key: {k}"
+        
+        #Check for invalid keys in Host Config
+        for cfg_key in cfg.keys():
+            assert cfg_key in HOST_CONFIG_KEYS or cfg_key in OPTIONAL_HOST_CONFIG_KEYS, \
+                (f"{cfg_key} is not a valid key")
 
         host_services = cfg[u.HOST_SERVICES]
         for service in host_services:
@@ -431,6 +523,18 @@ class ScenarioLoader:
             (f"{err_prefix} configuration services list cannot contain "
              "duplicates")
 
+        host_vul = cfg.get(u.HOST_VUL)
+        if host_vul is None:
+            cfg[u.HOST_VUL] = []
+        for v in cfg[u.HOST_VUL]:
+            assert v in self.vul, \
+                (f"{err_prefix} Invalid vulnerability in configuration vul "
+                 f"list: {service}")
+
+        assert len(cfg[u.HOST_VUL]) == len(set(cfg[u.HOST_VUL])), \
+            (f"{err_prefix} configuration vul list cannot contain "
+             "duplicates")
+
         host_processes = cfg[u.HOST_PROCESSES]
         for process in host_processes:
             assert process in self.processes, \
@@ -440,6 +544,14 @@ class ScenarioLoader:
         assert len(host_processes) == len(set(host_processes)), \
             (f"{err_prefix} configuation processes list cannot contain "
              "duplicates")
+        
+        cfg_cred = cfg.get(u.HOST_CREDENTIALS_NEEDED)
+        if cfg_cred is None:
+            cfg_cred = 0
+            
+        assert type(cfg_cred) == int and len(str(cfg_cred)) == 1, \
+            (f"{err_prefix} credentials_needed '{cfg[u.HOST_CREDENTIALS_NEEDED]}' "
+             "has to be a single digit integer")
 
         host_os = cfg[u.HOST_OS]
         assert host_os in self.os, \
@@ -545,12 +657,15 @@ class ScenarioLoader:
         hosts = dict()
         for address, h_cfg in self.host_configs.items():
             formatted_address = eval(address)
-            os_cfg, srv_cfg, proc_cfg = self._construct_host_config(h_cfg)
+            os_cfg, srv_cfg, vul_cfg, proc_cfg,cred_needed_cfg, cred_tofind_cfg = self._construct_host_config(h_cfg)
             value = self._get_host_value(formatted_address, h_cfg)
             hosts[formatted_address] = Host(
                 address=formatted_address,
                 os=os_cfg,
-                services=srv_cfg,
+                services=srv_cfg, 
+                vul=vul_cfg,
+                cred_tofind=cred_tofind_cfg,
+                cred_needed=cred_needed_cfg,
                 processes=proc_cfg,
                 firewall=h_cfg[u.HOST_FIREWALL],
                 value=value
@@ -559,15 +674,35 @@ class ScenarioLoader:
 
     def _construct_host_config(self, host_cfg):
         os_cfg = {}
+        h_os = host_cfg.get(u.HOST_OS)
         for os_name in self.os:
-            os_cfg[os_name] = os_name == host_cfg[u.HOST_OS]
+            os_cfg[os_name] = os_name == h_os
+            
         services_cfg = {}
+        h_services = host_cfg.get(u.HOST_SERVICES)
         for service in self.services:
-            services_cfg[service] = service in host_cfg[u.HOST_SERVICES]
+            services_cfg[service] = service in h_services
+
+        h_vul = host_cfg.get(u.HOST_VUL)
+        if h_vul is None:
+            h_vul = []
+        vul_cfg = {}
+        for v in self.vul:
+            vul_cfg[v] = v in h_vul
+
+        cred_needed_cfg = host_cfg.get(u.HOST_CREDENTIALS_NEEDED)
+        if cred_needed_cfg is None:
+            cred_needed_cfg = 0
+
+        cred_tofind_cfg = host_cfg.get(u.HOST_CREDENTIALS_TOFIND)
+        if cred_tofind_cfg is None:
+            cred_tofind_cfg = 0
+
         processes_cfg = {}
+        h_processes = host_cfg.get(u.HOST_PROCESSES)
         for process in self.processes:
-            processes_cfg[process] = process in host_cfg[u.HOST_PROCESSES]
-        return os_cfg, services_cfg, processes_cfg
+            processes_cfg[process] = process in h_processes
+        return os_cfg, services_cfg, vul_cfg, processes_cfg, cred_needed_cfg, cred_tofind_cfg
 
     def _get_host_value(self, address, host_cfg):
         if address in self.sensitive_hosts:
@@ -575,11 +710,9 @@ class ScenarioLoader:
         return float(host_cfg.get(u.HOST_VALUE, u.DEFAULT_HOST_VALUE))
 
     def _parse_step_limit(self):
-        if u.STEP_LIMIT not in self.yaml_dict:
-            step_limit = None
-        else:
-            step_limit = self.yaml_dict[u.STEP_LIMIT]
-            assert step_limit > 0, \
-                f"Step limit must be positive int: {step_limit} is invalid"
+        step_limit = self.yaml_dict.get(u.STEP_LIMIT)
+
+        assert step_limit is None or step_limit > 0, \
+            f"Step limit must be positive int or None: {step_limit} is invalid"
 
         self.step_limit = step_limit

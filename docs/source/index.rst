@@ -9,6 +9,16 @@ The environment is modelled after the `gymnasium (formerly Open AI gym) <https:/
 What's new
 ----------
 
+
+Version 0.12.1
+**************
+
+  + Modified version of NASim based on the paper "Evaluation of Reinforcement Learning for Autonomous Penetration Testing using A3C, Q-learning and DQN" `[Norman Becker et al.] <https://arxiv.org/abs/2407.15656>`_. Please refer to the documentation for further information
+
+  - Addition of Credentials and Vulnerabilities
+  - Modifications to existing functions and structures to reflect the intended
+  - Modifications to the generator in regards to the new additions
+
 Version 0.12.0
 **************
 

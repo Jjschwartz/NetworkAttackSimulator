@@ -81,11 +81,6 @@ class State:
             s_array = s_array.reshape(state_shape)
         return State(s_array, host_num_map)
 
-    @classmethod
-    def reset(cls):
-        """Reset any class attributes for state """
-        HostVector.reset()
-
     @property
     def hosts(self):
         hosts = []
@@ -96,6 +91,7 @@ class State:
     def copy(self):
         new_tensor = np.copy(self.tensor)
         return State(new_tensor, self.host_num_map)
+
 
     def get_initial_observation(self, fully_obs):
         """Get the initial observation of network.
@@ -161,7 +157,12 @@ class State:
             services=False,
             processes=False,
             os=False,
-            access=False
+            access=False,
+            vul=False,
+            cred_tofind=False,
+            cred_found=False,
+            cred_needed=False
+            
         )
         if action.is_exploit():
             # exploit action, so get all observations for host
@@ -169,12 +170,34 @@ class State:
             obs_kwargs["services"] = True
             obs_kwargs["os"] = True
             obs_kwargs["access"] = True
-            obs_kwargs["value"] = True
+            obs_kwargs["vul"] = True         
+            obs_kwargs["cred_needed"] = True  
+            obs_kwargs["cred_found"] = True    
+            
+            # if action.access == AccessLevel.ROOT:
+            if action_result.value > 0:
+                # Means exploit gained ROOT access for first time
+                # So observe value
+                obs_kwargs["value"] = True
         elif action.is_privilege_escalation():
             obs_kwargs["compromised"] = True
             obs_kwargs["access"] = True
+            obs_kwargs["cred_found"] = True
+            obs_kwargs["cred_tofind"] = True
+            if action_result.value > 0:
+                # Means exploit gained ROOT access for first time
+                # So observe value
+                obs_kwargs["value"] = True
         elif action.is_service_scan():
             obs_kwargs["services"] = True
+
+        elif action.is_vul_scan():
+            obs_kwargs["vul"] = True
+
+        elif action.is_wiretapping():
+            obs_kwargs["cred_found"] = True
+            obs_kwargs["cred_tofind"] = True
+
         elif action.is_os_scan():
             obs_kwargs["os"] = True
         elif action.is_process_scan():
@@ -211,10 +234,6 @@ class State:
     def numpy(self):
         return self.tensor
 
-    def update_host(self, host_addr, host_vector):
-        host_idx = self.host_num_map[host_addr]
-        self.tensor[host_idx] = host_vector.vector
-
     def get_host(self, host_addr):
         host_idx = self.host_num_map[host_addr]
         return HostVector(self.tensor[host_idx])
@@ -238,20 +257,14 @@ class State:
     def host_has_access(self, host_addr, access_level):
         return self.get_host(host_addr).access >= access_level
 
-    def set_host_compromised(self, host_addr):
-        self.get_host(host_addr).compromised = True
-
-    def set_host_reachable(self, host_addr):
-        self.get_host(host_addr).reachable = True
-
-    def set_host_discovered(self, host_addr):
-        self.get_host(host_addr).discovered = True
-
     def get_host_value(self, host_address):
         return self.hosts[host_address].get_value()
 
     def host_is_running_service(self, host_addr, service):
         return self.get_host(host_addr).is_running_service(service)
+
+    def host_is_running_vul(self, host_addr, vul):
+        return self.get_host(host_addr).is_running_vul(vul)
 
     def host_is_running_os(self, host_addr, os):
         return self.get_host(host_addr).is_running_os(os)
@@ -274,6 +287,25 @@ class State:
             host_obs.append(readable_dict)
         return host_obs
 
+
+    def update_host(self, host_addr, host_vector):
+        host_idx = self.host_num_map[host_addr]
+        self.tensor[host_idx] = host_vector.vector
+        
+    def set_host_compromised(self, host_addr):
+        self.get_host(host_addr).compromised = True
+
+    def set_host_reachable(self, host_addr):
+        self.get_host(host_addr).reachable = True
+
+    def set_host_discovered(self, host_addr):
+        self.get_host(host_addr).discovered = True
+
+    @classmethod
+    def reset(cls):
+        """Reset any class attributes for state """
+        HostVector.reset()
+        
     def __str__(self):
         output = "\n--- State ---\n"
         output += "Hosts:\n"

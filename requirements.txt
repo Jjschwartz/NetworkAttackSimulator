@@ -1,0 +1,6 @@
+Gymnasium==0.26.3
+matplotlib>=3.9.2
+networkx>=3.3
+numpy==1.26.0
+prettytable>=3.11.0
+pyyaml>=6.0.2

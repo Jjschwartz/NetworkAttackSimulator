@@ -12,15 +12,16 @@ This framework is tested to work under Python 3.7 or later.
 The required dependencies:
 
 * Python >= 3.7
-* Gym >= 0.17
-* NumPy >= 1.18
-* PyYaml >= 5.3
+* Gym == 0.26.3
+* NumPy == 1.26.0
+* PyYaml >= 6.0.2
 
 For rendering:
 
-* NetworkX >= 2.4
-* prettytable >= 0.7.2
-* Matplotlib >= 3.1.3
+* NetworkX >= 3.3
+* prettytable >= 3.11.0
+* Matplotlib >= 3.9.2
+
 
 We recommend to use the bleeding-edge version and to install it by following the :ref:`dev-install`. If you want a simpler installation procedure and do not intend to modify yourself the learning algorithms etc., you can look at the :ref:`user-install`.
 

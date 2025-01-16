@@ -22,17 +22,6 @@ class Network:
         self.sensitive_addresses = scenario.sensitive_addresses
         self.sensitive_hosts = scenario.sensitive_hosts
 
-    def reset(self, state):
-        """Reset the network state to initial state """
-        next_state = state.copy()
-        for host_addr in self.address_space:
-            host = next_state.get_host(host_addr)
-            host.compromised = False
-            host.access = AccessLevel.NONE
-            host.reachable = self.subnet_public(host_addr[0])
-            host.discovered = host.reachable
-        return next_state
-
     def perform_action(self, state, action):
         """Perform the given Action against the network.
 
@@ -90,11 +79,51 @@ class Network:
         if action.is_subnet_scan():
             return self._perform_subnet_scan(next_state, action)
 
+        if action.is_wiretapping():
+            return self._perform_wiretapping(next_state, action)
+
+        #if action.is_privilege_escalation() and t_host.is_running_process(action.process):
+        #    self._perform_privilege_escalation(state,  action)
+        #    self._perform_privilege_escalation(next_state, action)
+
         t_host = state.get_host(action.target)
+
+        if action.is_privilege_escalation():
+            has_proc = (
+                    action.process is None
+                    or t_host.is_running_process(action.process)
+            )
+            has_os = (
+                    action.os is None or t_host.is_running_os(action.os)
+            )
+            if has_os and has_proc and action.req_access <= t_host.access:
+                self._perform_privilege_escalation(state, action)
+                self._perform_privilege_escalation(next_state, action)
+
         next_host_state, action_obs = t_host.perform_action(action)
         next_state.update_host(action.target, next_host_state)
         self._update(next_state, action, action_obs)
         return next_state, action_obs
+
+
+
+    def _perform_privilege_escalation(self, next_state, action):
+        credentials = action.credentials_tofind
+
+        if credentials != 0:
+            cred_found = {}
+            for h in self.hosts:
+                host = next_state.get_host(h)
+                if str(int(credentials)) in str(int(host.credentials_found)):
+                    continue
+                else:
+                    if int(host.credentials_found) == 0:
+                        tmp = int(credentials)
+                    else:
+                        tmp = int(str(int(host.credentials_found)) + str(int(credentials)))
+
+                    host.credentials_found_set(tmp)
+                    cred_found[h] = tmp
 
     def _perform_subnet_scan(self, next_state, action):
         if not next_state.host_compromised(action.target):
@@ -125,6 +154,46 @@ class Network:
             discovery_reward,
             discovered=discovered,
             newly_discovered=newly_discovered
+        )
+        return next_state, obs
+
+
+    def _perform_wiretapping(self, next_state, action):
+        # Get credentials_tofind then update each Hostvector
+        if not next_state.host_compromised(action.target):
+            result = ActionResult(False, 0.0, connection_error=True)
+            return next_state, result
+
+        if not next_state.host_has_access(action.target, action.req_access):
+            result = ActionResult(False, 0.0, permission_error=True)
+            return next_state, result
+
+        host = next_state.get_host(action.target)
+        credentials = host.credentials_tofind
+        #Update
+
+        if credentials == 0:
+            result = ActionResult(True, 0.0)
+            return next_state, result
+
+        cred_found = {}
+        for h in self.hosts:
+            host = next_state.get_host(h)
+            if str(int(credentials)) in str(int(host.credentials_found)):
+                continue
+            else:
+                if int(host.credentials_found) == 0:
+                    tmp = int(credentials)
+                else:
+                    tmp = int(str(int(host.credentials_found)) + str(int(credentials)))
+
+                host.credentials_found_set(tmp)
+                cred_found[h] = tmp
+
+        obs = ActionResult(
+            True,
+            cred_tofind=credentials,
+            cred_found=cred_found,
         )
         return next_state, obs
 
@@ -233,6 +302,19 @@ class Network:
     def get_subnet_depths(self):
         return min_subnet_depth(self.topology)
 
+
+    def reset(self, state):
+        """Reset the network state to initial state """
+        next_state = state.copy()
+        for host_addr in self.address_space:
+            host = next_state.get_host(host_addr)
+            host.compromised = False
+            host.access = AccessLevel.NONE
+            host.cred_found = 0
+            host.reachable = self.subnet_public(host_addr[0])
+            host.discovered = host.reachable
+        return next_state
+
     def __str__(self):
         output = "\n--- Network ---\n"
         output += "Subnets: " + str(self.subnets) + "\n"
@@ -243,6 +325,7 @@ class Network:
         for addr, value in self.sensitive_hosts.items():
             output += f"\t{addr}: {value}\n"
         output += "Num_services: {self.scenario.num_services}\n"
+        output += "Num_Vul: {self.scenario.num_vul}\n"
         output += "Hosts:\n"
         for m in self.hosts.values():
             output += str(m) + "\n"

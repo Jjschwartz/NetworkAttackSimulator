@@ -173,11 +173,12 @@ def run_keyboard_agent(env):
         print("\n" + LINE_BREAK2)
         print("OBSERVATION RECIEVED")
         print(LINE_BREAK2)
-        env.render()
+        print(env.current_state.tensor)
         print(f"Reward={r}")
         print(f"Done={done}")
         print(f"Step limit reached={step_limit_reached}")
         print(LINE_BREAK)
+
 
     return total_reward, total_steps, done
 

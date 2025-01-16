@@ -17,28 +17,35 @@
 #
 
 subnets: [1, 1, 5, 5, 4]
+
 topology: [[ 1, 1, 0, 0, 0, 0],
            [ 1, 1, 1, 1, 0, 0],
            [ 0, 1, 1, 1, 0, 0],
            [ 0, 1, 1, 1, 1, 1],
            [ 0, 0, 0, 1, 1, 0],
            [ 0, 0, 0, 1, 0, 1]]
+
 sensitive_hosts:
   (2, 0): 100
   (5, 0): 100
+
 os:
   - linux
   - windows
+
 services:
   - ssh
   - ftp
   - http
   - samba
   - smtp
+
 processes:
   - tomcat
   - daclsvc
   - schtask
+
+
 exploits:
   e_ssh:
     service: ssh
@@ -46,30 +53,36 @@ exploits:
     prob: 0.9
     cost: 3
     access: user
+
   e_ftp:
     service: ftp
     os: windows
     prob: 0.6
     cost: 1
     access: root
+
   e_http:
     service: http
     os: None
     prob: 0.9
     cost: 2
     access: user
+
   e_samba:
     service: samba
     os: linux
     prob: 0.3
     cost: 2
     access: root
+
   e_smtp:
     service: smtp
     os: windows
     prob: 0.6
     cost: 3
     access: user
+
+
 privilege_escalation:
   pe_tomcat:
     process: tomcat
@@ -77,87 +90,108 @@ privilege_escalation:
     prob: 1.0
     cost: 1
     access: root
+
   pe_daclsvc:
     process: daclsvc
     os: windows
     prob: 1.0
     cost: 1
     access: root
+
   pe_schtask:
     process: schtask
     os: windows
     prob: 1.0
     cost: 1
     access: root
+
 service_scan_cost: 1
 os_scan_cost: 1
 subnet_scan_cost: 1
 process_scan_cost: 1
+
+
 host_configurations:
   (1, 0):
     os: linux
     services: [http]
     processes: []
+
   (2, 0):
     os: windows
     services: [smtp]
     processes: [schtask]
+
   (3, 0):
     os: windows
     services: [ftp]
     processes: [schtask]
+
   (3, 1):
     os: windows
     services: [ftp, http]
     processes: [daclsvc]
+
   (3, 2):
     os: windows
     services: [ftp]
     processes: []
+
   (3, 3):
     os: windows
     services: [ftp]
     processes: [schtask]
+
   (3, 4):
     os: windows
     services: [ftp]
     processes: [schtask]
+
   (4, 0):
     os: linux
     services: [ssh]
     processes: []
+
   (4, 1):
     os: linux
     services: [ssh]
     processes: []
+
   (4, 2):
     os: linux
     services: [ssh]
     processes: []
+
   (4, 3):
     os: windows
     services: [ssh, ftp]
     processes: [tomcat]
+
   (4, 4):
     os: windows
     services: [ssh, ftp]
     processes: [tomcat]
+
   (5, 0):
     os: linux
     services: [ssh, samba]
     processes: []
+
   (5, 1):
     os: linux
     services: [ssh, http]
     processes: [tomcat]
+
   (5, 2):
     os: linux
     services: [ssh]
     processes: []
+
   (5, 3):
     os: linux
     services: [ssh]
     processes: []
+
 firewall:
   (0, 1): [http]
   (1, 0): []
@@ -171,4 +205,5 @@ firewall:
   (4, 3): [ftp, ssh]
   (3, 5): [ssh, ftp]
   (5, 3): [ftp, ssh]
+  
 step_limit: 2000

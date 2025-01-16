@@ -35,6 +35,17 @@ class ServiceState(enum.IntEnum):
 
     def __repr__(self):
         return self.name
+class VulState(enum.IntEnum):
+    # values for possible Vul knowledge states
+    UNKNOWN = 0     # Vul may or may not be running on host
+    PRESENT = 1     # Vul is running on the host
+    ABSENT = 2      # Vul not running on the host
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
 
 
 class AccessLevel(enum.IntEnum):
@@ -47,7 +58,6 @@ class AccessLevel(enum.IntEnum):
 
     def __repr__(self):
         return self.name
-
 
 def get_minimal_hops_to_goal(topology, sensitive_addresses):
     """Get minimum network hops required to reach all sensitive hosts.

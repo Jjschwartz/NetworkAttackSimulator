@@ -29,8 +29,10 @@ DEFAULTS = dict(
     base_host_value=1,
     host_discovery_value=1,
     step_limit=1000,
-    address_space_bounds=None
+    address_space_bounds=None,
+    num_vul=3
 )
+
 
 # Generated Scenario definitions
 TINY_GEN = {**DEFAULTS,
@@ -106,6 +108,18 @@ POCP_2_GEN = {**DEFAULTS,
               "restrictiveness": 5,
               "step_limit": 30000}
 
+POCP_2_GEN_CRED =  {**DEFAULTS,
+                    "name": "pocp-2-gen-cred",
+                    "num_hosts": 95,
+                    "num_os": 3,
+                    "num_services": 10,
+                    "num_exploits": 30,
+                    "num_processes": 3,
+                    "restrictiveness": 5,
+                    "step_limit": 30000,
+                    "num_vul": 30,
+                    "num_cred": 4}
+
 
 AVAIL_GEN_BENCHMARKS = {
     "tiny-gen": TINY_GEN,
@@ -116,5 +130,6 @@ AVAIL_GEN_BENCHMARKS = {
     "large-gen": LARGE_GEN,
     "huge-gen": HUGE_GEN,
     "pocp-1-gen": POCP_1_GEN,
-    "pocp-2-gen": POCP_2_GEN
+    "pocp-2-gen": POCP_2_GEN,
+    "pocp-2-gen-cred": POCP_2_GEN_CRED
 }

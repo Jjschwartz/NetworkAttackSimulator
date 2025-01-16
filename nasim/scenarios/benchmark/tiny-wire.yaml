@@ -1,0 +1,104 @@
+#Showing how to implement Vulnerabilities, Credentials and Wiretapping
+#Based on Topology B of the Bachelor Thesis of Norman Becker
+
+
+subnets: [1, 1, 1]
+
+topology: [[ 1, 1, 0, 0],
+           [ 1, 1, 1, 1],
+           [ 0, 1, 1, 1],
+           [ 0, 1, 1, 1]]
+           
+sensitive_hosts:
+  (3, 0): 100
+
+os:
+  - Penbox
+  - Rasbian
+
+services:
+  - openssh
+  - init
+  - http
+
+vul:
+  - CVE20072447
+  - CVE20201938
+
+
+processes:
+  - shadow
+
+exploits:
+  e_init:
+    service: init
+    os: None
+    vul : None
+    prob: 1.0
+    cost: 1
+    access: root
+    credentials_needed: 0
+
+  e_ssh_cred_login:
+    service: openssh
+    os: None
+    vul: None
+    prob: 1.0
+    cost: 3
+    access: root
+    credentials_needed: 1
+
+
+privilege_escalation:
+  pe_gain_Credentails_from_Shadow:
+    process: shadow
+    os: Rasbian
+    prob: 1.0
+    cost: 3
+    access: root
+    credentials_tofind: 0
+
+service_scan_cost: 1
+os_scan_cost: 1
+vul_scan_cost: 1
+subnet_scan_cost: 1
+process_scan_cost: 1
+wiretapping_cost: 1
+
+host_configurations:
+
+  (1, 0):
+    os: Penbox
+    services: [ init ]
+    vul: []
+    processes: [ ]
+    credentials_needed: 0
+    credentials_tofind: 12
+
+  (2, 0):
+    os: Rasbian
+    services: [ openssh, http ]
+    vul: []
+    processes: [ ]
+    credentials_needed: 0
+    credentials_tofind: 1
+
+  (3, 0):
+    os: Rasbian
+    services: [ openssh, http ]
+    vul: []
+    processes: [ ]
+    credentials_needed: 1
+    credentials_tofind: 1
+
+firewall:
+  (0, 1): [init]
+  (1, 0): []
+  (1, 2): [http, openssh ]
+  (2, 1): []
+  (1, 3): [http, openssh ]
+  (3, 1): []
+  (2, 3): [http, openssh ]
+  (3, 2): [http, openssh ]
+
+step_limit: 5000

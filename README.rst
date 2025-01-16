@@ -79,6 +79,16 @@ License
 What's new
 ----------
 
+- 2024-11-01 (v 0.12.1) (MAJOR release, WOP)
+
+  - Modified version of NASim based on the paper "Evaluation of Reinforcement Learning for Autonomous Penetration Testing using A3C, Q-learning and DQN" `[Norman Becker et al.] <https://arxiv.org/abs/2407.15656>`_. Please refer to the documentation for further information
+
+  + Addition of Credentials and Vulnerabilities
+  + Modifications to existing functions and structures to reflect the intended
+  + Modifications to the generator in regards to the new additions
+  
+
+
 
 - 2023-05-14 (v 0.12.0) (MINOR release)
 

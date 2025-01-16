@@ -9,6 +9,8 @@ import numpy as np
 from nasim.envs.utils import AccessLevel
 from nasim.envs.action import ActionResult
 
+from pprint import pprint
+
 
 class HostVector:
     """ A Vector representation of a single host in NASim.
@@ -19,28 +21,33 @@ class HostVector:
 
     Features in the vector, listed in order, are:
 
-    1. subnet address - one-hot encoding with length equal to the number
+    1.  subnet address - one-hot encoding with length equal to the number
                         of subnets
-    2. host address - one-hot encoding with length equal to the maximum number
+    2.  host address - one-hot encoding with length equal to the maximum number
                       of hosts in any subnet
-    3. compromised - bool
-    4. reachable - bool
-    5. discovered - bool
-    6. value - float
-    7. discovery value - float
-    8. access - int
-    9. OS - bool for each OS in scenario (only one OS has value of true)
-    10. services running - bool for each service in scenario
-    11. processes running - bool for each process in scenario
+    3.  compromised - bool
+    4.  reachable - bool
+    5.  discovered - bool
+    6.  value - float
+    7.  cred_tofind - concatenation of int of discoverable credentials
+    8.  cred_needed - int of needed credential
+    9.  cred_found - concatenation of int of found credentials
+    10. discovery value - float
+    11. access - int
+    12. OS - bool for each OS in scenario (only one OS has value of true)
+    13. services running - bool for each service in scenario
+    14. vulnerability - bool for each vulnerability 
+    15. processes running - bool for each process in scenario
 
     Notes
     -----
     - The size of the vector is equal to:
 
-        #subnets + max #hosts in any subnet + 6 + #OS + #services + #processes.
+        #subnets + max #hosts in any subnet + 6 + 3 + #OS + #services + #processes + #vulnerabilites.
 
     - Where the +6 is for compromised, reachable, discovered, value,
       discovery_value, and access features
+    - +3 being cred_tofind, cred_needed and cred_found
     - The vector is a float vector so True/False is actually represented as
       1.0/0.0.
 
@@ -58,6 +65,10 @@ class HostVector:
     num_services = None
     # map from service name to its index in host vector
     service_idx_map = {}
+    
+    num_vul = None
+    vul_idx_map = {}
+
     # number of processes in scenario
     num_processes = None
     # map from process name to its index in host vector
@@ -73,6 +84,10 @@ class HostVector:
     _reachable_idx = None
     _discovered_idx = None
     _value_idx = None
+    _vul_start_idx = None
+    _credentials_tofind_idx = None
+    _credentials_needed_idx = None
+    _credentials_found_idx = None
     _discovery_value_idx = None
     _access_idx = None
     _os_start_idx = None
@@ -81,52 +96,6 @@ class HostVector:
 
     def __init__(self, vector):
         self.vector = vector
-
-    @classmethod
-    def vectorize(cls, host, address_space_bounds, vector=None):
-        if cls.address_space_bounds is None:
-            cls._initialize(
-                address_space_bounds, host.services, host.os, host.processes
-            )
-
-        if vector is None:
-            vector = np.zeros(cls.state_size, dtype=np.float32)
-        else:
-            assert len(vector) == cls.state_size
-
-        vector[cls._subnet_address_idx + host.address[0]] = 1
-        vector[cls._host_address_idx + host.address[1]] = 1
-        vector[cls._compromised_idx] = int(host.compromised)
-        vector[cls._reachable_idx] = int(host.reachable)
-        vector[cls._discovered_idx] = int(host.discovered)
-        vector[cls._value_idx] = host.value
-        vector[cls._discovery_value_idx] = host.discovery_value
-        vector[cls._access_idx] = host.access
-        for os_num, (os_key, os_val) in enumerate(host.os.items()):
-            vector[cls._get_os_idx(os_num)] = int(os_val)
-        for srv_num, (srv_key, srv_val) in enumerate(host.services.items()):
-            vector[cls._get_service_idx(srv_num)] = int(srv_val)
-        host_procs = host.processes.items()
-        for proc_num, (proc_key, proc_val) in enumerate(host_procs):
-            vector[cls._get_process_idx(proc_num)] = int(proc_val)
-        return cls(vector)
-
-    @classmethod
-    def vectorize_random(cls, host, address_space_bounds, vector=None):
-        hvec = cls.vectorize(host, vector)
-        # random variables
-        for srv_num in cls.service_idx_map.values():
-            srv_val = np.random.randint(0, 2)
-            hvec.vector[cls._get_service_idx(srv_num)] = srv_val
-
-        chosen_os = np.random.choice(list(cls.os_idx_map.values()))
-        for os_num in cls.os_idx_map.values():
-            hvec.vector[cls._get_os_idx(os_num)] = int(os_num == chosen_os)
-
-        for proc_num in cls.process_idx_map.values():
-            proc_val = np.random.randint(0, 2)
-            hvec.vector[cls._get_process_idx(proc_num)] = proc_val
-        return hvec
 
     @property
     def compromised(self):
@@ -164,6 +133,29 @@ class HostVector:
         return self.vector[self._value_idx]
 
     @property
+    def credentials_needed(self):
+        return self.vector[self._credentials_needed_idx]
+
+    @property
+    def credentials_tofind(self):
+        return self.vector[self._credentials_tofind_idx]
+
+    @property
+    def credentials_found(self):
+        return self.vector[self._credentials_found_idx]
+
+
+    def credentials_found_set(self, val):
+        self.vector[self._credentials_found_idx] = float(val)
+        
+    @property
+    def vul(self):
+        vul = {}
+        for v, vul_num in self.vul_idx_map.items():
+            vul[v] = self.vector[self._get_vul_idx(vul_num)]
+        return vul
+
+    @property
     def discovery_value(self):
         return self.vector[self._discovery_value_idx]
 
@@ -196,9 +188,83 @@ class HostVector:
             processes[proc] = self.vector[self._get_process_idx(proc_num)]
         return processes
 
+
+    @classmethod
+    def vectorize(cls, host, address_space_bounds, vector=None):
+        if cls.address_space_bounds is None:
+            cls._initialize(
+                address_space_bounds, host.services, host.vul, host.os, host.processes
+            )
+
+        if vector is None:
+            vector = np.zeros(cls.state_size, dtype=np.float32)
+        else:
+            assert len(vector) == cls.state_size
+
+        vector[cls._subnet_address_idx + host.address[0]] = 1
+        vector[cls._host_address_idx + host.address[1]] = 1
+        vector[cls._compromised_idx] = int(host.compromised)
+        vector[cls._reachable_idx] = int(host.reachable)
+        vector[cls._discovered_idx] = int(host.discovered)
+        vector[cls._value_idx] = host.value
+        vector[cls._credentials_tofind_idx] = host.cred_tofind
+        vector[cls._credentials_found_idx] = host.cred_found
+        vector[cls._credentials_needed_idx] = host.cred_needed
+        vector[cls._discovery_value_idx] = host.discovery_value
+        vector[cls._access_idx] = host.access
+        for os_num, (os_key, os_val) in enumerate(host.os.items()):
+            vector[cls._get_os_idx(os_num)] = int(os_val)
+        for srv_num, (srv_key, srv_val) in enumerate(host.services.items()):
+            vector[cls._get_service_idx(srv_num)] = int(srv_val)
+            
+        for vul_num, (vul_key, vul_val) in enumerate(host.vul.items()):
+            vector[cls._get_vul_idx(vul_num)] = int(vul_val)
+        
+        host_procs = host.processes.items()
+        for proc_num, (proc_key, proc_val) in enumerate(host_procs):
+            vector[cls._get_process_idx(proc_num)] = int(proc_val)
+        return cls(vector)
+
+    @classmethod
+    def vectorize_random(cls, host, address_space_bounds, vector=None):
+        hvec = cls.vectorize(host, vector)
+        # random variables
+        for srv_num in cls.service_idx_map.values():
+            srv_val = np.random.randint(0, 2)
+            hvec.vector[cls._get_service_idx(srv_num)] = srv_val
+
+        for vul_num in cls.vul_idx_map.values():
+            vul_val = np.random.randint(0, 2)
+            hvec.vector[cls._get_vul_idx(vul_num)] = vul_val
+
+        chosen_os = np.random.choice(list(cls.os_idx_map.values()))
+        for os_num in cls.os_idx_map.values():
+            hvec.vector[cls._get_os_idx(os_num)] = int(os_num == chosen_os)
+
+        for proc_num in cls.process_idx_map.values():
+            proc_val = np.random.randint(0, 2)
+            hvec.vector[cls._get_process_idx(proc_num)] = proc_val
+        return hvec
+
+   
+
     def is_running_service(self, srv):
         srv_num = self.service_idx_map[srv]
         return bool(self.vector[self._get_service_idx(srv_num)])
+
+    def got_credentials(self, c):
+        tmp1 = str(int(self.vector[self._credentials_found_idx]))
+        tmp2 = str(int(self.vector[self._credentials_needed_idx]))
+        if str(c) in tmp1 and str(c) in tmp2:
+            return True
+        else:
+            return False
+
+    def is_running_vul(self, v):
+        if v == []:
+            return False
+        vul_num = self.vul_idx_map[v]
+        return bool(self.vector[self._get_vul_idx(vul_num)])
 
     def is_running_os(self, os):
         os_num = self.os_idx_map[os]
@@ -224,8 +290,17 @@ class HostVector:
             the result from the action
         """
         next_state = self.copy()
+        
         if action.is_service_scan():
             result = ActionResult(True, 0, services=self.services)
+            return next_state, result
+
+        if action.is_vul_scan():
+            result = ActionResult(True, 0, vul=self.vul)
+            return next_state, result
+
+        if action.is_wiretapping():
+            result = ActionResult(True, 0, cred_tofind=self.credentials_tofind)
             return next_state, result
 
         if action.is_os_scan():
@@ -233,7 +308,9 @@ class HostVector:
 
         if action.is_exploit():
             if self.is_running_service(action.service) and \
-               (action.os is None or self.is_running_os(action.os)):
+               (action.os is None or self.is_running_os(action.os)) and \
+                    (action.vul == "None" or action.vul == None or self.is_running_vul(action.vul))and \
+                        (action.credentials_needed == 0 or action.credentials_needed == None or self.got_credentials(action.credentials_needed)):
                 # service and os is present so exploit is successful
                 value = 0
                 next_state.compromised = True
@@ -249,6 +326,8 @@ class HostVector:
                     value=value,
                     services=self.services,
                     os=self.os,
+                    vul=self.vul,
+                    cred_tofind=self.credentials_tofind,
                     access=action.access
                 )
                 return next_state, result
@@ -287,7 +366,8 @@ class HostVector:
                     value=value,
                     processes=self.processes,
                     os=self.os,
-                    access=action.access
+                    access=action.access,
+                    cred_tofind=action.credentials_tofind
                 )
                 return next_state, result
 
@@ -303,6 +383,10 @@ class HostVector:
                 value=False,
                 discovery_value=False,
                 services=False,
+                vul=False,
+                cred_tofind=False,
+                cred_found=False,
+                cred_needed=False,
                 processes=False,
                 os=False):
         obs = np.zeros(self.state_size, dtype=np.float32)
@@ -319,6 +403,12 @@ class HostVector:
             obs[self._discovered_idx] = self.vector[self._discovered_idx]
         if value:
             obs[self._value_idx] = self.vector[self._value_idx]
+        if cred_tofind:
+            obs[self._credentials_tofind_idx] = self.vector[self._credentials_tofind_idx]
+        if cred_found:
+            obs[self._credentials_found_idx] = self.vector[self._credentials_found_idx]
+        if cred_needed:
+            obs[self._credentials_needed_idx] = self.vector[self._credentials_needed_idx]
         if discovery_value:
             v = self.vector[self._discovery_value_idx]
             obs[self._discovery_value_idx] = v
@@ -330,6 +420,11 @@ class HostVector:
         if services:
             idxs = self._service_idx_slice()
             obs[idxs] = self.vector[idxs]
+
+        if vul:
+            idxs = self._vul_idx_slice()
+            obs[idxs] = self.vector[idxs]
+
         if processes:
             idxs = self._process_idx_slice()
             obs[idxs] = self.vector[idxs]
@@ -346,19 +441,24 @@ class HostVector:
         return self.vector
 
     @classmethod
-    def _initialize(cls, address_space_bounds, services, os_info, processes):
+    def _initialize(cls, address_space_bounds, services, vul, os_info, processes):
         cls.os_idx_map = {}
         cls.service_idx_map = {}
+        cls.vul_idx_map = {}
         cls.process_idx_map = {}
         cls.address_space_bounds = address_space_bounds
         cls.num_os = len(os_info)
         cls.num_services = len(services)
+        cls.num_vul = len(vul)
         cls.num_processes = len(processes)
         cls._update_vector_idxs()
         for os_num, (os_key, os_val) in enumerate(os_info.items()):
             cls.os_idx_map[os_key] = os_num
         for srv_num, (srv_key, srv_val) in enumerate(services.items()):
             cls.service_idx_map[srv_key] = srv_num
+        for vul_num, (vul_key, vul_val) in enumerate(vul.items()):
+            cls.vul_idx_map[vul_key] = vul_num
+
         for proc_num, (proc_key, proc_val) in enumerate(processes.items()):
             cls.process_idx_map[proc_key] = proc_num
 
@@ -374,9 +474,13 @@ class HostVector:
         cls._value_idx = cls._discovered_idx + 1
         cls._discovery_value_idx = cls._value_idx + 1
         cls._access_idx = cls._discovery_value_idx + 1
-        cls._os_start_idx = cls._access_idx + 1
+        cls._credentials_tofind_idx = cls._access_idx + 1            
+        cls._credentials_found_idx = cls._credentials_tofind_idx + 1   
+        cls._credentials_needed_idx = cls._credentials_found_idx + 1 
+        cls._os_start_idx = cls._credentials_needed_idx + 1          
         cls._service_start_idx = cls._os_start_idx + cls.num_os
-        cls._process_start_idx = cls._service_start_idx + cls.num_services
+        cls._vul_start_idx = cls._service_start_idx + cls.num_services 
+        cls._process_start_idx = cls._vul_start_idx + cls.num_vul       #cls._service_start_idx + cls.num_services
         cls.state_size = cls._process_start_idx + cls.num_processes
 
     @classmethod
@@ -393,7 +497,17 @@ class HostVector:
 
     @classmethod
     def _service_idx_slice(cls):
-        return slice(cls._service_start_idx, cls._process_start_idx)
+        return slice(cls._service_start_idx, cls._vul_start_idx) #cls._process_start_idx
+
+
+    @classmethod
+    def _get_vul_idx(cls, vul_num):
+        return cls._vul_start_idx+vul_num
+
+    @classmethod
+    def _vul_idx_slice(cls):
+        return slice(cls._vul_start_idx, cls._process_start_idx)
+
 
     @classmethod
     def _get_os_idx(cls, os_num):
@@ -422,10 +536,15 @@ class HostVector:
         readable_dict["Value"] = hvec.value
         readable_dict["Discovery Value"] = hvec.discovery_value
         readable_dict["Access"] = hvec.access
+        readable_dict["cred_tofind"] = hvec.credentials_tofind
+        readable_dict["cred_found"] = hvec.credentials_found
+        readable_dict["cred_needed"] = hvec.credentials_needed
         for os_name in cls.os_idx_map:
             readable_dict[f"{os_name}"] = hvec.is_running_os(os_name)
         for srv_name in cls.service_idx_map:
             readable_dict[f"{srv_name}"] = hvec.is_running_service(srv_name)
+        for vul_name in cls.vul_idx_map:
+            readable_dict[f"{vul_name}"] = hvec.is_running_vul(vul_name)
         for proc_name in cls.process_idx_map:
             readable_dict[f"{proc_name}"] = hvec.is_running_process(proc_name)
 

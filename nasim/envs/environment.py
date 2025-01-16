@@ -128,7 +128,8 @@ class NASimEnv(gym.Env):
         """
         super().reset(seed=seed, options=options)
         self.steps = 0
-        self.current_state = self.network.reset(self.current_state)
+        #self.current_state = self.network.reset(self.current_state)
+        self.current_state = State.generate_initial_state(self.network)
         self.last_obs = self.current_state.get_initial_observation(
             self.fully_obs
         )

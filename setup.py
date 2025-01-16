@@ -12,7 +12,7 @@ extras = {
         'sphinx-rtd-theme>=0.4'
     ],
     'test': [
-        'pytest>=5.4'
+        'pytest>=8.3.2'
     ]
 }
 
@@ -45,15 +45,15 @@ setup(
         if package.startswith('nasim')
     ],
     install_requires=[
-        'gymnasium>=0.26',
-        'numpy>=1.18',
-        'networkx>=2.4',
-        'matplotlib>=3.1',
-        'pyyaml>=5.3',
-        'prettytable>=0.7'
+        'gymnasium==0.26.3',
+        'numpy==1.26.0',
+        'networkx>=3.3',
+        'matplotlib>=3.9.2',
+        'pyyaml>=6.0.2',
+        'prettytable>=3.11.0'
     ],
     extras_require=extras,
-    python_requires='>=3.8',
+    python_requires='>=3.12.4',
     package_data={
         'nasim': ['scenarios/benchmark/*.yaml']
     },
@@ -65,7 +65,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.12.4',
     ],
     zip_safe=False
 )

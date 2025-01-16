@@ -1,0 +1,140 @@
+# tiny-small scenario but
+# with added credentials and vulnerabilities
+
+subnets: [1, 1, 2, 1]
+
+topology: [[ 1, 1, 0, 0, 0],
+           [ 1, 1, 1, 1, 0],
+           [ 0, 1, 1, 1, 0],
+           [ 0, 1, 1, 1, 1],
+           [ 0, 0, 0, 1, 1]]
+
+sensitive_hosts:
+  (2, 0): 100
+  (4, 0): 100
+
+os:
+  - linux
+  - windows
+
+services:
+  - ssh
+  - ftp
+  - http
+
+processes:
+  - tomcat
+  - daclsvc
+
+exploits:
+  e_ssh:
+    service: ssh
+    os: linux
+    prob: 0.9
+    cost: 3
+    access: user
+    vul: None
+    credentials_needed: 0
+
+  e_ftp:
+    service: ftp
+    os: windows
+    prob: 0.6
+    cost: 1
+    access: root
+    vul: None
+    credentials_needed: 0
+
+  e_http:
+    service: http
+    os: None
+    prob: 0.9
+    cost: 2
+    access: user
+    vul: None
+    credentials_needed: 0
+
+privilege_escalation:
+  pe_tomcat:
+    process: tomcat
+    os: linux
+    prob: 1.0
+    cost: 1
+    access: root
+    credentials_tofind: 0
+
+  pe_daclsvc:
+    process: daclsvc
+    os: windows
+    prob: 1.0
+    cost: 1
+    access: root
+    credentials_tofind: 0
+
+service_scan_cost: 1
+os_scan_cost: 1
+subnet_scan_cost: 1
+process_scan_cost: 1
+vul_scan_cost: 0
+wiretapping_cost: 0
+
+vul: 
+  - none
+
+host_configurations:
+  (1, 0):
+    os: linux
+    services: [http]
+    processes: [tomcat]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
+  (2, 0):
+    os: linux
+    services: [ssh, ftp]
+    processes: [tomcat]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
+  (3, 0):
+    os: windows
+    services: [ftp]
+    processes: []
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
+  (3, 1):
+    os: windows
+    services: [ftp, http]
+    processes: [daclsvc]
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
+  (4, 0):
+    os: windows
+    services: [ssh, ftp]
+    processes: []
+    vul: []
+    credentials_needed: 0
+    credentials_tofind: 0
+
+# two row for each connection between subnets as defined by topology
+# one for each direction of connection
+# list which services to allow
+firewall:
+  (0, 1): [http]
+  (1, 0): []
+  (1, 2): [ssh]
+  (2, 1): [ssh]
+  (1, 3): []
+  (3, 1): [ssh]
+  (2, 3): [http]
+  (3, 2): [ftp]
+  (3, 4): [ssh, ftp]
+  (4, 3): [ftp]
+  
+step_limit: 1000

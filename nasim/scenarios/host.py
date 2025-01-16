@@ -13,6 +13,10 @@ class Host:
                  services,
                  processes,
                  firewall,
+                 vul,
+                 cred_tofind,
+                 cred_needed,
+                 cred_found=0,
                  value=0.0,
                  discovery_value=0.0,
                  compromised=False,
@@ -38,6 +42,16 @@ class Host:
             firewall assumes all services allowed
         value : float, optional
             value of the host (default=0.0)
+        
+        vul : list
+            List of vulnerabilities running on the host. Can be empty but not None
+        cred_tofind : int
+            credential which is held by the host, wiretapping
+        cred_needed : int
+            credential needed to succesfully perform exploits on the host
+        cred_found : int, optional
+            #string# of unique integers representing the credentials found over the whole network
+        
         discovery_value : float, optional
             the reward gained for discovering the host (default=0.0)
         compromised : bool, optional
@@ -61,9 +75,16 @@ class Host:
         self.reachable = reachable
         self.discovered = discovered
         self.access = access
+        self.vul = vul 
+        self.cred_tofind = cred_tofind 
+        self.cred_found = cred_found   
+        self.cred_needed = cred_needed 
 
     def is_running_service(self, service):
         return self.services[service]
+
+    def is_running_vul(self, vul):
+        return self.vul[vul]
 
     def is_running_os(self, os):
         return self.os[os]
@@ -81,6 +102,10 @@ class Host:
         output.append(f"\treachable: {self.reachable}")
         output.append(f"\tvalue: {self.value}")
         output.append(f"\taccess: {self.access}")
+        output.append(f"\tcred_found: {self.cred_found}")   
+        output.append(f"\tcred_needed: {self.cred_needed}") 
+        output.append(f"\tcred_tofind: {self.cred_tofind}") 
+
 
         output.append("\tOS: {")
         for os_name, val in self.os.items():
@@ -89,6 +114,11 @@ class Host:
 
         output.append("\tservices: {")
         for name, val in self.services.items():
+            output.append(f"\t\t{name}: {val}")
+        output.append("\t}")
+
+        output.append("\tvul: {")
+        for name, val in self.vul.items():
             output.append(f"\t\t{name}: {val}")
         output.append("\t}")
 

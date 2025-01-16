@@ -57,3 +57,47 @@ Firstly, there exists no firewall between subnets in the user zone. So communica
 Secondly, the number of services blocked is controlled by the ``restrictiveness`` parameter. This controls the number of services to block between zones (i.e. between the internet, DMZ, sensitive, and user zones).
 
 Thirdly, to ensure that the goal can be reached, traffic from at least one service running on each subnet will be allowed between each zone. This may mean more services will be allowed than restrictiveness parameter.
+
+
+Credentials (Optional)
+----------------------
+
+To include credentials the following arguments are introduced:
+
+- ``num_cred=0`` - represents the number of credentials used. (max. of 9)
+
+- ``wiretapping_cost=0`` - cost to wiretap a target
+
+In general every exploit can be used with each credential, each exploit is generated with every possible credential as an input. These permutations are handled as one exploit to not affect the ``num_exploits=None`` variable.
+
+**Distribution**: Each credentials only has singular source to be discovered on. They are randomly handed to each subnet and then further distributed to the hosts in each subnet. 
+
+Since every Host is vulnerable to at least one exploit, the credentials are placed in the ``credentials_tofind`` variable of the host and can be found by ``Wiretapping()``.
+
+**Locking**: Following the distribution the hosts are potentionaly locked. For this a random order to visit each host is generated and an array of ``found_credentials`` is being tracked.
+
+Each visited host is locked with a random already 'found' credential (if possible), credentials saved in ``credentials_tofind`` are noted for future use.
+
+**Limitations**: 'Distribution' and 'Locking' are simple representations of the potential applications.
+
+- Both are fully random and not influenced by ``seed`` or ``restrictiveness``
+
+- credentials found by ``PrivelegeEscalation()`` are not represented nor implemented
+
+- 'Locking' does not uniformally 'lock' existing hosts, resulting in a random density of this property
+
+
+Vulnerabilities (Optional)
+--------------------------
+
+- ``num_vul=0`` - number of vulnerabilities
+
+- ``vul_scan_cost=0`` - cost to scan a host for vulnerabilities
+
+Similiar to the depiction of how vulnerabilities work, each one is linked to a service. The exploits utilizing these vulnerabilities are not bound to a OS and have a ``prob=1``.
+
+Hosts running a 'vulnerable' service also get the vulnerability alocated to them to ensure susceptibility.
+
+**Limitations**: Vulnerabilities are randomly bound to services and not additionally to OS's, making it less diverse in terms of permutations.
+
+Furthermore, the possibility of a service with a linked vulnerability running on a host without the vulnerability is not present.

@@ -310,7 +310,7 @@ class ScenarioLoader:
             (f"{e_name}. Exploit target OS is invalid. '{e[u.EXPLOIT_OS]}'."
              " Should be None or one of the OS in the os list.")
 
-        assert 0 <= e[u.EXPLOIT_PROB] < 1, \
+        assert 0 <= e[u.EXPLOIT_PROB] <= 1.0, \
             (f"{e_name}. Exploit probability, '{e[u.EXPLOIT_PROB]}' not "
              "a valid probability")
 
